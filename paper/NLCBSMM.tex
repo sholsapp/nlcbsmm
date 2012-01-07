@@ -1,0 +1,484 @@
+\documentclass[9pt]{sig-alternate-10pt}
+\usepackage{multicol} 
+\usepackage{amsmath} 
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{url}
+
+\begin{document}
+
+\title{\vfill NLCBSMM: A Virtual Memory Manager in Userspace} 
+\author{Ryan Verdon, Allen Dunlea, Stephen Holsapple}
+\date{\today}
+\maketitle
+
+\begin{abstract}
+Northern Lights Cinerious Brown Snake Memory Manager (NLCBSMM) is a virtual memory manager implemented completely in user space.  The NLCBSMM system is an extension to an existing shared library that replaces system-provided memory allocators, i.e. the shared library intercepts and replaces calls to malloc, free, new and delete in applications compiled and linked with it.  By extending Hoard, the memory allocator, our system is able to manage memory using several techniques inspired by traditional virtual memory managers that interface with a kernel.  NLCBSMM provides a simple API for developers to implement future methods of resolving page faults outside of traditional fault handlers.  We provide several experimental implementations for fault handlers that implement this API including a simple memory to memory handler and network to memory handler, suggesting NLCBSMM could easily be extended to build a more sophisticated distributed shared memory system.
+\end{abstract}
+
+\section{Introduction}
+Typical virtual memory management systems operate in kernel space, hiding virtually all aspects of memory management to the application programmer.  For many types of applications this is permissible, and even preferred.  The NLCBSMM system is an attempt to build an efficient and stable prototype for a virtual memory management system implemented entirely in user space.
+
+The NLCBSMM system is an extension to Hoard, an existing shared library that replaces system-provided memory allocators, i.e. the shared library intercepts and replaces calls to malloc, free, new and delete in applications compiled and linked with it. By extending Hoard we were able to hook into calls to malloc and record when processes receive virtual memory from the kernel. We mprotect(2) the memory from the kernel so that processes using that memory will segmentation fault when trying to access that memory. 
+
+Our system records the pages that it controls and can move the contents of the page to other locations. Our system keeps track of where the contents of each page resides and when a process faults on a page we are able to use a signal handler to find where the contents of the page are. NLCBSMM retrieves the contents of the page from wherever it has been move and returns it to the faulting page. The permissions are then set correctly and control is returned to the process which should no longer segmentation fault on that page. Using these techniques we are able to create a system that will control malloc, free, new and delete calls in almost any application. 
+
+NLCBSMM also provides a simple API for developers to implement future methods of resolving page faults outside of traditional fault handlers. Currently we are able to move memory to a shadow location or to the network. We can also compress the pages to lessen the memory footprint of the program. Using object oriented design principles we are able to make a simple API that developers can use to change where the contents of pages are moved to. We provide several experimental implementations for fault handlers that implement this API including a simple memory to memory handler and network to memory handler, suggesting NLCBSMM could easily be extended to build a more sophisticated distributed shared memory system.
+
+Section \ref{related work} covers some systems that work similarly to ours; in particular we cover the Hoard memory allocator. We describe the goals of our project in Section \ref{goals} and give an overview of our design in Section \ref{design}. In Section \ref{implementation} we discuss our specific implementation. Section \ref{results} covers the results that we achieved and Section \ref{future work} discusses where we would like to see this project taken in the future. We end the paper with the lessons we learned in Section \ref{lessons learned} and conclude our paper with Section \ref{conclusion}.
+
+\section{Related Work}
+\label{related work}
+The NLCBSMM system draws heavily on previous work done on the Hoard memory allocator~\cite{hoard}.  Hoard is a fast, highly scalable allocator that largely avoids false sharing and is memory efficient.  It does so by using a novel technique that combine the use of a global and per-process heap that performs extremely well in the common case.  It can also be shown that Hoard provably bounds memory consumption.  
+
+Hoard is a drop-in replacement for the system-provided memory allocator that provides overriding implementations for all memory management code.  These overriding implementations replace calls to \em malloc \em or \em free\em, among others, using malloc pre-hooks provided by GCC's memory allocation code to reassign the address of the functions for \em malloc \em or \em free\em.
+
+Hoard provides a flexible and efficient infrastructure for building memory allocators using concepts based on C++ templates and inheritance, called \em mixins\em~\cite{heaplayers}.  This novel approach avoids use of \em virtual \em methods, expensive overhead that is noticed by high-performance memory allocators.  The novel approach provides an API for building general-purpose allocators as ``heap layers'' that can be composed without incurring any additional runtime overhead~\cite{heaplayers}.  The concept of ``heap layers'' is an especially interesting abstraction that makes Hoard particularly powerful.  It allows for application developers building their own allocators to use a pick-and-choose method from a set of building block allocators.  For instance, an application developer may opt to combine a SegmentHeap $\rightarrow$ FreelistHeap $\rightarrow$ MmapHeap, or perhaps a SegmentHeap $\rightarrow$ ChunkHeap $\rightarrow$ MmapHeap.  The individual ``heap layers'' mentioned aren't necessarily important, they simply illustrate the layered approach of building memory heaps.  Using this approach application developers can develop their own custom allocators extremely quickly.  We discuss \em mixins \em in more detail in Section \ref{mixins}.
+
+% 
+% 
+%
+\begin{table}[htb]
+\begin{tabular}{|l p{5.8cm}|}
+\hline
+\multicolumn{2}{|c|}{\bf{A Library of Heap Layers}} \\
+\hline
+\multicolumn{2}{|c|}{\bf{Top Heaps}} \\
+\hline
+mallocHeap & A thin layer over \em malloc \em \\
+mmapHeap & A thin layer over the virtual memory manager \\
+sbrkHeap & A thin layer over \em sbrk \em (contiguous memory) \\
+\hline
+\multicolumn{2}{|c|}{\bf{Building-Block Heaps}} \\
+\hline
+AdaptHeap & Adapts data structures for use as a heap \\
+ChunkHeap & Manages memory in chunks of a given size \\
+CoalesceHeap & Performs coalescing and splitting \\
+FreelistHeap & A freelist (caches freed objects) \\
+\hline
+\multicolumn{2}{|c|}{\bf{Combining Heaps}} \\
+\hline
+HybridHeap & Uses one heap for small objects and another for large objects \\
+SegHeap & A general segregated fits allocator \\
+StrictSegHeap & A strict segregated fits allocator \\
+\hline
+\multicolumn{2}{|c|}{\bf{Utility Layers}} \\
+\hline
+ANSIWrapper & Provides ANSI-malloc compliance \\
+DebugHeap & Checks for a variety of allocation errors \\
+LockedHeap & Code-locks a heap for thread-safety \\
+PerClassHeap & Use a heap as a per-class allocator \\
+\hline
+\multicolumn{2}{|c|}{\bf{General-Purpose Heaps}} \\
+\hline
+KingsleyHeap & Fast but high fragmentation \\
+LeaHeap & Not quite as fast but low fragmentation \\
+\hline
+\end{tabular}
+\caption{Hoard provided heap layers can be combined to form high-performance custom memory allocators}
+\end{table}
+
+
+The NLCBSMM system also borrows many of the virtual memory management techniques implemented in the distributed shared memory system TreadMarks~\cite{treadmarks}.  TreadMarks discusses an efficient technique for managing memory in a Unix environment using signals~\cite{treadmarks}.  By handling signals generated by illegal memory access, TreadMarks is able to exercise an event driven architecture for managing memory.  TreadMarks also discusses a simple design for managing memory pages using an array object to manage page `state'.  The NLCBSMM system adopts these mentioned strategies in various ways, though they may be implemented slightly differently.
+
+\section{Goals}
+\label{goals}
+
+Effective distributed shared memory (DSM) systems can be implemented in user space.  It is the goal of this project to build a stable infrastructure that can be easily extended to build such a DSM system.  The NLCBSMM system seeks to contribute a virtual memory manager in user space to this long term goal.  There are several goals that the NLCBSMM project desires to meet in particular.  
+
+First, there should be little to no overhead for the application developer, i.e. the developer should not have to use special function calls, register functions or other common approaches that a plug-in architecture may require.  An application should be able to be run with NLCBSMM by requiring at most linkage at compile time.
+
+Second, the NLCBSMM system should lend itself to multi-threaded applications.  By this, we mean that the system should perform well for multi-threaded applications.  This will limit faults to processes only, allowing existing multi-threaded applications to take advantage of a common virtual memory address space.
+
+Thirdly, the NLCBSMM system must build and run in a Linux environment.  This allows us to control to a fine granularity the behavior of our threads using Linux-specific system calls like clone(2).
+
+Lastly, the NLCBSMM system should impose no significant overhead.  Admittedly, such a system will likely perform less well than a system provided memory allocator.  However, for the purposes of comparison, we'll qualify the term `significant overhead' to mean overhead beyond existing memory allocators implemented in user space.
+
+%
+% High Level Design
+%
+\section{Design}
+\label{design}
+We designed NLCBSMM to be a shared library object that client applications can link with at compile time.  Besides this limitation, no changes to the existing application are required.  Though compiling an application program with linkage to our library may be considered expensive, it was the only feasible way we could meet the rest of our project goals.
+
+The following sections describe the design of the NLCBSMM system.  We discuss the design of the memory management abstraction, i.e. all processes related to block initialization, permissions management and other various internal data structures.  We discuss the design of our fault resolution system, i.e. all design related to how we resolve faults. Lastly, we discuss the design a control interface that lets a client interface with the NLCBSMM system.
+
+\subsection{Memory Mangement}
+\subsubsection{Block Initialization}
+Hoard is allowed to run as it normally would except for instances in which Hoard interfaces with the system kernel to obtain or free memory.  At these critical times, the NLCBSMM system must record and protect this newly allocated memory.  Hoard conveniently allocates blocks of memory from the kernel in 16 page segments called \em superblocks\em.  When this happens, i.e. when Hoard's \em source heap \em is empty and must obtain more memory from the kernel, NLCBSMM records the superblock base, the offsets to each of the pages, initializes a basic object with accounting information like permissions and state and calls mprotect(2) for each of the 16 pages.  This initializes the basic element that we store to process page state, the address in the system-provided virtual memory, as well as the location provided by NLCBSMM.
+
+\subsubsection{Internal Data Structures}
+We developed an API for our internal data structures that does not rely on a certain data structure in the backend. Doing so allows our system to work in a large number of applications. Our internal data structure requires four different calls:
+\begin{enumerate}
+\item \em insert \em (Superblock record): The function inserts a record that records information about a superblock, we describe what a superblock record is in next section.
+\item \em findBySuperblock \em (A pointer to an address): The function uses the address to search the data structure and figure out what superblock the pointer is in. If the pointer is not in the data structure that would mean it is not a valid address to successfully resolve.
+\item \em getSize \em (): Returns the amount of superblock records in the data structure. Useful for sharing data structure information with other hoard clients.
+\item \em get \em (Index into the data structure): Returns the item referenced by the index provided to get.
+\end{enumerate}
+
+An interesting thing to note is that we do not support a remove command. This is because Hoard never gives superblocks back to the kernel. When a superblock is empty it goes to a global heap for reuse on another malloc call.
+
+\paragraph{Superblock Management}
+To record superblock information we record the superblock's address on the local machine and records for each page in the superblock. We record the superblock's starting address because we plan to use it to keep the address spaces on multiple hoard instances the same. Page records are described in the next section.
+
+\paragraph{Page Management}
+We record two things in each page record. The first is the flags for the page. The flags consist of basic state flags like those you would find in a traditional virtual memory manager. The second thing is where the page is. We defined where a page is as a location. A location can be in this machines memory, in a shadow location or a network location. 
+
+%Currently, a \em Page \em is the object we have designed to manage the pages in the NLCBSMM system. A \em Page \em consists of basic state flags like those you would find in a traditional virtual memory manager and another abstraction we called a \em location\em.  The \em location \em abstraction is the component we will elaborate more on in section \ref{fault_resolution}.
+
+
+\subsection{Fault Resolution}
+\label{fault_resolution}
+At the heart of NLCBSMM is a signal handler that catches illegal memory accesses, commonly known as segmentation faults (\em SIGSEGV\em) on pages that NLCBSMM controls or is aware of. Segmentation faults happen whenever a thread tries to access a memory location that is protected by NLCBSMM. 
+ 
+During fault resolution, the NLCBSMM system's primary goal is to resolve the fault.  To do this, NLCBSMM need only know the faulting address.  Using the faulting address as a key into our internal data structure, i.e. those structures that manage what superblocks and pages the system is aware of, we can obtain representations for the page.  Using those representations we can resolve faulting addresses in several ways. 
+
+\subsubsection{Signal Handling}
+During the same initialization code that Hoard uses to register replacement functions for calls to memory allocation code, NLCBSMM registers a signal handler for the \em SIGSEGV \em signal.  By using this kind of technique, we are able to intercept illegal memory access faults that are enforced by the underlying kernel virtual memory manager.  During this signal handler, the NLCBSMM system may attempt to resolve the fault, or in case the illegal access is truly illegal, pass the segmentation fault to the application.  This approach is similar to the approach taken by the TreadMarks system~\cite{treadmarks}. 
+	 
+When a segmentation fault is caught by the NLCBSMM signal handler the following actions are taken: 
+\begin {enumerate}
+\item The \em SIGSEGV \em signal is blocked to prevent additional \em SIGSEGV \em signals from interrupting the handling of this fault. 
+\item NLCBSMM calculates the page offset of the faulting address, as this value is a key into a superblock lookup function. 
+\item After querying internal data structures that store superblock metadata, NLCBSMM sets the permissions of the page using mprotect(2). 
+\item NLCBSMM uses the \em location \em object to find the page, as it may be available in a compressed format, may be present in shadowed memory or even on a network machine, and copies the contents of this virtual page to the actual page in the faulting thread's virtual memory address space. 
+\item Lastly, NLCBSMM unblocks \em SIGSEGV \em and return control to the running thread. 
+\end {enumerate}
+
+As previously noted, some of the segmentations faults caught by our signal handler might truly be application errors, so it is important that NLCBSMM behave correctly in these case. We decide that if our signal handler is not able to locate a faulting page in our internal data structures, that we can assume that a true segmentation fault is occurring. At this point, the system fails and exits. 
+
+\subsubsection{Shadowed Memory}
+One of the areas that we currently store memory is called Shadowed Memory. Currently that memory is a mmap allocated memory region so there is really no sense in using it, but it helps us show that we can correctly move memory and bring it back when it is requested. 
+
+We originally created Shadowed Memory to show that NLCBSMM works in the simplest memory managing scenario, which is to move the contents of a page to a new location in memory and then safely transfer the information back. Once we created a framework for setting and getting pages from arbitrary locations we were able to extend our work to other more interesting locations for page storage. By shadowing memory we are able to demonstrate the simplest technique for hiding and returning pages. 
+
+\subsubsection{Network Memory} 
+Out of curiosity, we added a mechanism that allows NLCBSMM to resolve page faults from a network location.  This was an important proof-of-concept case to show that the NLCBSMM system can easily be extended to develop a DSM system.  The approach taken in this resolver was similar to that of shadow memory, except we populated a page buffer from the network machine.  We implemented this system using UDP. 
+
+\subsubsection{Compressed Memory}
+To try and reduce the memory footprint of NLCBSMM we added the ability to compress memory using zlib. We compress the contents of pages and then can move them to either a shadow page or to network memory. When a process faults on the page we uncompress the memory and move the contents back to the faulting page. 
+
+Compressing and uncompressing memory can be an expensive operation so it is not useful to do for pages that are accessed frequently but for pages that are not often used it can be a great way to reduce memory consumption.
+
+We originally implemented Compressed Memory as an experiment to show one way that our virtual memory manager could be useful. By compressing pages that are not often used we can significantly reduce the memory footprint of programs that use NLCBSMM. 
+
+\subsection{Control Interface}
+Our control interface is a cloned thread that operates in the same address space as the library. In the thread it spawns a socket to listen for commands from other control interfaces or from a test network client that we use to fake commands to the control interface. 
+
+The control interface thread blocks until a packet is received. It then parses the packet it received to see if its knows about the type of command that arrived. The following commands have been implemented:
+\begin{enumerate}
+\item INVALIDATE: along with the type of command a page address is sent. Using the page address our signal handler figures out if its a valid page that has been mmap allocated from the kernel. If it is, the thread moves the information in the page(page is determined from the page address sent with the command) to a randomly new mmap allocated location in virtual memory. The thread then sets the entire page to 0's and turns off all permissions on the page.
+\item EXIT: exits the thread and does cleanup.
+\item INIT: receiving an INIT commands means the sender wants NLCBSMM's data structure information. The thread creates a INIT RESPONSE packet that contains all of the currently mmap allocated areas in the NLCBSMM data structure. The thread then sends the INIT RESPONSE to the caller.
+\item COR PAGE: we call this command the copy on read command. The caller sends a page address that it wants the NLCBSMM that receives the command to copy from sender. In the thread, if the page address that was sent with the command exists in the NCLSBMM data structure then the thread switches the Location class for that page from whatever it currently is to a NetworkLocation. The thread stores where it received the COR PAGE command from for later use to ask for the page in the NetworkLocation class. Next the thread turns off all permissions on the page so any further attempts to access or write to it create a fault. Technically this would be copy on read and copy on write. 
+\item GET PAGE: when an NLCBSMM instance faults on a COR page then it sends a GET PAGE request for the faulting page. It can tell where to ask for the page from the NetworkLocation class. 
+\end{enumerate}
+
+The main purpose for the control interface now is to all testing. Specifically allowing us to choose a page during runtime to turn into a ShadowPage and test how long it takes to map in a page in the current virtual memory address space. We also use the control interface to allow us to test how long it would take to bring in a page a different way then just mapping it in from local memory.
+
+%
+% Implementation
+%
+\section{Implementation}
+\label{implementation}
+In this section we discuss some of our implementation choices that we made as we developed NLCBSMM. We discuss how we manage pages and how we implemented a control interface to test the functionality of our code.
+
+%Talk about all the things we overcame during implementation.  Managing our own memory, using a Hoard heap allocator, signal issues, the network interface, etc.  All the funky thing swith clone.
+
+\subsection{Memory Management}
+The following sections describe how we implemented our design that were explained in the design section.
+
+\subsubsection{Internal Data Structures}
+For our prototype we developed a simple generic linked list. Having this generic linked list allowed us to mess around with the data the linked list was managing without having to completely redesign the data structure when we changed a field in one of the classes we used. We easily implemented all of our required internal data structure API calls in our linked list.
+
+\begin{verbatim}
+    struct SBEntry {
+        //  A pointer to a superblock type
+        void* sb;
+        // A pointer to a Page  
+        Page page[16];
+    }__attribute__((packed));
+\end{verbatim}
+
+\paragraph{Superblock Management}
+We record a superblock information in a \em SBEntry\em. A \em SBEntry \em contains a  void pointer to the location of the superblock in the address space. We also have an array of sixteen page records in the \em SBEntry \em to hold information about each page in the \em SBEntry \em. Page records are described in the next section. We refer to each of the sixteen pages by its zero based index in the array. So the first page in the superblock is referenced by indexing into the array with an index of zero.
+
+\paragraph{Page Management}
+Our page records are recorded in our \em Page \em class. The \em Page \em class contains an integer that holds the flags for the page the \em Page\em. We use each bit to correspond to a different flag. Currently, we only have one flag which represents copy on read. 
+
+\begin{verbatim}
+    class Page {
+      public:
+        // Methods removed for brevity
+      private:
+        // The location object for this page
+        Location* loc;
+        // The state of the page
+        unsigned int state;
+    }__attribute__((packed));
+\end{verbatim}
+
+We also record a \em Location \em class in the \em Page \em class. The \em Location \em class is our way of recording where the page is. We refer to the \em Location \em class as a superclass of our actual classes that record where data is. The \em Location \em class defines what the subclasses need to contain. Subclasses, at a minimum, must implement the following \em virtual \em functions:
+
+\begin{verbatim}
+    class Location {
+    public:
+        /*
+         * Returns the size in bytes of the  
+         * class. This is important for certain 
+         * types of allocators we use require  
+         * size of the object to function 
+         * correctly.
+         */
+        virtual int getSize() = 0;
+
+        /*
+         * Returns the real data in the page.
+         */        
+        virtual void* getPage() = 0;
+    };
+\end{verbatim}
+
+The current subclasses of \em Location \em are:
+
+\begin{enumerate}
+\item \em MemoryLocation \em: Is used when the page is on the local system currently in memory where it should be located.
+\item \em NetworkLocation \em: Describes a page on a different Hoard instance.
+\item \em ShadowLocation \em: Is used when we invalidate a page. We record it as a shadow page so we can figure out where the real page information went.
+\end{enumerate}
+
+For further reading on the implementation of the Location object, we've included the full implementation for the \em ShadowLocation \em object in the appendix, available in Section \ref{locationcode}.
+
+By designing our system this way we make it easy to later add more location classes as we develop new places to store memory. We can also develop classes that will compress memory or possible encrypt it to add more functionality to our virtual memory manager. 
+
+\subsection{Control Interface}
+There are two parts to are control interface implementation. The first is the NLCBSMM code and the second is our "fake" client.
+
+\subsubsection{NLCBSMM}
+We implemented the control interface as a thread created by using clone. The control interface setups a UDP socket and loops until the exit command is received.
+
+%\paragraph{Why we chose to use clone for the network interface}
+We chose to use clone because we had an issue with spawning a pthread in the shared library. When we called pthread\_create it preceded to call to malloc to set up the child threads data. Which in turn recalled our hoard code, which then called pthread\_create again and this continued in a nice loop until the stack overflowed.
+
+%\paragraph{Clone is kind-of awesome}
+After we figured out pthread's were a bad idea we ended up using clone to create a thread. Clone is an interesting function call. Tons of flags and options to customize the threads. It took us a little bit of time to figure out what were the appropriate flags to use. We ended up using VM\_CLONE to create the thread in the same address space and VM\_FILES to allow the thread to share the same file descriptors as the parent. 
+
+We ended up needing  VM\_FILE because of how we resolved the NetworkLocations. We create new NetworkLocation in the control interface thread. This creates a socket specifically for that NetworkLocation in the thread. When we fault on a page that is marked NetworkLocation we use the socket from the NetworkLocation class which was created in the thread. If  VM\_FILE is not set we get a bad descriptor error because it is not valid in the parent.
+
+After we got the flags sorted out we had an awesome time with the child stack and attempting to give it the correct location. One would assume that a pointer to the child stack would start from the first byte of allocated memory, but alas we were wrong. Systems people must enjoy being tricky and require that the last byte is passed in.
+
+\subsubsection{The fake client}
+We implemented a simple UDP client that was knowledgeable about our control interfaces network commands. We coded it so that it would act like another NLCBSMM instance would on another machine. The client can take input from the user to run specific commands in NLCBSMM. This functionality was especially useful when testing the correctness of our system. Our client was developed in such a way that it would indistinguishable from a NLCBSMM client running on a network computer. From the point of view of NLCBSMM it is just another client that it is networked with.
+
+\section{Results}
+\label{results}
+The following sections describe the performance characteristics of the NLCBSMM system.  First we discuss the memory overhead NLCBSMM requires. Then we discuss the traits of fault resolution, i.e. all processes related to resolving faults in various ways.  Lastly, we discuss the performance characteristics of applications that utilize the NLCBSMM system.
+
+%\subsection{Memory Management}
+%The memory management component of NLCBSMM is comprised of several subsystems that we measured independently.  Those subsystems deal with block initialization, permissions management and maintenance of internal data structures that we use to manage pages.
+
+%\subsubsection{Block Initialization}
+%\subsubsection{Permissions Management}
+%\subsubsection{Internal Data Structures}
+
+\subsection{Memory Overhead}
+This section discusses our worst and best case memory overhead footprints.
+
+\begin{center}
+\begin{table}[htb]
+\begin{tabular}{|l | l |}
+\hline
+\bf{Abstraction} & \bf{Size(bytes)}  \\
+\hline
+SBEntry &  132\\
+Page & 8 \\
+MemoryLocation & 12 \\
+ShadowMemoryLocation & 12 \\
+NetworkLocation & 40 \\
+\hline
+\end{tabular}
+\caption{Memory overhead in the number of bytes of the different types of NLCBSMM abstraction.}
+\end{table}
+\end{center}
+
+A SBEntry is made up of a 4 byte pointer and 16 Page classes.
+A Page is made up of a 4 byte int and a pointer to a Location class.
+
+The minimum overhead for a superblock is a SBEntry with 16 Page classes that each have a reference to a MemoryLocation or ShadowMemoryLocation. In this case the number of bytes in the overhead is 132 + 16 * 12 = 324. The 324 bytes would be the overhead for a superblock (16 pages, i.e. 65536 bytes). Therefore in this case the overhead is ( 324 / 65536 ) * 100 = 0.494\% overhead per superblock.
+
+The maximum overhead for a superblock is a SBEntry with 16 Page classes that each have a reference to a NetworkLocation. In this case the number of bytes in the overhead is 132 + 16 * 40 = 772. The 772 bytes would be the overhead for a superblock (16 pages, i.e. 65536 bytes). Therefore in this case the overhead is ( 772 / 65536 ) * 100 = 1.178\% overhead per superblock.
+
+\subsection{Fault Resolution}
+\subsubsection{Baseline}
+Regardless of the way one resolves a fault with the NLCBSMM system, there is a constant amount of overhead that will go into resolving faults using SIGSEGV and traditional Linux signal handlers.  This figure was calculated by consecutively accessing each page of a superblock, and resolving the faulting instruction with a single call to \em mprotect \em to grant read and write permissions to the faulting page.
+
+\subsubsection{Resolvers}
+Being that the NLCBSMM system is a user space application, there were several interesting ways the system could go about resolving faults.  The figures in this section measure the performance overhead due to specific fault resolvers.
+
+% 
+% 
+%
+\begin{center}
+\begin{table}[htb]
+\begin{tabular}{|l | l | l | l |}
+\hline
+\bf{Resolver} & \bf{Baseline} & \bf{Actual Time} & \bf{Difference} \\
+\hline
+\bf{Shadow} & 0.98 ms & 34.85 ms & 33.87 ms\\
+\bf{Network} & 0.98 ms & 123.34 ms & 122.36 ms\\
+\hline
+\end{tabular}
+\caption{Performance metrics for various fault resolvers we implemented.  Shadow memory is mmap allocated memory regions, similar to swap space, but still in physical memory.  Network memory is mmap allocated memory on a remote host, that is mapped in using a custom protocol implemented over UDP.}
+\end{table}
+\end{center}
+
+\subsection{Application Performance}
+We wrote an application that malloc allocates a superblock. Then writes a magic string to each of the sixteen pages in a superblock. The program than goes through each page and makes sure what was written to the page was correct. The program repeats this process 20,000 times. We currently have to different versions of the application. The first uses memory properly and frees a superblock when it is done with it. The second holds onto the superblock until the program exits.
+% 
+% 
+%
+\begin{center}
+\begin{table}[htb]
+\begin{tabular}{|l | l | l | l |}
+\hline
+\bf{Application} & \bf{Malloc} & \bf{Real Hoard} & \bf{NLCBSMM} \\
+\hline
+\bf{Using free} & 0.42 sec & 1.09 sec & 1.11 sec\\
+\bf{No free} & 1.18 sec & 12.72 sec & 12.74 sec\\
+\hline
+\end{tabular}
+\caption{Performance metrics for the simple application we wrote to test performance.}
+\end{table}
+\end{center}
+
+From this test we can see that our code does not add much to the Hoard performance. The case that free's is much faster than in the case that does not because it only requires one superblock from the kernel. Once the application loops around after freeing the first superblock it uses the same superblock as the first loop.
+
+But, the second case shows an interesting quirk with Hoard. If a developer uses memory incorrectly this leads to poor performance with Hoard. From our analysis we believe the slow down to lie with how hoard stores superblocks. Hoard stores them in linked lists. So when a developer has 20,000 superblocks mallocing from the last superblock gets a large penalty.
+
+
+\section{Future Work}
+\label{future work}
+\subsection{Shortcomings}
+\begin{enumerate}
+\item NLCBSMM currently fakes all interactions between NLCBSMM and another client. The \emph{fake} client pretends to be another instance of NLCBSMM on another machine and it fakes the correct interactions that we want the two instances to do.
+
+{\bf Possible Solutions:} Implement the client logic in NLCBSMM. Currently it only responds to commands from external sources. Unless it receives a page fault and the Location class for the faulting page is a NetworkLocation.
+\item Currently every NetworkLocation class has its own socket, terrible design and needs to be fixed. Can only have 252 NetworkLocations if the application that is using hoard does not use any file descriptors. The 252 comes from stdin, stdout, stderr and our socket we use in the control interface.
+
+{\bf Possible Solutions:} We have thought of two possible solutions and their trade-offs. The first one is to use the socket from the control interface to send a GET PAGE request and then map in the page that is returned in the control interface. This has some obvious downsides such as having to possibly wait a long time to resolve the fault if there is a lot of activity going on in the control interface. The second solution, which we believe to be the better choice, is to create a new socket for each faulting page request. We could only resolves a maximum of 252 NetworkLocation's at a time then, but it would enable us to not have to worry about a possibly overloaded control interface.
+\item Do not track several mmap allocated locations in our data structure. Such as our data structure location and the stack for the control interface.
+
+{\bf Possible Solutions:} We propose to extend our data structure to be a list of Memory classes. A Memory class would be an abstraction over SBEntry and it would allow us to have a data structure entry which would enable us to record these mmap allocated areas.
+\item When Hoard receives a malloc call greater than sixteen pages it mmap allocates an area of the request size and returns a pointer to it. We current do not track these regions, though doing so would be as trivial as implementing a new type of Location object.
+
+{\bf Possible Solutions:} A possible solution in this case is to build off the previous solution for our mmap allocated data structure areas.  We could add another subclass of the Memory class which refers to the large malloc allocated locations.
+\item Do not lock our data structure. So our control interface thread and signal handler have a chance to fight each other.
+
+{\bf Possible Solutions:} Obviously we need to implement this. It was set to get done but never did. 
+
+\item We currently manage our internal data structure in a generic linked list to allow us to easily change the size and type of data we manage in the list. Obviously this will be slow with a large amount of malloc allocated memory.
+
+{\bf Possible Solutions:} The real data structure we want to use is an AVL tree that sorts by starting superblock address. This would allow us to have quick search times of O(log n). Instead of having O(n) search times in the linked list.
+\end{enumerate}
+
+\subsection{DSM64}
+As mentioned earlier, a efficient and stable virtual memory manager is a necessary system to implement a distributed shared memory system.  That was the goal of this project, and though we've only implemented a prototype, the lessons we learned during this project will allow for a more elegant design for future versions of NLCBSMM.  From informal discussion, we've narrowed down the most problematic problems that must be addressed to extend NLCBSMM to a DSM system.
+
+\subsubsection{Hoard}
+Hoard is a shared library that manages memory for application level programs.  To establish a system that can truly support a global address space, we'll have to find a way to synchronize instances of Hoard on different machines, i.e. Hoard instances must have a view of a common set of objects.  For instance, if instance A allocates a superblock, instance B must not only be notified that the superblock exists, it must also be made aware of how to manipulate the C++ object (this would be the case if a process or thread on instance B faulted for a page owned by instance A).  
+
+From our research, C++ doesn't directly support object serialization.  However, we see no reason why synchronizing superblock headers across network machines would not work.  Our theories haven't been tested, but we're speculating what problems we'll have to address to do this.  The headers are currently 72 bytes large, which isn't an excessive amount of data to keep synchronized between network processes. However, due to the frequency that this header is updated we feel this may become an issue.
+
+Additionally, we have found no way to insure that remote processes will be able to address the same address space.  This is an issue because we cannot remap memory addresses (Hoard and NLCBSMM operate in user space).  This issue is currently being researched.
+
+\subsubsection{Distributed Protocol}
+To build a DSM system we will have to keep the data between Hoard instances synchronized.  Because of the large amount of data that would be constantly being updated and maintained, it is important that the distributed protocol we implement is extremely efficient.  This protocol will also revolve around ideas already implemented in traditional virtual memory managers, i.e. dirty flags, write locks, etc.  We believe this protocol will reveal itself as the problem domain, i.e. what data we must maintain in Hoard to distribute Hoard, becomes more apparent.
+
+\section{Lessons Learned}
+\label {lessons learned}
+Over the course of this project we have learned a lot about C++ and how virtual memory managers work. In this section we discuss some of the important lessons (those that were especially irritating or rewarding) we learned during the course of developing and implementing this system.
+
+\subsection{Operating Systems}
+This project greatly increased our appreciation of the topic areas taught in introductory operating system courses. The time we spent in that class learning about how operating systems work has proved invaluable to us. It was in this class that we originally learned about how memory was managed by the kernel and that base knowledge was what we built off of to extend Hoard.  This project deepened that knowledge. 
+
+The entire team has spend considerable time learning about memory management techniques and practices, and made some of the behavior of the system-provided memory management code less strange.  For instance, our team now has an appreciation of why \em some \em buffer overflow bugs cannot be prevented, i.e. why some memory (though not allocated) is still valid to a process or thread.
+
+This project also deepened knowledge of shared libraries, object linking and external linkage.  This proved several times to be very problematic, namely because of the design of Hoard.  This project has yielded a few \em linking wizards \em as our team cordially dubbed them, and made certain C and C++ language features blatantly apparent.
+
+Lastly, this project has made several of our developers intimately familiar with debuggers like GDB.  This debugger provided to be extremely helpful for analyzing memory problems, intercepting and controlling signals like SIGSEGV, as well as analyzing the internal workings of shared objects using back trace and instruction stepping commands.  Our team would have had a much more difficult time analyzing the workings of Hoard without the help of the GDB debugger.
+
+\subsection{C++}
+All of the team members were C++ novices at the start of the project. We ran into several C++ issues along the way that slowed our progress considerably. These problems revolved around linkage and template compilation problems.  For instance, in several cases the C++ compiler would compile template functions out of our project without warning.  This was maddening, and caused one of the developers to temporarily go insane.  Upon discovering the solution and cause, the team has a deep respect for the compilers need to know about types at compile time.  However, our developers still feel that whoever designs a system, like a C++ compiler, to fail silently should be shot, metaphorically speaking.
+
+In hindsight, we regret deciding to implement our memory manager in a language that was unfamiliar to us. It might have been easier if we had implemented a shared library in a language that we were all more familiar with. Although we are proud of our work on our project and our better understanding of C++, we still feel that since we only had 7 weeks to complete the project that our time would have been better spent implementing the system than learning archaic C++ language features.  As such, one may notice C design paradigms still present in this predominately C++ system.
+
+\subsection{C++ Mixins}
+\label{mixins}
+Hoard made heavy use of a C++ feature called \em mixins\em, a design strategy which uses C++ templates and inheritance~\cite{heaplayers}.  In doing so, the authors of Hoard were able to design a system with a infrastructure that resembled Java interfaces.  Typically, one uses \em virtual \em functions to implement this.  However, using \em virtual \em functions has performance penalties associated with it that are considerably bad for programmers developing memory allocators~\cite{heaplayers}.  This is because the \em virtual \em method dispatch is significant when compared with the cost of memory allocation.  Compilers also struggle to optimize programs across these \em method boundaries\em~\cite{heaplayers}.  Mixins are classes whose superclass may be changed.  Using mixins allows the programmer to code allocators as composable layers that are highly modular and reusable and avoid the expensive use of \em virtual \em functions.
+
+\subsection{Memory Allocators}
+The custom ``heap layers'' that Hoard provides can be combined in various ways to build high-performance allocators.  Hoard made extensive use of the \em mixins \em paradigm to achieve this.  This paradigm was the source of much confusion during the initial stages of design for NLCBSMM.  As time progressed, and more time was spend studying the internals of Hoard, the design of Hoard became more apparent and less mysterious.  Hoard exhibits a very elegant design, and is perfectly obfuscated.
+
+However, at the termination of this project the entire team has a much stronger understanding not only of the functioning of Hoard, but also the use of \em mixins \em to design abstract classes without the use of expensive \em virtual \em methods.  With this being said, one area of future work we would like to emphasize is the reimplementation of the Location classes to utilize the \em mixins \em paradigm.  This would allow us to rid NLCBSMM of \em virtual \em function declarations, and improve the performance of our fault resolution times.
+
+\section{Conclusion}
+\label {conclusion}
+We were excited to meet most of our project goals. We were able to design a system that a developer could use without having to use special function calls. Just by linking with our library and then making regular calls to malloc any developer is able to use our system. However, since so much time on our project was spent learning the internal workings of Hoard and C++ we were not able to make our program as robust as we hoped. Instead, we focused our efforts on proving the validity of our project.
+
+We were not able to spend significant time testing whether or not our system performs well for multi-threaded applications but are confident that it could be optomized for this purpose without many changes to our existing system. Our project also has more overhead than we would like but suspect that many of these problems can be solved with some simple optomization. 
+
+We believe that we have successfully shown the validity of a virtual memory manager implemented in user space. We were able to successfully move the contents of a page to another location and then return those contents when a process faults on the page. We suspect that it would not be hard to extend our work from this point to better optimize our system and to add additional location classes to increase the fuctionality of NLCBSMM.
+\section{Appendix}
+\subsection{Location}
+\label{locationcode}
+We've included the implementation for one of our \em Location \em objects to illustrate the simple design we chose to use for it.  We believe this design lends allows for developers to add new resolvers that can resolve page faults in a generic way.  That is, as long as a subclass implements the \em virtual \em functions, a Page object should be able to resolve the fault.
+
+\begin{verbatim}
+class Location {
+public:
+    virtual int getSize() = 0;
+    virtual void* getPage() = 0;
+};
+
+class ShadowMemoryLocation : public Location {
+public:
+    ShadowMemoryLocation() {
+        actualPage = 
+          mmap(NULL, PAGESIZE, 
+               PROT_READ | PROT_WRITE, 
+               MAP_PRIVATE | MAP_ANONYMOUS, 
+               -1, 0);
+        sz = PAGESIZE;
+    }
+    ~ShadowMemoryLocation() {
+        munmap(actualPage, PAGESIZE);
+    }
+    virtual int getSize() {
+        return PAGESIZE;
+    }
+    virtual void* getPage() {
+        return actualPage;
+    }
+    /**
+     * Takes a pointer to the "real" page 
+     *  and copies the contents of 
+     *  actualPage to it.
+     */
+    void setPage(void* page) {
+        // Copy page contents
+        memcpy(actualPage, page, PAGESIZE);
+        // Zero out real page
+        memset(page, 0, 4096);
+        // Caller should mprotect(2) page
+        return;
+    }
+private:
+    void* actualPage;
+    int sz;
+};
+\end{verbatim}
+
+
+\bibliographystyle{IEEEannot}
+\bibliography{NLCBSMM}
+\end{document}

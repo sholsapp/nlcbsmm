@@ -1,0 +1,205 @@
+#include <iostream>
+#include <cstdlib>
+#include <cstdio>
+#include <sys/mman.h>
+#include <string>
+
+using namespace std;
+
+
+struct SBEntry {
+   unsigned char* addr;
+};
+
+class Heap {
+   public:
+      /*
+       * Constructor is emptry so we can init on the global stack.
+       */
+      Heap() {
+         arr = NULL;
+         sz = 0;
+      }
+
+      /*
+       * Must be called before buliding the heap so we have memory.
+       * @param ptr a pointer to a chunk of allocated memory (we did this with mmap)
+       */
+      void init(unsigned char* ptr) {
+         fprintf(stderr, "IN INIT (ptr = %p)\n", ptr);
+         arr = (struct SBEntry*) ptr;
+      }
+
+      /*
+       * Insert an element into the heap.
+       * @param SBEntry the structure of a superblock element
+       */
+      void insert(struct SBEntry data) {
+         
+         arr[sz] = data;
+         sz++;
+         for (int i = sz / 2 - 1; i >= 0; i--) {
+           fprintf(stderr, "*");
+           percolateUp(i);
+         }
+         return;
+      }
+
+      /*
+       * Print out the heap as an array (for debugging)
+       */
+      void walk() {
+
+          for (int i = 0; i < sz; i++) {
+            fprintf(stderr, "%d ", (unsigned int) arr[i].addr);
+          }
+          fprintf(stderr, "\n");
+      }
+
+      /*
+       * Is the heap empty?
+       */
+      bool isEmpty() {
+         return sz == 0;
+      }
+
+      /*
+       * The size of the heap.
+       */
+      unsigned int size() {
+         return sz;
+      }
+
+
+   private:
+      /*
+       * The pointer to the base of the memory segment we may use. Use
+       *  correct type (SBEntry for now) so that pointer arithmetic
+       *  can correctly calc the index.
+       */
+      struct SBEntry* arr;
+
+      /*
+       * How many elements are in the heap.
+       */
+      unsigned int sz;
+
+      /*
+       * Returns true if there is still room in the global data structure
+       */
+      bool hasRoom() {
+         return true;
+      }
+
+      /*
+       * Swap
+       */
+       void swap(int a, int b) {
+         fprintf(stderr, "Swapping\n");
+         struct SBEntry temp = arr[a];
+         arr[a] = arr[b];
+         arr[b] = temp;
+         return;
+       }
+
+      /*
+       * Heap method
+       */
+       void percolateUp(int root) {
+         int max = root * 2 + 1;
+         while (max < sz) {
+           if (max + 1 < sz) {
+             if (arr[max + 1].addr > arr[max].addr) {
+               max += 1;
+             }
+           }
+           fprintf(stderr, "root = %d, max = %d\n", root, max);
+           if (arr[root].addr < arr[max].addr) {
+             walk();
+             swap(root, max);
+             walk();
+             root = max;
+             max = root * 2 + 1;
+           }
+           else {
+             return;
+           }
+         }
+       }
+};
+
+// Global data
+Heap heap;
+
+int main(int argc, char** argv) {
+
+   unsigned char* memory = (unsigned char*) mmap(NULL, 1024*2, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+   heap.init(memory);
+
+
+   struct SBEntry data1;
+   data1.addr = (unsigned char*) 17;
+   //fprintf(stderr, "data1addr = %p\n", data1.addr);
+
+   struct SBEntry data2;
+   data2.addr = (unsigned char*) 19;
+   //fprintf(stderr, "data2addr = %p\n", data2.addr);
+
+   struct SBEntry data3;
+   data3.addr = (unsigned char*) 36;
+   //fprintf(stderr, "data3addr = %p\n", data3.addr);
+
+   struct SBEntry data4;
+   data4.addr = (unsigned char*) 7;
+   //fprintf(stderr, "data3addr = %p\n", data4.addr);
+
+   struct SBEntry data5;
+   data5.addr = (unsigned char*) 2;
+   //fprintf(stderr, "data5addr = %p\n", data5.addr);
+
+   struct SBEntry data6;
+   data6.addr = (unsigned char*) 25;
+   //fprintf(stderr, "data6addr = %p\n", data6.addr);
+
+   struct SBEntry data7;
+   data7.addr = (unsigned char*) 1;
+   //fprintf(stderr, "data6addr = %p\n", data7.addr);
+
+   struct SBEntry data8;
+   data8.addr = (unsigned char*) 100;
+   //fprintf(stderr, "data6addr = %p\n", data8.addr);
+
+   struct SBEntry data9;
+   data9.addr = (unsigned char*) 3;
+   //fprintf(stderr, "data6addr = %p\n", data9.addr);
+
+
+
+
+
+   heap.insert(data1);
+   heap.insert(data2);
+   heap.insert(data3);
+   heap.insert(data4);
+   heap.insert(data5);
+   heap.insert(data6);
+   heap.insert(data7);
+   heap.insert(data8);
+   heap.insert(data9);
+
+   heap.walk();
+
+   //fprintf(stderr, "Delete.. addr = %p\n", heap.deleteMin().addr);
+   //fprintf(stderr, "Delete.. addr = %p\n", heap.deleteMin().addr);
+   //fprintf(stderr, "Delete.. addr = %p\n", heap.deleteMin().addr);
+   //fprintf(stderr, "Delete.. addr = %p\n", heap.deleteMin().addr);
+
+   fprintf(stderr, "Heap size = %d\n", heap.size());
+
+   return 0;
+}
+
+
+
+
