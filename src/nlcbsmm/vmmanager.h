@@ -10,11 +10,11 @@
 #include "sbentry.h"
 
 namespace NLCBSMM {
-  /*
-   * Global Data Section
-   */
+   /*
+    * Global Data Section
+    */
 
-  extern LinkedList metadata;
+   extern LinkedList metadata;
 
    /**
     * Helper function to page align a pointer
@@ -29,7 +29,7 @@ namespace NLCBSMM {
    /**
     * Registers signal handler for SIGSEGV
     */
-   void register_signal_handlers(); 
+   void register_signal_handlers();
 
    void nlcbsmm_init();
 

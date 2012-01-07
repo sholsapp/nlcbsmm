@@ -13,19 +13,19 @@
 #define NLCBSMM_SEND_PAGE 0x7
 
 struct NLCBSMMpacket {
-    unsigned char type;
-    unsigned int page;
+   unsigned char type;
+   unsigned int page;
 } __attribute__((packed));
 
 
 struct NLCBSMMpacket_init {
-    unsigned int type;
+   unsigned int type;
 } __attribute__((packed));
 
 struct NLCBSMMpacket_init_response {
-    unsigned char type;
-    unsigned int length;
-    unsigned int sb_addrs[1337];//FIX ME PLS
+   unsigned char type;
+   unsigned int length;
+   unsigned int sb_addrs[1337];//FIX ME PLS
 } __attribute__((packed));
 
 
@@ -33,15 +33,15 @@ struct NLCBSMMpacket_init_response {
  * Used in location.h
  */
 struct NLCBSMMpacket_getpage {
-    unsigned char type;
-    unsigned int baseaddr;
-}__attribute__((packed)); 
+   unsigned char type;
+   unsigned int baseaddr;
+}__attribute__((packed));
 typedef struct NLCBSMMpacket_getpage GetPagePacket;
 
 struct NLCBSMMpacket_sendpage {
-    unsigned char type;
-    unsigned int addr;
-    unsigned char page[4096]; 
+   unsigned char type;
+   unsigned int addr;
+   unsigned char page[4096];
 }__attribute__((packed));
 typedef struct NLCBSMMpacket_sendpage SendPagePacket;
 

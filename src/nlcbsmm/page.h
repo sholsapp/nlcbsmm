@@ -9,24 +9,24 @@
 namespace NLCBSMM {
 
 
-    class Page {
+   class Page {
       public:
-        Page() {
-          loc = NULL;
-          state = INIT; 
-        }
+         Page() {
+            loc = NULL;
+            state = INIT;
+         }
 
-        Location* getLocation() {return loc;}
-        void setLocation(Location* l) {loc = l;}
+         Location* getLocation() {return loc;}
+         void setLocation(Location* l) {loc = l;}
 
-        unsigned int getState() {return state;}
-        void setState(int s) {state = s;}
+         unsigned int getState() {return state;}
+         void setState(int s) {state = s;}
 
-        bool isCOW() {return state & COPY_ON_WRITE;}
+         bool isCOW() {return state & COPY_ON_WRITE;}
 
       private:
-        Location* loc;
-        unsigned int state;
+         Location* loc;
+         unsigned int state;
 
-    }__attribute__((packed));
+   }__attribute__((packed));
 }
