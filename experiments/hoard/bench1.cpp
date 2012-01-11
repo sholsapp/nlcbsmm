@@ -3,7 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
-//#include <ctime>
+#include <ctime>
 
 
 #define SIZE 64

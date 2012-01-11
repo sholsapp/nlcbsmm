@@ -1,20 +1,20 @@
 #include <cstdio>
-#include <iostream>
-
+#include <string.h>
 #include <errno.h>
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
 #include <sys/wait.h>
+
+// Order matters
 #include "vmmanager.h"
 #include "hoard.h"
 #include "packets.h"
 
 #define PAGE_SIZE 4096
 
-
 using namespace Hoard;
+
 using namespace HL;
 
 namespace NLCBSMM {
@@ -24,64 +24,66 @@ namespace NLCBSMM {
       public:
 
          NetworkManager(){
-            threadid=0;
+            /**
+             * Constructor
+             */
+            threadid = 0;
          }
 
          ~NetworkManager(){
-            //TODO thread cleanup code
-            //fprintf(stderr, "NetworkManager decon: thread %d\n", getpid());
-            errno = 0;
-            //int pid = wait(NULL);
-            int pid = waitpid(threadid, NULL,  __WCLONE);
-            if(pid == -1){
+            /**
+             * Destructor
+             */
+            int pid = 0;
+            if((pid = waitpid(threadid, NULL,  __WCLONE)) == -1) {
+               fprintf(stderr, "Return from wait (pid = %d)\n", pid);
                perror("wait error");
-               fprintf(stderr, "Return from wait=%d\n",pid);
             }
          }
 
-         /**
-          * Spawns the listener thread
-          * st: stack pointer
-          * size: amount of memory valid on the stack
-          */
-         void spawn_listener(void* st, int size){
-            int rc;
-            long t = 5;
+         void spawn_listener(void* stack, int size){
+            /**
+             * Spawns the listener thread
+             *
+             * stack: stack pointer
+             * size: amount of memory valid on the stack
+             */
+            void* child_stack  = NULL;
+            void* argument     = NULL;
 
-            rc = clone(&nlcbsmm_listener,(void*)(((int)st)+size), CLONE_VM | CLONE_FILES, (void*)t);
-            if(rc == -1) {
-               printf("ERROR; return code from clone is %d\n", rc);
-               exit(-1);
+            child_stack = (void*) (((int) stack) + size);
+            argument    = (void*) 5;
+
+            if((threadid = clone(&nlcbsmm_listener, child_stack, CLONE_VM | CLONE_FILES, argument)) == -1) {
+               perror("vmmanager.cpp, clone");
+               exit(EXIT_FAILURE);
             }
-            else {
-               //fprintf(stderr,"Spawned a listener thread (%d)!\n", rc);
-            }
-            threadid = rc;
             return;
          }
 
-         static int nlcbsmm_listener(void* t){
-            int sk = socket(AF_INET,SOCK_DGRAM,0);
-            struct sockaddr_in local;
-            socklen_t len = sizeof(struct sockaddr_in);
 
-            //make sure it is empty
-            memset(&local, 0, sizeof(struct sockaddr_in));
-            local.sin_family = AF_INET;
-            local.sin_addr.s_addr = INADDR_ANY;
-            local.sin_port = htons(6666);
+         static int nlcbsmm_listener(void* t){
+            /**
+             *
+             */
+            int                 sk    = socket(AF_INET, SOCK_DGRAM, 0);
+            socklen_t           len   = sizeof(struct sockaddr_in);
+            struct sockaddr_in  local = {0};
+            //memset(&local, 0, sizeof(struct sockaddr_in));
+            local.sin_family          = AF_INET;
+            local.sin_addr.s_addr     = INADDR_ANY;
+            local.sin_port            = htons(6666);
 
             /* bind the name (address) to a port */
             if (bind(sk, (struct sockaddr *) &local, sizeof(local)) < 0) {
-               perror("bind call");
-               exit(-1);
+               perror("vmmanager.cpp, bind");
+               exit(EXIT_FAILURE);
             }
-
 
             //get the port name and print it out
             if (getsockname(sk, (struct sockaddr*)&local, &len) < 0) {
-               perror("getsockname call");
-               exit(-1);
+               perror("vmmanager.cpp, getsockname");
+               exit(EXIT_FAILURE);
             }
 
             printf("Thread socket has port %d \n", ntohs(local.sin_port));
@@ -89,17 +91,23 @@ namespace NLCBSMM {
             do_work(sk);
 
             close(sk);
-            //fprintf(stderr, "Network thread: socket now closed!\n");
             return 0;
          }
 
          static void do_work(int sk){
-            sockaddr_in from;
-            struct NLCBSMMpacket* packet;
-            socklen_t fromLen = sizeof(from);
+            /**
+             *
+             */
             int buflen = PAGE_SIZE + sizeof(int) * 2;
+            int done = 0;
+            int read = 0;
+            int sent = 0;
             char buf[buflen];
-            int done = 0, read = 0, sent = 0;
+            sockaddr_in from;
+            socklen_t fromLen = sizeof(from);
+
+            struct NLCBSMMpacket* packet;
+
             memset(buf, 0, buflen);
 
             while(!done) {
@@ -159,12 +167,12 @@ namespace NLCBSMM {
             return;
          }
 
-         /**
-          * COR a page.
-          * First turn off permisions.
-          * Then turn the MemoryLocation into NetworkLocation
-          */
          static void copyOnRead(void* page, struct sockaddr_in remote) {
+            /**
+             * COR a page.
+             * First turn off permisions.
+             * Then turn the MemoryLocation into NetworkLocation
+             */
             NetworkLocation* netpage;
 
             //Page aligned page
@@ -192,7 +200,7 @@ namespace NLCBSMM {
                // Set no permissions on page
                if (mprotect(aligned, PAGESIZE, PROT_NONE)) {
                   perror("mprotect failure in copyOnRead");
-                  exit(errno);
+                  exit(EXIT_FAILURE);
                }
                else {
                   // Free the reference to the old location
@@ -206,13 +214,11 @@ namespace NLCBSMM {
             }
             // Otherwise error
             else {
-               //fprintf(stderr, "Can't networkify page(%p): no SBEntry present.\n", page);
-               exit(1);
+               fprintf(stderr, "Can't networkify page(%p): no SBEntry present.\n", page);
+               exit(EXIT_FAILURE);
             }
             return;
          }
-
-
 
 
          static void shadowPage(void* page) {
@@ -246,7 +252,7 @@ namespace NLCBSMM {
                // Set no permissions on page
                if (mprotect(aligned, PAGESIZE, PROT_NONE)) {
                   perror("mprotect failure in shadowPage");
-                  exit(errno);
+                  exit(EXIT_FAILURE);
                }
                else {
                   // Free the reference to the old location
@@ -267,22 +273,22 @@ namespace NLCBSMM {
                exit(1);
             }
             return;
-
          }
+
       private:
          int threadid;
 
-         /**
-          * Helper function to page align a pointer
-          */
          static unsigned char* pageAlign(unsigned char* p) {
-            return (unsigned char *)(((int)p) & ~(PAGESIZE-1));
+            /**
+             * Helper function to page align a pointer
+             */
+            return (unsigned char *) (((int)p) & ~(PAGESIZE-1));
          }
 
-         /**
-          * Help function to return page number in superblock
-          */
          static unsigned int pageIndex(unsigned char* p, unsigned char* base) {
+            /**
+             * Help function to return page number in superblock
+             */
             unsigned char* pageAligned = pageAlign(p);
             return (pageAligned - base) % PAGESIZE;
          }
@@ -298,25 +304,26 @@ namespace NLCBSMM {
 
    NetworkManager networkmanager;
 
-   /**
-    * Helper function to page align a pointer
-    */
    unsigned char* pageAlign(unsigned char* p) {
+      /**
+       * Helper function to page align a pointer
+       */
       return (unsigned char *)(((int)p) & ~(PAGESIZE-1));
    }
 
-   /**
-    * Help function to return page number in superblock
-    */
    unsigned int pageIndex(unsigned char* p, unsigned char* base) {
+      /**
+       * Help function to return page number in superblock
+       */
       unsigned char* pageAligned = pageAlign(p);
       return (pageAligned - base) % PAGESIZE;
    }
 
-   /**
-    * The actual signal handler for SIGSEGV
-    */
    void signal_handler(int signo, siginfo_t* info, void* contex) {
+      /**
+       * The actual signal handler for SIGSEGV
+       */
+
       //sigset_t oset;
       //sigset_t set;
 
@@ -339,7 +346,7 @@ namespace NLCBSMM {
       // Set the permissions on the page
       if (mprotect(p, PAGESIZE, PROT_READ | PROT_WRITE)) {
          perror("vmmanager.h: mprotect");
-         exit(errno);
+         exit(EXIT_FAILURE);
       }
       //else {
       //    fprintf(stderr, "Set PROT_READ | PROT_WRITE on %p\n", p);
@@ -362,31 +369,32 @@ namespace NLCBSMM {
       //sigprocmask(SIG_UNBLOCK, &set, &oset);
    }
 
-   /**
-    * Registers signal handler for SIGSEGV
-    */
    void register_signal_handlers() {
-      fprintf(stderr, "Registering Signal Handlers\n");
+      /**
+       * Registers signal handler for SIGSEGV
+       */
+      fprintf(stderr, "Registering SIGSEGV handler...");
       struct sigaction act;
       act.sa_sigaction = signal_handler;
-      act.sa_flags = SA_SIGINFO;
+      act.sa_flags     = SA_SIGINFO;
       sigemptyset(&act.sa_mask);
       sigaction(SIGSEGV, &act, 0);
+      fprintf(stderr, "done\n");
       return;
    }
 
    void nlcbsmm_init() {
-      // Register the signal handlers
+      /**
+       * Hook entry.
+       */
+      int   stack_sz  = 4096;
+      void* stack_ptr = NULL;
+
       register_signal_handlers();
 
       // Spawn the thread that listens for network commands
-      int stacksize = 4096;
-      void* st = mmap(NULL, stacksize , PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-      //networkmanager.spawn_listener(st, stacksize);
-
+      stack_ptr = mmap(NULL, stack_sz , PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      networkmanager.spawn_listener(stack_ptr, stack_sz);
       return;
    }
 }
-
-

@@ -115,7 +115,7 @@ int main(int argc, char * argv[]) {
 
          // Read response (a int X followed by X many ints)
          memset(read_buf, 0, bufsize);
-         read = recvfrom(socket_num, read_buf, bufsize, NULL, (struct sockaddr*) &remote, &fromLen);
+         read = recvfrom(socket_num, read_buf, bufsize, 0, (struct sockaddr*) &remote, &fromLen);
 
          fprintf(stderr, ">> Client read response\n");
 
@@ -143,7 +143,7 @@ int main(int argc, char * argv[]) {
 
          // Wait for request from NetworkLocation client
          memset(read_buf, 0, bufsize);
-         read = recvfrom(socket_num, read_buf, bufsize, NULL, (struct sockaddr*) &remote, &fromLen);
+         read = recvfrom(socket_num, read_buf, bufsize, 0, (struct sockaddr*) &remote, &fromLen);
 
          fprintf(stderr, ">> Client read response\n");
 

@@ -7,11 +7,12 @@
 CC=gcc
 CPP=g++
 SUS3=-D_POSIX_SOURCE -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600
-HARDEN=-D_FORTIFY_SOURCE
+HARDEN=
 CFLAGS=-g -pedantic $(SUS3) $(HARDEN)
 LDFLAGS=-lrt -L. -lhoard
 
-ALL=hoard_test bench1-hoard bench1-malloc network_client
+#ALL=hoard_test bench1-hoard bench1-malloc network_client
+ALL=hoard_test network_client
 
 all:	$(ALL)
 
