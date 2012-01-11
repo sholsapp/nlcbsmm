@@ -13,6 +13,12 @@
        '--.:::...---'\:'.:`':`':./
                        '-::..:::-' nlcbsmm
 
+************** COMPILATION ***************
+For compiling applications with Hoard, you may need to use the '-Wl,--no-as-needed' and '-Wl,-R,/path/to/libhoard/dir':
+ (thanks to cyk on irc.freenode.net #stackoverflow for this http://stackoverflow.com/questions/8814707/shared-library-mysteriously-doesnt-get-linked-to-application)
+
+> g++ -O2 -Wall -o hoard_test hoard_test.cpp -Wl,--no-as-needed -Wl,-R,/home/sholsapp/workspace/nlcbsmm/experiments/hoard -L. -lhoard
+
 ***************** TODO *******************
 
 1) Testbed clients.
