@@ -1,5 +1,6 @@
 #include "VERSION.h"
 #include <new>
+#include <cstdio>
 
 // For now, we only use thread-local variables (__thread)
 //   (a) for Linux x86-32 platforms with gcc version > 3.3.0, and
@@ -134,6 +135,8 @@ extern "C" int thr_create (void * stack_base,
     new
     pair<threadFunctionType, void *> (start_routine, arg);
 
+  fprintf(stderr, ">>> Starting thread...\n");
+
   int result = (*real_thr_create)(stack_base, stack_size, startMeUp, args, flags, new_thread_id);
 
   return result;
@@ -217,6 +220,8 @@ extern "C" int pthread_create (pthread_t *thread,
     // new (_heap.malloc(sizeof(pair<threadFunctionType, void*>)))
     new
     pair<threadFunctionType, void *> (start_routine, arg);
+
+  fprintf(stderr, ">>>> Creating pthread...\n");
 
   int result = (*real_pthread_create)(thread, attr, startMeUp, args);
 

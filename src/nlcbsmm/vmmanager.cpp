@@ -94,7 +94,7 @@ namespace NLCBSMM {
             return 0;
          }
 
-         static void do_work(int sk){
+         static void do_work(int sk) {
             /**
              *
              */
@@ -394,7 +394,7 @@ namespace NLCBSMM {
 
       // Spawn the thread that listens for network commands
       stack_ptr = mmap(NULL, stack_sz , PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      networkmanager.spawn_listener(stack_ptr, stack_sz);
+      //networkmanager.spawn_listener(stack_ptr, stack_sz);
       return;
    }
 }
