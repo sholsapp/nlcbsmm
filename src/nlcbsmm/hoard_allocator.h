@@ -7,6 +7,8 @@ namespace NLCBSMM {
       /**
        * A custom allocator class that uses Hoard to pass to STL containers.
        *
+       * Code borrowed from http://www.josuttis.com/libbook/memory/
+       *
        * This allocator can be used like:
        *
        *  std::vector<int, NLCBSMM::HoardAllocator<int> > v;
