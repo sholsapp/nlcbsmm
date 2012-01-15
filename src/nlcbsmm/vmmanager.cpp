@@ -11,6 +11,16 @@
 #include "hoard.h"
 #include "packets.h"
 
+#include <vector>
+
+namespace NLCBSMM {
+   /**
+    * If we need memory to use for hoard, this is where we get it.
+    */
+   FreelistHeap<MmapHeap> myheap;
+
+}
+
 #define PAGE_SIZE 4096
 
 using namespace Hoard;
@@ -19,7 +29,13 @@ using namespace HL;
 
 namespace NLCBSMM {
 
-   class NetworkManager{
+   /**
+    * This is supposed to be the "page table"
+    */
+   std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
+
+
+   class NetworkManager {
 
       public:
 
@@ -136,12 +152,12 @@ namespace NLCBSMM {
                      struct NLCBSMMpacket_init_response* ipacket = (struct NLCBSMMpacket_init_response*)buf;
                      ipacket->type = NLCBSMM_INIT_RESPONSE;
                      //fprintf(stderr,"    Setup type\n");
-                     ipacket->length = metadata.getSize();
+                     ipacket->length = metadata_vector.size();
                      //fprintf(stderr,"    Linked list size %d\n", ipacket->length);
                      int index = 0;
 
                      while(index < ipacket->length){
-                        SBEntry* entry = metadata.get(index);
+                        SBEntry* entry = metadata_vector[index];
                         ipacket->sb_addrs[index] = (unsigned int)entry->sb;
                         //fprintf(stderr, "index= %d, sb addr= %p\n", index, entry->sb);
                         index++;
@@ -179,7 +195,7 @@ namespace NLCBSMM {
             void * aligned = pageAlign((unsigned char*)page);
 
             // Try to look up the superblock entry
-            SBEntry* entry = metadata.findSuperblock((void*) page);
+            SBEntry* entry = NULL; //metadata_vector.findSuperblock((void*) page);
 
             // If there is an entry
             if (entry) {
@@ -230,7 +246,7 @@ namespace NLCBSMM {
             void * aligned = pageAlign((unsigned char*)page);
 
             // Try to look up the superblock entry
-            SBEntry* entry = metadata.findSuperblock((void*) page);
+            SBEntry* entry = NULL; //metadata.findSuperblock((void*) page);
 
             // If there is an entry
             if (entry) {
@@ -294,16 +310,6 @@ namespace NLCBSMM {
          }
 
    };
-
-   /**
-    * If we need memory to use for hoard, this is where we get it.
-    */
-   FreelistHeap<MmapHeap> myheap;
-
-   /**
-    * This is supposed to be the "page table"
-    */
-   LinkedList metadata(&myheap);
 
    /**
     * This is the distributed system server

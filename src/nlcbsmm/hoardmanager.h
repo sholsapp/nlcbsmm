@@ -378,8 +378,10 @@ namespace Hoard {
                   entry->page[page].setLocation(new (placement) MemoryLocation((void*) (s + (page * PAGESIZE))));
                }
 
-               //fprintf(stderr, "Adding superblock entry (%p) to metadata.\n", entry->sb);
-               metadata.insert(entry);
+               fprintf(stderr, "Adding superblock entry (%p) to metadata...", entry->sb);
+               //metadata.insert(entry);
+               metadata_vector.push_back(entry);
+               fprintf(stderr, "done.\n");
 
             }
 

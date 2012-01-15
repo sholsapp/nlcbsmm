@@ -7,14 +7,18 @@
 #include <signal.h>
 #include <errno.h>
 
+#include <vector>
+
+
 #include "sbentry.h"
+#include "hoard_allocator.h"
+
 
 namespace NLCBSMM {
    /*
     * Global Data Section
     */
-
-   extern LinkedList metadata;
+   extern std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
 
    /**
     * Helper function to page align a pointer
