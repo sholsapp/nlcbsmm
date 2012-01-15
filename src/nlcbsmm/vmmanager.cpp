@@ -295,14 +295,21 @@ namespace NLCBSMM {
 
    };
 
-   /*
-    * Global Data Section
+   /**
+    * If we need memory to use for hoard, this is where we get it.
     */
    FreelistHeap<MmapHeap> myheap;
 
+   /**
+    * This is supposed to be the "page table"
+    */
    LinkedList metadata(&myheap);
 
+   /**
+    * This is the distributed system server
+    */
    NetworkManager networkmanager;
+
 
    unsigned char* pageAlign(unsigned char* p) {
       /**
@@ -394,7 +401,7 @@ namespace NLCBSMM {
 
       // Spawn the thread that listens for network commands
       stack_ptr = mmap(NULL, stack_sz , PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      //networkmanager.spawn_listener(stack_ptr, stack_sz);
+      networkmanager.spawn_listener(stack_ptr, stack_sz);
       return;
    }
 }
