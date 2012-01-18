@@ -15,32 +15,21 @@
 
 
 namespace NLCBSMM {
-   /*
-    * Global Data Section
-    */
+   // The page table 
    extern std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
 
-   /**
-    * Helper function to page align a pointer
-    */
+   // Helper function to page align a pointer
    unsigned char* pageAlign(unsigned char* p);
 
-   /**
-    * The actual signal handler for SIGSEGV
-    */
+   // Helper function to return page number in superblock
+   unsigned int pageIndex(unsigned char* p, unsigned char* base);
+
+   // The actual signal handler for SIGSEGV
    void signal_handler(int signo, siginfo_t* info, void* contex);
 
-   /**
-    * Registers signal handler for SIGSEGV
-    */
+   // Registers signal handler for SIGSEGV
    void register_signal_handlers();
-
    void nlcbsmm_init();
-
    void spawn_listener_thread();
 
-
 }
-
-
-

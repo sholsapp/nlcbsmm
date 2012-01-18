@@ -13,19 +13,45 @@
 
 #include <vector>
 
+#define PAGE_SIZE 4096
+
+/**
+ * Symbols defined by the end application.
+ *
+ * If we use these to sanity check, cannot compile with -Wl,--no-undefined
+ * because these symbols won't be defined until application link time...
+ */
+extern unsigned char* main;
+extern unsigned char* _init;
+extern unsigned char* _fini;
+extern unsigned char* _end;
+extern unsigned char* __data_start;
+
 namespace NLCBSMM {
    /**
     * If we need memory to use for hoard, this is where we get it.
     */
    FreelistHeap<MmapHeap> myheap;
 
+   unsigned char* pageAlign(unsigned char* p) {
+      /**
+       * Helper function to page align a pointer
+       */
+      return (unsigned char *)(((int)p) & ~(PAGESIZE-1));
+   }
+
+   unsigned int pageIndex(unsigned char* p, unsigned char* base) {
+      /**
+       * Help function to return page number in superblock
+       */
+      unsigned char* pageAligned = pageAlign(p);
+      return (pageAligned - base) % PAGESIZE;
+   }
 }
 
-#define PAGE_SIZE 4096
 
-using namespace Hoard;
-
-using namespace HL;
+//using namespace Hoard;
+//using namespace HL;
 
 namespace NLCBSMM {
 
@@ -33,7 +59,6 @@ namespace NLCBSMM {
     * This is supposed to be the "page table"
     */
    std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
-
 
    class NetworkManager {
 
@@ -57,7 +82,7 @@ namespace NLCBSMM {
             }
          }
 
-         void spawn_listener(void* stack, int size){
+         void spawn_listener(void* stack, int size) {
             /**
              * Spawns the listener thread
              *
@@ -70,15 +95,14 @@ namespace NLCBSMM {
             child_stack = (void*) (((int) stack) + size);
             argument    = (void*) 5;
 
-            if((threadid = clone(&nlcbsmm_listener, child_stack, CLONE_VM | CLONE_FILES, argument)) == -1) {
+            if((threadid = clone(&listener, child_stack, CLONE_VM | CLONE_FILES, argument)) == -1) {
                perror("vmmanager.cpp, clone");
                exit(EXIT_FAILURE);
             }
             return;
          }
 
-
-         static int nlcbsmm_listener(void* t){
+         static int listener(void* t) {
             /**
              *
              */
@@ -104,233 +128,24 @@ namespace NLCBSMM {
 
             printf("Thread socket has port %d \n", ntohs(local.sin_port));
 
-            do_work(sk);
+            //do_work(sk);
 
             close(sk);
             return 0;
          }
 
-         static void do_work(int sk) {
-            /**
-             *
-             */
-            int buflen = PAGE_SIZE + sizeof(int) * 2;
-            int done = 0;
-            int read = 0;
-            int sent = 0;
-            char buf[buflen];
-            sockaddr_in from;
-            socklen_t fromLen = sizeof(from);
-
-            struct NLCBSMMpacket* packet;
-
-            memset(buf, 0, buflen);
-
-            while(!done) {
-               read = recvfrom(sk, buf, buflen, 0, (struct sockaddr*)&from, &fromLen);
-               if(read) {
-                  //fprintf(stderr,"Recived %d byes of data on the socket!\n", read);
-                  packet = (struct NLCBSMMpacket*) &buf;
-                  unsigned char type = packet->type;//only 1 byte, no endianness
-                  unsigned int page = ntohl(packet->page); //handle endianness
-                  //fprintf(stderr,"    type->%d\n", (int)type);
-
-
-                  if(type == NLCBSMM_INVALIDATE) {//invalidate a page
-                     //fprintf(stderr,"    Recieved shadow page command\n");
-                     // Save the page in a shadow page (this is proof of concept code)
-                     shadowPage((void*) page);
-                  } else if(type == NLCBSMM_EXIT) {
-                     //Exit the loop and clean up the socket
-                     //fprintf(stderr,"    Recived kill command\n");
-                     done = 1;
-                  } else if(type == NLCBSMM_INIT) {
-                     //fprintf(stderr,"    Recived init command\n");
-
-                     //figure out header structure, linked list?
-                     //send all sb entries
-                     struct NLCBSMMpacket_init_response* ipacket = (struct NLCBSMMpacket_init_response*)buf;
-                     ipacket->type = NLCBSMM_INIT_RESPONSE;
-                     //fprintf(stderr,"    Setup type\n");
-                     ipacket->length = metadata_vector.size();
-                     //fprintf(stderr,"    Linked list size %d\n", ipacket->length);
-                     int index = 0;
-
-                     while(index < ipacket->length){
-                        SBEntry* entry = metadata_vector[index];
-                        ipacket->sb_addrs[index] = (unsigned int)entry->sb;
-                        //fprintf(stderr, "index= %d, sb addr= %p\n", index, entry->sb);
-                        index++;
-                     }
-                     //fprintf(stderr,"    Sent init response\n");
-                     sent =  sendto(sk, buf, sizeof(struct NLCBSMMpacket_init_response), 0,(struct sockaddr*) &from, fromLen);
-
-                  } else if(type == NLCBSMM_COR_PAGE) {
-                     //get lock on metadata
-                     unsigned int corpage = packet->page;
-                     //fprintf(stderr,"    Copy on read recieved for page %p\n", (void*)corpage);
-                     copyOnRead((void*)corpage, (struct sockaddr_in)from);
-                     //unlock metadata
-                  } else if(NLCBSMM_SEND_PAGE) {
-                     //copy the page to a buffer and send it back
-
-
-                  }
-                  //clean up the buffer
-                  memset(buf,0,buflen);
-               }
-            }
-            return;
-         }
-
-         static void copyOnRead(void* page, struct sockaddr_in remote) {
-            /**
-             * COR a page.
-             * First turn off permisions.
-             * Then turn the MemoryLocation into NetworkLocation
-             */
-            NetworkLocation* netpage;
-
-            //Page aligned page
-            void * aligned = pageAlign((unsigned char*)page);
-
-            // Try to look up the superblock entry
-            SBEntry* entry = NULL; //metadata_vector.findSuperblock((void*) page);
-
-            // If there is an entry
-            if (entry) {
-               // Get the index of this page in the superblock (i.e. 0-15)
-               int whichPage = pageIndex((unsigned char*) page, (unsigned char*)entry->sb);
-
-               //fprintf(stderr, "Operating on page %d\n", whichPage);
-
-               // Allocate space for a new NetworkLocation
-               void* space = myheap.malloc(sizeof(NetworkLocation));
-
-               // Instantiate location
-               netpage = new (space) NetworkLocation(remote);
-
-               // Send this page to shadow memory
-               //shadow->setPage(aligned);
-
-               // Set no permissions on page
-               if (mprotect(aligned, PAGESIZE, PROT_NONE)) {
-                  perror("mprotect failure in copyOnRead");
-                  exit(EXIT_FAILURE);
-               }
-               else {
-                  // Free the reference to the old location
-                  myheap.free(entry->page[whichPage].getLocation());
-
-                  // Save the reference to the Location object in the superblock entry
-                  entry->page[whichPage].setLocation(netpage);
-                  //fprintf(stderr, "Networkified page(%p) and saving reference to network.\n", page);
-               }
-
-            }
-            // Otherwise error
-            else {
-               fprintf(stderr, "Can't networkify page(%p): no SBEntry present.\n", page);
-               exit(EXIT_FAILURE);
-            }
-            return;
-         }
-
-
-         static void shadowPage(void* page) {
-
-            // A shadow memory page
-            ShadowMemoryLocation* shadow;
-
-            //Page aligned page
-            void * aligned = pageAlign((unsigned char*)page);
-
-            // Try to look up the superblock entry
-            SBEntry* entry = NULL; //metadata.findSuperblock((void*) page);
-
-            // If there is an entry
-            if (entry) {
-               // Get the index of this page in the superblock (i.e. 0-15)
-               int whichPage = pageIndex((unsigned char*) page, (unsigned char*)entry->sb);
-
-               //fprintf(stderr, "Operating on page %d\n", whichPage);
-
-               // Allocate space for a new ShadowMemoryLocation
-               //void* space = mm.allocObj(sizeof(ShadowMemoryLocation));
-               void* space = myheap.malloc(sizeof(ShadowMemoryLocation));
-
-               // Instantiate shadow memory
-               shadow = new (space) ShadowMemoryLocation();
-
-               // Send this page to shadow memory
-               shadow->setPage(aligned);
-
-               // Set no permissions on page
-               if (mprotect(aligned, PAGESIZE, PROT_NONE)) {
-                  perror("mprotect failure in shadowPage");
-                  exit(EXIT_FAILURE);
-               }
-               else {
-                  // Free the reference to the old location
-                  myheap.free(entry->page[whichPage].getLocation());
-                  //fprintf(stderr, "Freeing & ");
-
-
-
-                  // Save the reference to the Location object in the superblock entry
-                  entry->page[whichPage].setLocation(shadow);
-                  //fprintf(stderr, "Corrupted page(%p) and saving reference to shadow.\n", page);
-               }
-
-            }
-            // Otherwise error
-            else {
-               //fprintf(stderr, "Can't shadow page(%p): no SBEntry present.\n", page);
-               exit(1);
-            }
-            return;
-         }
 
       private:
          int threadid;
 
-         static unsigned char* pageAlign(unsigned char* p) {
-            /**
-             * Helper function to page align a pointer
-             */
-            return (unsigned char *) (((int)p) & ~(PAGESIZE-1));
-         }
-
-         static unsigned int pageIndex(unsigned char* p, unsigned char* base) {
-            /**
-             * Help function to return page number in superblock
-             */
-            unsigned char* pageAligned = pageAlign(p);
-            return (pageAligned - base) % PAGESIZE;
-         }
-
    };
+
 
    /**
     * This is the distributed system server
     */
    NetworkManager networkmanager;
 
-
-   unsigned char* pageAlign(unsigned char* p) {
-      /**
-       * Helper function to page align a pointer
-       */
-      return (unsigned char *)(((int)p) & ~(PAGESIZE-1));
-   }
-
-   unsigned int pageIndex(unsigned char* p, unsigned char* base) {
-      /**
-       * Help function to return page number in superblock
-       */
-      unsigned char* pageAligned = pageAlign(p);
-      return (pageAligned - base) % PAGESIZE;
-   }
 
    void signal_handler(int signo, siginfo_t* info, void* contex) {
       /**
@@ -402,6 +217,12 @@ namespace NLCBSMM {
        */
       int   stack_sz  = 4096;
       void* stack_ptr = NULL;
+
+      fprintf(stderr, "        main: %p\n",  &main        );
+      fprintf(stderr, "       _init: %p\n",  &_init       );
+      fprintf(stderr, "       _fini: %p\n",  &_fini       );
+      fprintf(stderr, "        _end: %p\n",  &_end        );
+      fprintf(stderr, "__data_start: %p\n",  &__data_start);
 
       register_signal_handlers();
 

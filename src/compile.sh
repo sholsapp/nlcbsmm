@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TARGET=../experiments/hoard
+TARGET=../experiments/benchmark
 LIB=libhoard.so
 CLIENT=nlcbsmm-dist-client
 
