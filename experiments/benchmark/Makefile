@@ -26,4 +26,4 @@ benchmark.o: benchmark.cpp
 	$(CPP) $(CFLAGS) -c $<
 
 clean:
-	rm -rf core* *.o *.gch $(ALL)
+	rm -rf core* *.o *.gch go-pipe $(ALL)

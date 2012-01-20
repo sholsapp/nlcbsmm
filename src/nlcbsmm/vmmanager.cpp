@@ -2,9 +2,11 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <time.h>
 
 // Order matters
 #include "vmmanager.h"
@@ -49,6 +51,9 @@ namespace NLCBSMM {
    }
 }
 
+#define HELLO_PORT 12345
+#define HELLO_GROUP "225.0.0.37"
+#define MSGBUFSIZE 256
 
 //using namespace Hoard;
 //using namespace HL;
@@ -68,7 +73,8 @@ namespace NLCBSMM {
             /**
              * Constructor
              */
-            threadid = 0;
+            speaker_thread_id  = 0;
+            listener_thread_id = 0;
          }
 
          ~NetworkManager(){
@@ -76,67 +82,145 @@ namespace NLCBSMM {
              * Destructor
              */
             int pid = 0;
-            if((pid = waitpid(threadid, NULL,  __WCLONE)) == -1) {
+
+            if((pid = waitpid(speaker_thread_id, NULL,  __WCLONE)) == -1) {
+               fprintf(stderr, "Return from wait (pid = %d)\n", pid);
+               perror("wait error");
+            }
+
+            if((pid = waitpid(listener_thread_id, NULL,  __WCLONE)) == -1) {
                fprintf(stderr, "Return from wait (pid = %d)\n", pid);
                perror("wait error");
             }
          }
 
-         void spawn_listener(void* stack, int size) {
+         void start_comms() {
             /**
-             * Spawns the listener thread
-             *
-             * stack: stack pointer
-             * size: amount of memory valid on the stack
+             * Spawns the speaker and listener threads.
              */
-            void* child_stack  = NULL;
-            void* argument     = NULL;
+            void* argument       = NULL;
+            void* speaker_ptr    = NULL;
+            void* speaker_stack  = NULL;
+            void* listener_ptr   = NULL;
+            void* listener_stack = NULL;
+            int   size           = 4096;
 
-            child_stack = (void*) (((int) stack) + size);
-            argument    = (void*) 5;
+            listener_stack = (void*) mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            speaker_stack  = (void*) mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            argument       = (void*) 5;
+            speaker_ptr    = (void*) (((int) speaker_stack) + size);
+            listener_ptr   = (void*) (((int) listener_stack) + size);
 
-            if((threadid = clone(&listener, child_stack, CLONE_VM | CLONE_FILES, argument)) == -1) {
-               perror("vmmanager.cpp, clone");
+            if((speaker_thread_id = clone(&speaker, speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+               perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
+
+            if((listener_thread_id = clone(&listener, listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+               perror("vmmanager.cpp, clone, listener");
+               exit(EXIT_FAILURE);
+            }
+
             return;
          }
+
+         static int speaker(void* t) {
+            /**
+             *
+             */
+            fprintf(stderr, "> speaker\n");
+
+            uint32_t sk             = 0;
+            uint32_t cnt            = 0;
+            struct ip_mreq mreq     = {0};
+            struct sockaddr_in addr = {0};
+
+            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+               perror("vmmanager.cpp, socket");
+               exit(EXIT_FAILURE);
+            }
+
+            addr.sin_family      = AF_INET;
+            addr.sin_addr.s_addr = inet_addr(HELLO_GROUP);
+            addr.sin_port        = htons(HELLO_PORT);
+
+            char message[] = "Hello, World!";
+
+            while (1) {
+               if (sendto(sk, message, sizeof(message), 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+                  perror("vmmanager.cpp, sendto");
+                  exit(EXIT_FAILURE);
+               }
+               sleep(EXIT_FAILURE);
+            }
+
+            return 0;
+
+         }
+
 
          static int listener(void* t) {
             /**
              *
              */
-            int                 sk    = socket(AF_INET, SOCK_DGRAM, 0);
-            socklen_t           len   = sizeof(struct sockaddr_in);
-            struct sockaddr_in  local = {0};
-            //memset(&local, 0, sizeof(struct sockaddr_in));
-            local.sin_family          = AF_INET;
-            local.sin_addr.s_addr     = INADDR_ANY;
-            local.sin_port            = htons(6666);
+            fprintf(stderr, "> listener\n");
 
-            /* bind the name (address) to a port */
-            if (bind(sk, (struct sockaddr *) &local, sizeof(local)) < 0) {
+            uint32_t sk             =  0;
+            uint32_t nbytes         =  0;
+            uint32_t addrlen        =  0;
+            uint32_t yes            =  1;
+            struct ip_mreq mreq     = {0};
+            struct sockaddr_in addr = {0};
+
+            char msgbuf[MSGBUFSIZE];
+
+            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+               perror("vmmanager.cpp, socket");
+               exit(EXIT_FAILURE);
+            }
+
+            // Allow multiple sockets to use the same port
+            if (setsockopt(sk, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0) {
+               perror("vmmanager.cpp, setsockopt");
+               exit(EXIT_FAILURE);
+            }
+
+            addr.sin_family      = AF_INET;
+            addr.sin_addr.s_addr = htonl(INADDR_ANY);
+            addr.sin_port        = htons(HELLO_PORT);
+
+            if (bind(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                perror("vmmanager.cpp, bind");
                exit(EXIT_FAILURE);
             }
 
-            //get the port name and print it out
-            if (getsockname(sk, (struct sockaddr*)&local, &len) < 0) {
-               perror("vmmanager.cpp, getsockname");
+            // Use setsockopt() to join multicast group
+            mreq.imr_multiaddr.s_addr = inet_addr(HELLO_GROUP);
+            mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+            if (setsockopt(sk, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+               perror("vmmanager.cpp, setsockopt");
                exit(EXIT_FAILURE);
             }
 
-            printf("Thread socket has port %d \n", ntohs(local.sin_port));
+            char ip[1024];
+            inet_ntop(AF_INET, &addr.sin_addr.s_addr, ip, sizeof(ip));
 
-            //do_work(sk);
-
-            close(sk);
+            while (1) {
+               addrlen=sizeof(addr);
+               if ((nbytes=recvfrom(sk,msgbuf,MSGBUFSIZE,0,
+                           (struct sockaddr *) &addr, &addrlen)) < 0) {
+                  perror("recvfrom");
+                  exit(1);
+               }
+               fprintf(stderr, "%s: %s\n", ip, msgbuf);
+            }
             return 0;
          }
 
-
       private:
-         int threadid;
+         int speaker_thread_id;
+         int listener_thread_id;
 
    };
 
@@ -172,10 +256,12 @@ namespace NLCBSMM {
       //int whichPage = pageIndex((unsigned char*)p, (unsigned char*)entry->sb);
       //fprintf(stderr,"Found the page\n");
       // Set the permissions on the page
+
       if (mprotect(p, PAGESIZE, PROT_READ | PROT_WRITE)) {
-         perror("vmmanager.h: mprotect");
+         perror("vmmanager.cpp: mprotect");
          exit(EXIT_FAILURE);
       }
+
       //else {
       //    fprintf(stderr, "Set PROT_READ | PROT_WRITE on %p\n", p);
       //}
@@ -215,8 +301,6 @@ namespace NLCBSMM {
       /**
        * Hook entry.
        */
-      int   stack_sz  = 4096;
-      void* stack_ptr = NULL;
 
       fprintf(stderr, "        main: %p\n",  &main        );
       fprintf(stderr, "       _init: %p\n",  &_init       );
@@ -226,9 +310,8 @@ namespace NLCBSMM {
 
       register_signal_handlers();
 
-      // Spawn the thread that listens for network commands
-      stack_ptr = mmap(NULL, stack_sz , PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      networkmanager.spawn_listener(stack_ptr, stack_sz);
+      // Spawn the thread that speaks/listens to cluster
+      networkmanager.start_comms();
       return;
    }
 }
