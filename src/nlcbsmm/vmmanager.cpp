@@ -25,11 +25,11 @@
  * If we use these to sanity check, cannot compile with -Wl,--no-undefined
  * because these symbols won't be defined until application link time...
  */
-extern unsigned char* main;
-extern unsigned char* _init;
-extern unsigned char* _fini;
-extern unsigned char* _end;
-extern unsigned char* __data_start;
+extern uint8_t* main;
+extern uint8_t* _init;
+extern uint8_t* _fini;
+extern uint8_t* _end;
+extern uint8_t* __data_start;
 
 
 namespace NLCBSMM {
@@ -125,25 +125,33 @@ namespace NLCBSMM {
             multi_speaker_ptr    = (void*) (((int) multi_speaker_stack)  + CLONE_STACK_SZ);
             multi_listener_ptr   = (void*) (((int) multi_listener_stack) + CLONE_STACK_SZ);
 
-            if((uni_speaker_thread_id = clone(&uni_speaker, uni_speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
-               perror("vmmanager.cpp, clone, speaker");
+            if((multi_listener_thread_id = clone(&multi_listener, multi_listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+               perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
+
+            sleep(0.5);
 
             if((uni_listener_thread_id = clone(&uni_listener, uni_listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
                perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
 
+            sleep(0.5);
+
             if((multi_speaker_thread_id = clone(&multi_speaker, multi_speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
 
-            if((multi_listener_thread_id = clone(&multi_listener, multi_listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
-               perror("vmmanager.cpp, clone, listener");
+            sleep(0.5);
+
+            if((uni_speaker_thread_id = clone(&uni_speaker, uni_speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+               perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
+
+            sleep(0.5);
 
             return;
          }
@@ -172,7 +180,6 @@ namespace NLCBSMM {
              *
              */
             fprintf(stderr, "> multi-speaker\n");
-
             uint32_t sk             = 0;
             uint32_t cnt            = 0;
             struct ip_mreq mreq     = {0};
@@ -187,15 +194,22 @@ namespace NLCBSMM {
             addr.sin_addr.s_addr = inet_addr(MULTICAST_GRP);
             addr.sin_port        = htons(MULTICAST_PORT);
 
-            char message[] = "Hello, World!";
+            void* memory = myheap.malloc(sizeof(MulticastJoin));
+
+            Packet* p = new (memory) MulticastJoin(&main, &_init, &_fini, &_end, &__data_start);
 
             while (1) {
-               if (sendto(sk, message, sizeof(message), 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+
+               if (sendto(sk, p, sizeof(MulticastJoin), 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                   perror("vmmanager.cpp, sendto");
                   exit(EXIT_FAILURE);
                }
-               sleep(EXIT_FAILURE);
+
+               sleep(1);
+
             }
+
+            myheap.free(memory);
 
             return 0;
 
@@ -208,6 +222,7 @@ namespace NLCBSMM {
              */
             fprintf(stderr, "> multi-listener\n");
 
+            uint8_t  *packet_buffer = NULL;
             uint32_t sk             =  0;
             uint32_t nbytes         =  0;
             uint32_t addrlen        =  0;
@@ -215,7 +230,6 @@ namespace NLCBSMM {
             struct ip_mreq mreq     = {0};
             struct sockaddr_in addr = {0};
 
-            char msgbuf[MSGBUFSIZE];
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
@@ -231,8 +245,9 @@ namespace NLCBSMM {
             addr.sin_family      = AF_INET;
             addr.sin_addr.s_addr = htonl(INADDR_ANY);
             addr.sin_port        = htons(MULTICAST_PORT);
+            addrlen              = sizeof(addr);
 
-            if (bind(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+            if (bind(sk, (struct sockaddr *) &addr, addrlen) < 0) {
                perror("vmmanager.cpp, bind");
                exit(EXIT_FAILURE);
             }
@@ -246,17 +261,26 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            char ip[1024];
-            inet_ntop(AF_INET, &addr.sin_addr.s_addr, ip, sizeof(ip));
-
             while (1) {
-               addrlen=sizeof(addr);
-               if ((nbytes=recvfrom(sk,msgbuf,MSGBUFSIZE,0,
-                           (struct sockaddr *) &addr, &addrlen)) < 0) {
+
+               // Get a new buffer from our hoard allocator
+               packet_buffer = (uint8_t*) myheap.malloc(128);
+
+               if ((nbytes = recvfrom(sk, packet_buffer, MSGBUFSIZE, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
-                  exit(1);
+                  exit(EXIT_FAILURE);
                }
-               fprintf(stderr, "%s: %s\n", ip, msgbuf);
+
+               // Some debug output
+               Packet* p          = reinterpret_cast<Packet*>(packet_buffer);
+               MulticastJoin* mjp = reinterpret_cast<MulticastJoin*>(packet_buffer);
+               uint32_t seq       = p->get_sequence();
+               uint8_t  flag      = p->get_flag();
+               uint32_t main_addr = ntohl(mjp->main_addr);
+               fprintf(stderr, "Flag 0x%x - Main Addr: %p\n", flag, (void*) main_addr);
+
+               // Shit is scarce, son!
+               myheap.free(packet_buffer);
             }
             return 0;
          }

@@ -1,47 +1,55 @@
 #ifndef __PACKETS_H_
 #define __PACKETS_H_
 
-#define NLCBSMM_INVALIDATE         0x0
-#define NLCBSMM_EXIT               0x1
-#define NLCBSMM_INIT               0x2
-#define NLCBSMM_INIT_RESPONSE      0x3
-#define NLCBSMM_COR_PAGE           0x4
-#define NLCBSMM_COR_PAGE_RESPONSE  0x5
-#define NLCBSMM_GET_PAGE           0x6
-#define NLCBSMM_SEND_PAGE          0x7
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
-struct NLCBSMMpacket {
-   unsigned char type;
-   unsigned int page;
+#define MULTICAST_JOIN_F 0xFF
+
+class Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t get_sequence() {
+         return ntohl(((uint32_t*) this)[0]);
+      }
+
+      uint8_t get_flag() {
+         return ((uint8_t*) this)[4];
+      }
+};
+
+class MulticastJoin : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint8_t  flag;
+
+      uint32_t main_addr;
+      uint32_t init_addr;
+      uint32_t fini_addr;
+      uint32_t end_addr;
+      uint32_t data_start_addr;
+
+      uint32_t payload_sz;
+
+      MulticastJoin(uint8_t** _main_addr, uint8_t** _init_addr, uint8_t** _fini_addr, uint8_t** _end_addr, uint8_t** __data_start_addr) {
+         /**
+          *
+          */
+         sequence        = htonl(0);
+         flag            = MULTICAST_JOIN_F;
+         main_addr       = htonl(reinterpret_cast<uint32_t>(_main_addr));
+         init_addr       = htonl(reinterpret_cast<uint32_t>(_init_addr));
+         fini_addr       = htonl(reinterpret_cast<uint32_t>(_fini_addr));
+         end_addr        = htonl(reinterpret_cast<uint32_t>(_end_addr));
+         data_start_addr = htonl(reinterpret_cast<uint32_t>(__data_start_addr));
+         payload_sz      = htonl(0);
+      }
+
 }__attribute__((packed));
-
-
-struct NLCBSMMpacket_init {
-   unsigned int type;
-}__attribute__((packed));
-
-
-struct NLCBSMMpacket_init_response {
-   unsigned char type;
-   unsigned int length;
-   unsigned int sb_addrs[1337];//FIX ME PLS
-}__attribute__((packed));
-
-
-/**
- * Used in location.h
- */
-struct NLCBSMMpacket_getpage {
-   unsigned char type;
-   unsigned int baseaddr;
-}__attribute__((packed));
-typedef struct NLCBSMMpacket_getpage GetPagePacket;
-
-struct NLCBSMMpacket_sendpage {
-   unsigned char type;
-   unsigned int addr;
-   unsigned char page[4096];
-}__attribute__((packed));
-typedef struct NLCBSMMpacket_sendpage SendPagePacket;
 
 #endif

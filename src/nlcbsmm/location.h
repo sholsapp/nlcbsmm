@@ -93,6 +93,7 @@ namespace NLCBSMM {
       private:
 
          void fetchNetworkPage() {
+            /*
             // send buffer
             unsigned char sendbuf[4096 + 8];
             // read buffer
@@ -130,6 +131,7 @@ namespace NLCBSMM {
             guard = true;
 
             return;
+            */
          }
 
          bool guard;
