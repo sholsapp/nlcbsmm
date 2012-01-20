@@ -1,7 +1,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>
-#include <zlib.h>
 #include "packets.h"
 
 namespace NLCBSMM {
