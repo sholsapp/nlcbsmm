@@ -7,15 +7,17 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <vector>
 
 // Order matters
 #include "vmmanager.h"
 #include "hoard.h"
 #include "packets.h"
 
-#include <vector>
+#define MSGBUFSIZE 256
 
-#define PAGE_SIZE 4096
+#include "constants.h"
+
 
 /**
  * Symbols defined by the end application.
@@ -28,6 +30,7 @@ extern unsigned char* _init;
 extern unsigned char* _fini;
 extern unsigned char* _end;
 extern unsigned char* __data_start;
+
 
 namespace NLCBSMM {
    /**
@@ -51,12 +54,6 @@ namespace NLCBSMM {
    }
 }
 
-#define HELLO_PORT 12345
-#define HELLO_GROUP "225.0.0.37"
-#define MSGBUFSIZE 256
-
-//using namespace Hoard;
-//using namespace HL;
 
 namespace NLCBSMM {
 
@@ -73,23 +70,31 @@ namespace NLCBSMM {
             /**
              * Constructor
              */
-            speaker_thread_id  = 0;
-            listener_thread_id = 0;
+            multi_speaker_thread_id  = 0;
+            multi_listener_thread_id = 0;
+            uni_speaker_thread_id    = 0;
+            uni_listener_thread_id   = 0;
          }
 
          ~NetworkManager(){
             /**
              * Destructor
              */
-            int pid = 0;
+            uint32_t pid = 0;
 
-            if((pid = waitpid(speaker_thread_id, NULL,  __WCLONE)) == -1) {
-               fprintf(stderr, "Return from wait (pid = %d)\n", pid);
+            if((pid = waitpid(multi_speaker_thread_id, NULL,  __WCLONE)) == -1) {
                perror("wait error");
             }
 
-            if((pid = waitpid(listener_thread_id, NULL,  __WCLONE)) == -1) {
-               fprintf(stderr, "Return from wait (pid = %d)\n", pid);
+            if((pid = waitpid(multi_listener_thread_id, NULL,  __WCLONE)) == -1) {
+               perror("wait error");
+            }
+
+            if((pid = waitpid(uni_speaker_thread_id, NULL,  __WCLONE)) == -1) {
+               perror("wait error");
+            }
+
+            if((pid = waitpid(uni_listener_thread_id, NULL,  __WCLONE)) == -1) {
                perror("wait error");
             }
          }
@@ -98,25 +103,44 @@ namespace NLCBSMM {
             /**
              * Spawns the speaker and listener threads.
              */
-            void* argument       = NULL;
-            void* speaker_ptr    = NULL;
-            void* speaker_stack  = NULL;
-            void* listener_ptr   = NULL;
-            void* listener_stack = NULL;
-            int   size           = 4096;
+            void* argument             = NULL;
+            void* multi_speaker_ptr    = NULL;
+            void* multi_listener_ptr   = NULL;
+            void* uni_speaker_ptr      = NULL;
+            void* uni_listener_ptr     = NULL;
+            void* multi_speaker_stack  = NULL;
+            void* multi_listener_stack = NULL;
+            void* uni_speaker_stack    = NULL;
+            void* uni_listener_stack   = NULL;
 
-            listener_stack = (void*) mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            speaker_stack  = (void*) mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            argument       = (void*) 5;
-            speaker_ptr    = (void*) (((int) speaker_stack) + size);
-            listener_ptr   = (void*) (((int) listener_stack) + size);
+            argument       = (void*) 1337; // Not used
 
-            if((speaker_thread_id = clone(&speaker, speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+            uni_listener_stack   = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            uni_speaker_stack    = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            multi_listener_stack = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            multi_speaker_stack  = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+            uni_speaker_ptr      = (void*) (((int) uni_speaker_stack)    + CLONE_STACK_SZ);
+            uni_listener_ptr     = (void*) (((int) uni_listener_stack)   + CLONE_STACK_SZ);
+            multi_speaker_ptr    = (void*) (((int) multi_speaker_stack)  + CLONE_STACK_SZ);
+            multi_listener_ptr   = (void*) (((int) multi_listener_stack) + CLONE_STACK_SZ);
+
+            if((uni_speaker_thread_id = clone(&uni_speaker, uni_speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
 
-            if((listener_thread_id = clone(&listener, listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+            if((uni_listener_thread_id = clone(&uni_listener, uni_listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+               perror("vmmanager.cpp, clone, listener");
+               exit(EXIT_FAILURE);
+            }
+
+            if((multi_speaker_thread_id = clone(&multi_speaker, multi_speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+               perror("vmmanager.cpp, clone, speaker");
+               exit(EXIT_FAILURE);
+            }
+
+            if((multi_listener_thread_id = clone(&multi_listener, multi_listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
                perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
@@ -124,11 +148,30 @@ namespace NLCBSMM {
             return;
          }
 
-         static int speaker(void* t) {
+
+         static int uni_speaker(void* t) {
             /**
              *
              */
-            fprintf(stderr, "> speaker\n");
+            fprintf(stderr, "> uni-speaker\n");
+            return 0;
+         }
+
+
+         static int uni_listener(void* t) {
+            /**
+             *
+             */
+            fprintf(stderr, "> uni-listener\n");
+            return 0;
+         }
+
+
+         static int multi_speaker(void* t) {
+            /**
+             *
+             */
+            fprintf(stderr, "> multi-speaker\n");
 
             uint32_t sk             = 0;
             uint32_t cnt            = 0;
@@ -141,8 +184,8 @@ namespace NLCBSMM {
             }
 
             addr.sin_family      = AF_INET;
-            addr.sin_addr.s_addr = inet_addr(HELLO_GROUP);
-            addr.sin_port        = htons(HELLO_PORT);
+            addr.sin_addr.s_addr = inet_addr(MULTICAST_GRP);
+            addr.sin_port        = htons(MULTICAST_PORT);
 
             char message[] = "Hello, World!";
 
@@ -159,11 +202,11 @@ namespace NLCBSMM {
          }
 
 
-         static int listener(void* t) {
+         static int multi_listener(void* t) {
             /**
              *
              */
-            fprintf(stderr, "> listener\n");
+            fprintf(stderr, "> multi-listener\n");
 
             uint32_t sk             =  0;
             uint32_t nbytes         =  0;
@@ -187,7 +230,7 @@ namespace NLCBSMM {
 
             addr.sin_family      = AF_INET;
             addr.sin_addr.s_addr = htonl(INADDR_ANY);
-            addr.sin_port        = htons(HELLO_PORT);
+            addr.sin_port        = htons(MULTICAST_PORT);
 
             if (bind(sk, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                perror("vmmanager.cpp, bind");
@@ -195,7 +238,7 @@ namespace NLCBSMM {
             }
 
             // Use setsockopt() to join multicast group
-            mreq.imr_multiaddr.s_addr = inet_addr(HELLO_GROUP);
+            mreq.imr_multiaddr.s_addr = inet_addr(MULTICAST_GRP);
             mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
             if (setsockopt(sk, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
@@ -219,8 +262,11 @@ namespace NLCBSMM {
          }
 
       private:
-         int speaker_thread_id;
-         int listener_thread_id;
+
+         uint32_t multi_speaker_thread_id;
+         uint32_t multi_listener_thread_id;
+         uint32_t uni_speaker_thread_id;
+         uint32_t uni_listener_thread_id;
 
    };
 
@@ -287,13 +333,13 @@ namespace NLCBSMM {
       /**
        * Registers signal handler for SIGSEGV
        */
-      fprintf(stderr, "Registering SIGSEGV handler...");
+      //fprintf(stderr, "Registering SIGSEGV handler...");
       struct sigaction act;
       act.sa_sigaction = signal_handler;
       act.sa_flags     = SA_SIGINFO;
       sigemptyset(&act.sa_mask);
       sigaction(SIGSEGV, &act, 0);
-      fprintf(stderr, "done\n");
+      //fprintf(stderr, "done\n");
       return;
    }
 
@@ -301,13 +347,13 @@ namespace NLCBSMM {
       /**
        * Hook entry.
        */
-
       fprintf(stderr, "        main: %p\n",  &main        );
       fprintf(stderr, "       _init: %p\n",  &_init       );
       fprintf(stderr, "       _fini: %p\n",  &_fini       );
       fprintf(stderr, "        _end: %p\n",  &_end        );
       fprintf(stderr, "__data_start: %p\n",  &__data_start);
 
+      // Register SEGFAULT handler
       register_signal_handlers();
 
       // Spawn the thread that speaks/listens to cluster
