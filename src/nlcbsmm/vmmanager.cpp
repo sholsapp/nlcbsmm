@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -17,6 +18,11 @@
 #define MSGBUFSIZE 256
 
 #include "constants.h"
+
+#include <ifaddrs.h>
+#include <cstdlib>
+#include <unistd.h>
+#include <netdb.h>
 
 
 /**
@@ -38,6 +44,7 @@ namespace NLCBSMM {
     */
    FreelistHeap<MmapHeap> myheap;
 
+
    unsigned char* pageAlign(unsigned char* p) {
       /**
        * Helper function to page align a pointer
@@ -52,6 +59,53 @@ namespace NLCBSMM {
       unsigned char* pageAligned = pageAlign(p);
       return (pageAligned - base) % PAGESIZE;
    }
+
+
+   const char* get_local_interface() {
+      /**
+       * Used to initialize the static variable local_ip with an IP address other nodes can
+       *  use to contact the unicast listener.
+       *
+       * I'm not happy with this function still... =/ There has to be a better way to get a
+       *  local interface without using string comparison and shit.
+       */
+      struct ifaddrs *ifaddr = NULL;
+      struct ifaddrs *ifa    = NULL;
+      int            family  = 0;
+      int            s       = 0;
+      char*          host    = (char*) myheap.malloc(sizeof(char) * NI_MAXHOST);
+
+      if (getifaddrs(&ifaddr) == -1) {
+         perror("getifaddrs");
+         exit(EXIT_FAILURE);
+      }
+
+      // For each interface
+      for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+         if (ifa->ifa_addr == NULL) {
+            continue;
+         }
+         family = ifa->ifa_addr->sa_family;
+         if (family == AF_INET) {
+            if ((s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST)) != 0) {
+               printf("getnameinfo() failed: %s\n", gai_strerror(s));
+               exit(EXIT_FAILURE);
+            }
+
+            // Don't return the loopback interface
+            if (strcmp (host, "127.0.0.1") != 0) {
+               freeifaddrs(ifaddr);
+               return host;
+            }
+         }
+      }
+      freeifaddrs(ifaddr);
+      // This is an error case
+      return "255.255.255.255";
+   }
+
+   const char* local_ip = NULL;
+
 }
 
 
@@ -74,6 +128,11 @@ namespace NLCBSMM {
             multi_listener_thread_id = 0;
             uni_speaker_thread_id    = 0;
             uni_listener_thread_id   = 0;
+
+            // This is what we broadcast to everyone
+            fprintf(stderr, "> Network manager local_ip initialized to: %s\n", local_ip);
+
+            return;
          }
 
          ~NetworkManager(){
@@ -98,6 +157,7 @@ namespace NLCBSMM {
                perror("wait error");
             }
          }
+
 
          void start_comms() {
             /**
@@ -171,6 +231,36 @@ namespace NLCBSMM {
              *
              */
             fprintf(stderr, "> uni-listener\n");
+
+            uint8_t  *packet_buffer = NULL;
+            uint32_t sk             =  0;
+            uint32_t nbytes         =  0;
+            uint32_t addrlen        =  0;
+            uint32_t yes            =  1;
+            struct ip_mreq mreq     = {0};
+            struct sockaddr_in addr = {0};
+
+            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+               perror("vmmanager.cpp, socket");
+               exit(EXIT_FAILURE);
+            }
+
+            addr.sin_family      = AF_INET;
+            addr.sin_addr.s_addr = htonl(INADDR_ANY);
+            addr.sin_port        = htons(UNICAST_PORT);
+            addrlen              = sizeof(addr);
+
+            if (bind(sk, (struct sockaddr *) &addr, addrlen) < 0) {
+               perror("vmmanager.cpp, bind");
+               exit(EXIT_FAILURE);
+            }
+
+            // Just block for now
+            if ((nbytes = recvfrom(sk, packet_buffer, MSGBUFSIZE, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
+               perror("recvfrom");
+               exit(EXIT_FAILURE);
+            }
+
             return 0;
          }
 
@@ -180,10 +270,14 @@ namespace NLCBSMM {
              *
              */
             fprintf(stderr, "> multi-speaker\n");
-            uint32_t sk             = 0;
-            uint32_t cnt            = 0;
-            struct ip_mreq mreq     = {0};
-            struct sockaddr_in addr = {0};
+
+            void*               memory = NULL;
+            size_t              psz    = 0;
+            uint32_t            sk     = 0;
+            uint32_t            cnt    = 0;
+            struct ip_mreq      mreq   = {0};
+            struct sockaddr_in  addr   = {0};
+            Packet*             p      = NULL;
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
@@ -194,25 +288,27 @@ namespace NLCBSMM {
             addr.sin_addr.s_addr = inet_addr(MULTICAST_GRP);
             addr.sin_port        = htons(MULTICAST_PORT);
 
-            void* memory = myheap.malloc(sizeof(MulticastJoin));
+            psz = sizeof(MulticastJoin) + strlen(local_ip);
+            memory = myheap.malloc(psz);
 
-            Packet* p = new (memory) MulticastJoin(&main, &_init, &_fini, &_end, &__data_start);
+            // Build packet
+            p = new (memory) MulticastJoin(strlen(local_ip), &main, &_init, &_fini, &_end, &__data_start);
+            // Add packet payload (the user IP address)
+            /*
+             * TODO: fix magic number '29'
+             */
+            memcpy(&((uint8_t*) p)[29], local_ip, strlen(local_ip));
 
             while (1) {
-
-               if (sendto(sk, p, sizeof(MulticastJoin), 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+               if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                   perror("vmmanager.cpp, sendto");
                   exit(EXIT_FAILURE);
                }
-
                sleep(1);
-
             }
 
             myheap.free(memory);
-
             return 0;
-
          }
 
 
@@ -229,7 +325,6 @@ namespace NLCBSMM {
             uint32_t yes            =  1;
             struct ip_mreq mreq     = {0};
             struct sockaddr_in addr = {0};
-
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
@@ -277,7 +372,10 @@ namespace NLCBSMM {
                uint32_t seq       = p->get_sequence();
                uint8_t  flag      = p->get_flag();
                uint32_t main_addr = ntohl(mjp->main_addr);
-               fprintf(stderr, "Flag 0x%x - Main Addr: %p\n", flag, (void*) main_addr);
+               uint32_t payload_sz = ntohl(mjp->payload_sz);
+               char*    user      = (char*) myheap.malloc(sizeof(char) * payload_sz);
+               memcpy(user, &packet_buffer[29], payload_sz);
+               fprintf(stderr, "User %s - Flag 0x%x - Main Addr: %p\n", user, flag, (void*) main_addr);
 
                // Shit is scarce, son!
                myheap.free(packet_buffer);
@@ -291,7 +389,6 @@ namespace NLCBSMM {
          uint32_t multi_listener_thread_id;
          uint32_t uni_speaker_thread_id;
          uint32_t uni_listener_thread_id;
-
    };
 
 
@@ -371,11 +468,16 @@ namespace NLCBSMM {
       /**
        * Hook entry.
        */
-      fprintf(stderr, "        main: %p\n",  &main        );
-      fprintf(stderr, "       _init: %p\n",  &_init       );
-      fprintf(stderr, "       _fini: %p\n",  &_fini       );
-      fprintf(stderr, "        _end: %p\n",  &_end        );
-      fprintf(stderr, "__data_start: %p\n",  &__data_start);
+      local_ip = get_local_interface(); 
+
+      fprintf(stderr, "> nlcbsmm init on local ip: %s\n", local_ip);
+
+
+      //fprintf(stderr, "        main: %p\n",  &main        );
+      //fprintf(stderr, "       _init: %p\n",  &_init       );
+      //fprintf(stderr, "       _fini: %p\n",  &_fini       );
+      //fprintf(stderr, "        _end: %p\n",  &_end        );
+      //fprintf(stderr, "__data_start: %p\n",  &__data_start);
 
       // Register SEGFAULT handler
       register_signal_handlers();

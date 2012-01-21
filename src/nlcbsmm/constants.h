@@ -2,7 +2,7 @@
 
 namespace NLCBSMM {
 
-  uint32_t     CLONE_STACK_SZ   = 4096;
+  uint32_t     CLONE_STACK_SZ   = 4069 * 32;
 
   uint16_t     UNICAST_PORT     = 60000;
   uint16_t     MULTICAST_PORT   = 60001;

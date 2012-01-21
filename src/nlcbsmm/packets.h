@@ -36,7 +36,7 @@ class MulticastJoin : public Packet {
 
       uint32_t payload_sz;
 
-      MulticastJoin(uint8_t** _main_addr, uint8_t** _init_addr, uint8_t** _fini_addr, uint8_t** _end_addr, uint8_t** __data_start_addr) {
+      MulticastJoin(uint32_t user_length, uint8_t** _main_addr, uint8_t** _init_addr, uint8_t** _fini_addr, uint8_t** _end_addr, uint8_t** __data_start_addr) {
          /**
           *
           */
@@ -47,7 +47,7 @@ class MulticastJoin : public Packet {
          fini_addr       = htonl(reinterpret_cast<uint32_t>(_fini_addr));
          end_addr        = htonl(reinterpret_cast<uint32_t>(_end_addr));
          data_start_addr = htonl(reinterpret_cast<uint32_t>(__data_start_addr));
-         payload_sz      = htonl(0);
+         payload_sz      = htonl(user_length);
       }
 
 }__attribute__((packed));
