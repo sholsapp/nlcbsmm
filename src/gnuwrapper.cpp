@@ -44,7 +44,6 @@ extern "C" {
   void (*__malloc_initialize_hook) (void) = my_init_hook;
 
   static void my_init_hook (void) {
-    fprintf(stderr, "In my_init_hook...\n");
 
     // Register NLCBSMM signal handlers
     nlcbsmm_init();

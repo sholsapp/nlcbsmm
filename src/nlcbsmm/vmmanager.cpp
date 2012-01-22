@@ -19,6 +19,8 @@
 
 #include "constants.h"
 
+#include "mutex.h"
+
 #include <ifaddrs.h>
 #include <cstdlib>
 #include <unistd.h>
@@ -36,6 +38,8 @@ extern uint8_t* _init;
 extern uint8_t* _fini;
 extern uint8_t* _end;
 extern uint8_t* __data_start;
+
+mutex test;
 
 
 namespace NLCBSMM {
@@ -471,13 +475,6 @@ namespace NLCBSMM {
       local_ip = get_local_interface(); 
 
       fprintf(stderr, "> nlcbsmm init on local ip: %s\n", local_ip);
-
-
-      //fprintf(stderr, "        main: %p\n",  &main        );
-      //fprintf(stderr, "       _init: %p\n",  &_init       );
-      //fprintf(stderr, "       _fini: %p\n",  &_fini       );
-      //fprintf(stderr, "        _end: %p\n",  &_end        );
-      //fprintf(stderr, "__data_start: %p\n",  &__data_start);
 
       // Register SEGFAULT handler
       register_signal_handlers();
