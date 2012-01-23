@@ -9,13 +9,29 @@
 
 #include <vector>
 
-
 #include "sbentry.h"
 #include "hoard_allocator.h"
 
 
 namespace NLCBSMM {
-   // The page table 
+
+   // A vector of NLCBSMM::Page objects
+   typedef std::vector<Page*,
+           HoardAllocator<Page*> > PageVectorType;
+
+   // A mapping of 'ip address' to a NLCBSMM::PageVector
+   typedef std::map<const char*,
+           PageVectorType*,
+           std::less<const char*>,
+           HoardAllocator<std::pair<const char*, PageVectorType*> > > PageTableType;
+
+}
+
+namespace NLCBSMM {
+   // The node's IP address
+   extern const char* local_ip;
+
+   // The page table
    extern std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
 
    // Helper function to page align a pointer

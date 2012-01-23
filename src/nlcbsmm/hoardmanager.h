@@ -378,7 +378,7 @@ namespace Hoard {
                   entry->page[page].setLocation(new (placement) MemoryLocation((void*) (s + (page * PAGESIZE))));
                }
 
-               fprintf(stderr, "Adding superblock entry (%p) to metadata...", entry->sb);
+               fprintf(stderr, "%s is adding superblock entry (%p) to metadata...", local_ip, entry->sb);
                //metadata.insert(entry);
                metadata_vector.push_back(entry);
                fprintf(stderr, "done.\n");

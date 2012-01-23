@@ -39,8 +39,6 @@ extern uint8_t* _fini;
 extern uint8_t* _end;
 extern uint8_t* __data_start;
 
-mutex test;
-
 
 namespace NLCBSMM {
    /**
@@ -61,7 +59,7 @@ namespace NLCBSMM {
        * Help function to return page number in superblock
        */
       unsigned char* pageAligned = pageAlign(p);
-      return (pageAligned - base) % PAGESIZE;
+      return (pageAlign(p) - base) % PAGESIZE;
    }
 
 
@@ -119,6 +117,11 @@ namespace NLCBSMM {
     * This is supposed to be the "page table"
     */
    std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
+
+
+}
+
+namespace NLCBSMM {
 
    class NetworkManager {
 
@@ -472,9 +475,17 @@ namespace NLCBSMM {
       /**
        * Hook entry.
        */
-      local_ip = get_local_interface(); 
+      local_ip = get_local_interface();
 
       fprintf(stderr, "> nlcbsmm init on local ip: %s\n", local_ip);
+
+      PageTableType   page_table;
+      PageVectorType* page_list = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
+      Page*           page1     = (Page*)           myheap.malloc(sizeof(Page));
+      Page*           page2     = (Page*)           myheap.malloc(sizeof(Page));
+      page_table["127.0.0.1"]   = page_list; 
+      page_table["127.0.0.1"]->push_back(page1);
+      page_table["127.0.0.1"]->push_back(page2);
 
       // Register SEGFAULT handler
       register_signal_handlers();
