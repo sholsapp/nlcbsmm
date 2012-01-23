@@ -19,12 +19,6 @@ LINUX_GCC_x86_COMPILE := g++ -m32 -I/usr/include/nptl -ffast-math -g -malign-dou
 linux-gcc-x86:
 	$(LINUX_GCC_x86_COMPILE)
 
-#nlcbsmm-dist-client: dist_client.o
-#	$(CPP) -o $@ $^
-
-#dist_client.o: nlcbsmm/dist_client.cpp
-#	$(CPP) -Inlcbsmm $(CFLAGS) -c $<
-
 clean:
 	rm -rf core* *.o *.gch libhoard.so $(ALL)
 
