@@ -113,11 +113,12 @@ namespace NLCBSMM {
 
 namespace NLCBSMM {
 
-   /**
-    * This is supposed to be the "page table"
-    */
    std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
 
+   PageTableType* page_table;
+
+   uint32_t _start_page_table = 0;
+   uint32_t _end_page_table   = 0;
 
 }
 
@@ -135,11 +136,6 @@ namespace NLCBSMM {
             multi_listener_thread_id = 0;
             uni_speaker_thread_id    = 0;
             uni_listener_thread_id   = 0;
-
-            // This is what we broadcast to everyone
-            fprintf(stderr, "> Network manager local_ip initialized to: %s\n", local_ip);
-
-            return;
          }
 
          ~NetworkManager(){
@@ -471,27 +467,47 @@ namespace NLCBSMM {
       return;
    }
 
+   void print_log_sep(int len) {
+      fprintf(stderr, "\n");
+      for (int i = 0; i < len; i++) {
+        fprintf(stderr, "%c", (char) 144);
+      }
+      fprintf(stderr, "\n\n");
+   }
+
    void nlcbsmm_init() {
       /**
        * Hook entry.
        */
+
+      // Dedicated memory to maintaining the page table
+      void* raw         = (void*) mmap(NULL, PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      page_table        = new (raw) PageTableType();
+      _start_page_table = (uint32_t) raw;
+      _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
+
+      // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
-      fprintf(stderr, "> nlcbsmm init on local ip: %s\n", local_ip);
+      print_log_sep(40);
+      fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
+      fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
+      print_log_sep(40);
 
-      PageTableType   page_table;
-      PageVectorType* page_list = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
-      Page*           page1     = (Page*)           myheap.malloc(sizeof(Page));
-      Page*           page2     = (Page*)           myheap.malloc(sizeof(Page));
-      page_table["127.0.0.1"]   = page_list; 
-      page_table["127.0.0.1"]->push_back(page1);
-      page_table["127.0.0.1"]->push_back(page2);
+      // Debug
+      PageVectorType* page_list    = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
+      Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
+      Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
+      (*page_table)["127.0.0.1"]   = page_list; 
+      (*page_table)["127.0.0.1"]->push_back(page1);
+      (*page_table)["127.0.0.1"]->push_back(page2);
+      // End Debug
 
-      // Register SEGFAULT handler
+      // Register SIGSEGV handler
       register_signal_handlers();
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();
-      return;
    }
+
 }
