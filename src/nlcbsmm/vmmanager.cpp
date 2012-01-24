@@ -8,7 +8,9 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <time.h>
+
 #include <vector>
+#include <deque>
 
 // Order matters
 #include "vmmanager.h"
@@ -34,11 +36,11 @@ extern uint8_t* __data_start;
 
 
 namespace NLCBSMM {
-   /**
-    * If we need memory to use for hoard, this is where we get it.
-    */
+   // If we need memory to use for hoard, this is where we get it.
    FreelistHeap<MmapHeap> myheap;
 
+   // This node's ip address
+   const char* local_ip = NULL;
 
    unsigned char* pageAlign(unsigned char* p) {
       /**
@@ -54,7 +56,6 @@ namespace NLCBSMM {
       unsigned char* pageAligned = pageAlign(p);
       return (pageAlign(p) - base) % PAGESIZE;
    }
-
 
    const char* get_local_interface() {
       /**
@@ -99,7 +100,42 @@ namespace NLCBSMM {
       return "255.255.255.255";
    }
 
-   const char* local_ip = NULL;
+}
+
+namespace NLCBSMM {
+
+   typedef std::deque<Packet*,
+           HoardAllocator<Packet*> > PacketQueueType;
+
+   PacketQueueType uni_speaker_work_deque;
+
+   PacketQueueType multi_speaker_work_deque;
+
+   mutex uni_speaker_lock;
+   mutex multi_speaker_lock; 
+
+   Packet* safe_pop(PacketQueueType* queue, mutex* m) {
+      /**
+       *
+       */
+      Packet* p = NULL;
+      mutex_lock(m);
+      p = queue->front();
+      queue->pop_front();
+      mutex_unlock(m);
+      return p;
+   }
+
+   void safe_push(PacketQueueType* queue, mutex* m, Packet* p) {
+      /**
+       *
+       */
+      mutex_lock(m);
+      queue->push_back(p);
+      mutex_unlock(m);
+      return;
+   }
+
 
 }
 
@@ -367,9 +403,6 @@ namespace NLCBSMM {
                uint8_t  flag        = p->get_flag();
                uint32_t main_addr   = ntohl(mjp->main_addr);
                uint32_t payload_sz  = ntohl(mjp->payload_sz);
-               //uint32_t pt_start    = ntohl(mjp->pt_start);
-               //uint32_t pt_end      = ntohl(mjp->pt_end);
-               //uint32_t uuid        = ntohl(mjp->uuid);
                char*    user        = (char*) myheap.malloc(sizeof(char) * payload_sz);
                memcpy(user, p->get_payload_ptr(), payload_sz);
                fprintf(stderr, "User %s - Flag 0x%x - Main Addr: %p\n", user, flag, (void*) main_addr);
@@ -464,7 +497,7 @@ namespace NLCBSMM {
    void print_log_sep(int len) {
       fprintf(stderr, "\n");
       for (int i = 0; i < len; i++) {
-        fprintf(stderr, "%c", (char) 144);
+         fprintf(stderr, "%c", (char) 144);
       }
       fprintf(stderr, "\n\n");
    }
@@ -484,6 +517,9 @@ namespace NLCBSMM {
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
+      mutex_init(&uni_speaker_lock, NULL);
+      mutex_init(&multi_speaker_lock, NULL);
+
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
       fprintf(stderr, "> uuid: %d <\n", _uuid);
@@ -491,12 +527,12 @@ namespace NLCBSMM {
       print_log_sep(40);
 
       // Debug
-      PageVectorType* page_list    = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
-      Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
-      Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
-      (*page_table)["127.0.0.1"]   = page_list; 
-      (*page_table)["127.0.0.1"]->push_back(page1);
-      (*page_table)["127.0.0.1"]->push_back(page2);
+      //PageVectorType* page_list    = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
+      //Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
+      //Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
+      //(*page_table)["127.0.0.1"]   = page_list;
+      //(*page_table)["127.0.0.1"]->push_back(page1);
+      //(*page_table)["127.0.0.1"]->push_back(page2);
       // End Debug
 
       // Register SIGSEGV handler
