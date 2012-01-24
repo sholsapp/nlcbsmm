@@ -5,6 +5,10 @@
 #include <netinet/in.h>
 
 #define MULTICAST_JOIN_F 0xFF
+#define UNICAST_JOIN_ACCEPT_F 0xFE
+
+#include "constants.h"
+
 
 class Packet {
    /**
@@ -18,36 +22,65 @@ class Packet {
       uint8_t get_flag() {
          return ((uint8_t*) this)[4];
       }
+
+      uint8_t* get_payload_ptr() {
+         return &(((uint8_t*) this)[PACKET_HEADER_SZ]);
+      }
 };
 
 class MulticastJoin : public Packet {
    /**
-    *
+    * When a node starts, this is the first packet multicasted to the group.  It
+    * is an attempt to synchronize with n or more nodes in the cluster (or none
+    * if this node is the first (e.g., master node)).
     */
    public:
       uint32_t sequence;
       uint8_t  flag;
 
       uint32_t main_addr;
-      uint32_t init_addr;
-      uint32_t fini_addr;
       uint32_t end_addr;
       uint32_t data_start_addr;
-
       uint32_t payload_sz;
 
-      MulticastJoin(uint32_t user_length, uint8_t** _main_addr, uint8_t** _init_addr, uint8_t** _fini_addr, uint8_t** _end_addr, uint8_t** __data_start_addr) {
+      MulticastJoin(uint32_t user_length, uint8_t** _main_addr, uint8_t** _end_addr, uint8_t** __data_start_addr) {
          /**
           *
           */
          sequence        = htonl(0);
          flag            = MULTICAST_JOIN_F;
          main_addr       = htonl(reinterpret_cast<uint32_t>(_main_addr));
-         init_addr       = htonl(reinterpret_cast<uint32_t>(_init_addr));
-         fini_addr       = htonl(reinterpret_cast<uint32_t>(_fini_addr));
          end_addr        = htonl(reinterpret_cast<uint32_t>(_end_addr));
          data_start_addr = htonl(reinterpret_cast<uint32_t>(__data_start_addr));
          payload_sz      = htonl(user_length);
+      }
+}__attribute__((packed));
+
+
+class UnicastJoinAcceptance : public Packet {
+   /**
+    * When a requests to join the group, the master node sends this directly to
+    * the node requesting to join.  This packet indicates the node is being added
+    * to the cluster, and assigns the new node a unique identifier.
+    */
+   public:
+      uint32_t sequence;
+      uint8_t  flag;
+
+      uint32_t start_page_table;
+      uint32_t end_page_table;
+      uint32_t uuid;
+
+      uint32_t payload_sz;
+
+      UnicastJoinAcceptance(uint32_t user_length, uint32_t _start_pt, uint32_t _end_pt, uint32_t _uuid) {
+
+         sequence          = htonl(0);
+         flag              = UNICAST_JOIN_ACCEPT_F;
+         start_page_table  = htonl(_start_pt);
+         end_page_table    = htonl(_end_pt);
+         uuid              = htonl(_uuid);
+         payload_sz        = htonl(user_length);
       }
 
 }__attribute__((packed));

@@ -15,8 +15,6 @@
 #include "hoard.h"
 #include "packets.h"
 
-#define MSGBUFSIZE 256
-
 #include "constants.h"
 
 #include "mutex.h"
@@ -29,13 +27,8 @@
 
 /**
  * Symbols defined by the end application.
- *
- * If we use these to sanity check, cannot compile with -Wl,--no-undefined
- * because these symbols won't be defined until application link time...
  */
 extern uint8_t* main;
-extern uint8_t* _init;
-extern uint8_t* _fini;
 extern uint8_t* _end;
 extern uint8_t* __data_start;
 
@@ -119,6 +112,7 @@ namespace NLCBSMM {
 
    uint32_t _start_page_table = 0;
    uint32_t _end_page_table   = 0;
+   uint32_t _uuid             = 0;
 
 }
 
@@ -259,7 +253,7 @@ namespace NLCBSMM {
             }
 
             // Just block for now
-            if ((nbytes = recvfrom(sk, packet_buffer, MSGBUFSIZE, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
+            if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                perror("recvfrom");
                exit(EXIT_FAILURE);
             }
@@ -291,16 +285,13 @@ namespace NLCBSMM {
             addr.sin_addr.s_addr = inet_addr(MULTICAST_GRP);
             addr.sin_port        = htons(MULTICAST_PORT);
 
-            psz = sizeof(MulticastJoin) + strlen(local_ip);
-            memory = myheap.malloc(psz);
+            psz     = PACKET_HEADER_SZ + strlen(local_ip);
+            memory  = myheap.malloc(psz);
 
             // Build packet
-            p = new (memory) MulticastJoin(strlen(local_ip), &main, &_init, &_fini, &_end, &__data_start);
+            p = new (memory) MulticastJoin(strlen(local_ip), &main, &_end, &__data_start);
             // Add packet payload (the user IP address)
-            /*
-             * TODO: fix magic number '29'
-             */
-            memcpy(&((uint8_t*) p)[29], local_ip, strlen(local_ip));
+            memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
 
             while (1) {
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
@@ -362,22 +353,25 @@ namespace NLCBSMM {
             while (1) {
 
                // Get a new buffer from our hoard allocator
-               packet_buffer = (uint8_t*) myheap.malloc(128);
+               packet_buffer = (uint8_t*) myheap.malloc(MAX_PACKET_SZ);
 
-               if ((nbytes = recvfrom(sk, packet_buffer, MSGBUFSIZE, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
+               if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
                }
 
                // Some debug output
-               Packet* p          = reinterpret_cast<Packet*>(packet_buffer);
-               MulticastJoin* mjp = reinterpret_cast<MulticastJoin*>(packet_buffer);
-               uint32_t seq       = p->get_sequence();
-               uint8_t  flag      = p->get_flag();
-               uint32_t main_addr = ntohl(mjp->main_addr);
-               uint32_t payload_sz = ntohl(mjp->payload_sz);
-               char*    user      = (char*) myheap.malloc(sizeof(char) * payload_sz);
-               memcpy(user, &packet_buffer[29], payload_sz);
+               Packet* p            = reinterpret_cast<Packet*>(packet_buffer);
+               MulticastJoin* mjp   = reinterpret_cast<MulticastJoin*>(packet_buffer);
+               uint32_t seq         = p->get_sequence();
+               uint8_t  flag        = p->get_flag();
+               uint32_t main_addr   = ntohl(mjp->main_addr);
+               uint32_t payload_sz  = ntohl(mjp->payload_sz);
+               //uint32_t pt_start    = ntohl(mjp->pt_start);
+               //uint32_t pt_end      = ntohl(mjp->pt_end);
+               //uint32_t uuid        = ntohl(mjp->uuid);
+               char*    user        = (char*) myheap.malloc(sizeof(char) * payload_sz);
+               memcpy(user, p->get_payload_ptr(), payload_sz);
                fprintf(stderr, "User %s - Flag 0x%x - Main Addr: %p\n", user, flag, (void*) main_addr);
 
                // Shit is scarce, son!
@@ -485,12 +479,14 @@ namespace NLCBSMM {
       page_table        = new (raw) PageTableType();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
+      _uuid             = (uint32_t) 0;
 
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
+      fprintf(stderr, "> uuid: %d <\n", _uuid);
       fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
 
