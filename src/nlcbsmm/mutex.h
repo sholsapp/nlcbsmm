@@ -24,6 +24,17 @@ typedef int mutex;
 
 #define MUTEX_INITIALIZER {0}
 
+//#define PTHREAD_COND_INITIALIZER {NULL, 0, 0}
+
+/**
+ * If this many wake operations can happen between the read of the seq variable and the implementation 
+ * of the FUTEX_WAIT system call, then we will have a bug. However, this is extremely unlikely due to 
+ * amount of time it would take to generate that many calls.
+ */
+#define INT_MAX 32768
+
+struct timespec TIMESPEC = { INT_MAX, 0 };
+
 extern "C" {
 
    static inline unsigned xchg_32(void *ptr, unsigned x) {
@@ -105,6 +116,78 @@ extern "C" {
       unsigned c = cmpxchg(m, 0, 1);
       if (!c) return 0;
       return EBUSY;
+   }
+
+   typedef struct cv cv;
+   struct cv {
+      mutex *m;
+      int seq;
+      int pad;
+   };
+
+
+   int cond_init(cv *c, pthread_condattr_t *a) {
+      (void) a;
+
+      c->m = NULL;
+
+      /* Sequence variable doesn't actually matter, but keep valgrind happy */
+      c->seq = 0;
+
+      return 0;
+   }
+
+   int cond_destroy(cv *c) {
+      /* No need to do anything */
+      (void) c;
+      return 0;
+   }
+
+
+   int cond_signal(cv *c) {
+      /* We are waking someone up */
+      atomic_add(&c->seq, 1);
+
+      /* Wake up a thread */
+      sys_futex(&c->seq, FUTEX_WAKE_PRIVATE, 1, NULL, NULL, 0);
+
+      return 0;
+   }
+
+   int cond_broadcast(cv *c) {
+      mutex *m = c->m;
+
+      /* No mutex means that there are no waiters */
+      if (!m) return 0;
+
+      /* We are waking everyone up */
+      atomic_add(&c->seq, 1);
+
+      /* Wake one thread, and requeue the rest on the mutex */
+      sys_futex(&c->seq, FUTEX_REQUEUE_PRIVATE, 1, &TIMESPEC, m, 0);
+
+      return 0;
+   }
+
+   int cond_wait(cv *c, mutex *m) {
+      int seq = c->seq;
+
+      if (c->m != m) {
+         if (c->m) return EINVAL;
+
+         /* Atomically set mutex inside cv */
+         cmpxchg(&c->m, NULL, m);
+         if (c->m != m) return EINVAL;
+      }
+
+      mutex_unlock(m);
+
+      sys_futex(&c->seq, FUTEX_WAIT_PRIVATE, seq, NULL, NULL, 0);
+
+      while (xchg_32(m, 2)) {
+         sys_futex(m, FUTEX_WAIT_PRIVATE, 2, NULL, NULL, 0);
+      }
+      return 0;
    }
 
 }
