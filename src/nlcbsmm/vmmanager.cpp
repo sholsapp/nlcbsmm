@@ -354,28 +354,46 @@ namespace NLCBSMM {
                // Clear the memory buffer each time
                memset(packet_buffer, 0, MAX_PACKET_SZ);
 
-               fprintf(stderr, "> uni-listener waiting...\n");
-
                // Just block for now
                if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
                }
 
-               uni_listener_event_loop();
+               // Send buffer off for processing
+               uni_listener_event_loop(packet_buffer, nbytes);
             }
 
+            // Shit is scarce, son!
             myheap.free(packet_buffer);
-
             return 0;
          }
 
 
-         static void uni_listener_event_loop() {
+         static void uni_listener_event_loop(void* buffer, uint32_t nbytes) {
             /**
              *
              */
-            fprintf(stderr, "> uni_listener FIRED\n");
+            Packet*                p              = NULL;
+            UnicastJoinAcceptance* uja            = NULL;
+            WorkTupleType*         work           = NULL;
+            char*                  payload_buf    = NULL;
+            uint32_t               payload_sz     = 0;
+
+            // Generic packet data (type/payload size/payload)
+            p           = reinterpret_cast<Packet*>(buffer);
+            payload_sz  = p->get_payload_sz();
+            payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
+
+            switch (p->get_flag()) {
+            case UNICAST_JOIN_ACCEPT_F:
+               fprintf(stderr, "> received join acknowledgement\n");
+
+               MS_STATE = HEARTBEAT;
+               break;
+            default:
+               break;
+            }
             return;
          }
 
@@ -403,7 +421,6 @@ namespace NLCBSMM {
             addr.sin_addr.s_addr = inet_addr(MULTICAST_GRP);
             addr.sin_port        = htons(MULTICAST_PORT);
 
-            //psz     = PACKET_HEADER_SZ + strlen(local_ip);
             psz     = MAX_PACKET_SZ;
             memory  = myheap.malloc(psz);
 
@@ -429,6 +446,7 @@ namespace NLCBSMM {
 
             }
 
+            // Shit is scarce, son!
             myheap.free(memory);
 
             return 0;
@@ -541,20 +559,16 @@ namespace NLCBSMM {
             /**
              *
              */
-            Packet*                p        = NULL;
-            MulticastJoin*         mjp      = NULL;
-            MulticastHeartbeat*    mjh      = NULL;
-            UnicastJoinAcceptance* uja      = NULL;
-
-            WorkTupleType*         work            = NULL;
-
-            void*                  packet_memory   = NULL;
-            void*                  work_memory     = NULL;
-
-            char*               payload_buf = NULL;
-            uint32_t            payload_sz  = 0;
-
-            struct   sockaddr_in retaddr = {0};
+            Packet*                p              = NULL;
+            MulticastJoin*         mjp            = NULL;
+            MulticastHeartbeat*    mjh            = NULL;
+            UnicastJoinAcceptance* uja            = NULL;
+            WorkTupleType*         work           = NULL;
+            void*                  packet_memory  = NULL;
+            void*                  work_memory    = NULL;
+            char*                  payload_buf    = NULL;
+            uint32_t               payload_sz     = 0;
+            struct sockaddr_in     retaddr        = {0};
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
