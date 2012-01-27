@@ -294,15 +294,19 @@ namespace NLCBSMM {
 
                // Wait for another thread's signal
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
-
                fprintf(stderr, "* uni-speaker got signalz yo *\n");
 
                WorkTupleType* work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
 
+
                if (work != NULL) {
-                  //fprintf(stderr, "> uni-speaker needs to talk to %s\n", inet_ntoa(work->first.sin_addr));
-                  // Send whatever we just built
-                  if (sendto(sk, work->second, MAX_PACKET_SZ, 0, (struct sockaddr *) &work->first, sizeof(work->second)) < 0) {
+                  struct sockaddr_in s = work->first;
+                  Packet* p = work->second;
+                  UnicastJoinAcceptance* uja = (UnicastJoinAcceptance*) work->second;
+                  fprintf(stderr, "> talk to: %s\n", inet_ntoa(work->first.sin_addr));
+                  fprintf(stderr, "> packet type: %d\n", uja->get_flag());
+
+                  if (sendto(sk, uja, MAX_PACKET_SZ, 0, (struct sockaddr *) &s , sizeof(s)) < 0) {
                      perror("vmmanager.cpp, sendto");
                      exit(EXIT_FAILURE);
                   }
