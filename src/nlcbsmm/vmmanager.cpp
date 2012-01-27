@@ -278,25 +278,24 @@ namespace NLCBSMM {
             fprintf(stderr, "> uni-speaker\n");
 
             uint32_t            sk     = 0;
-            struct sockaddr_in  addr   = {0};
+            //struct sockaddr_in  addr   = {0};
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
                exit(EXIT_FAILURE);
             }
 
-            addr.sin_family      = AF_INET;
-            addr.sin_addr.s_addr = inet_addr(local_ip);
-            addr.sin_port        = htons(UNICAST_PORT);
+            //addr.sin_family      = AF_INET;
+            //addr.sin_addr.s_addr = htonl(INADDR_ANY);
+            //addr.sin_port        = htons(UNICAST_PORT);
 
             while(1) {
 
                // Wait for another thread's signal
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
-               fprintf(stderr, "* uni-speaker got signalz yo *\n");
+               //fprintf(stderr, "* uni-speaker got signalz yo *\n");
 
                WorkTupleType* work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
-
 
                if (work != NULL) {
                   struct sockaddr_in s = work->first;
@@ -309,6 +308,8 @@ namespace NLCBSMM {
                      perror("vmmanager.cpp, sendto");
                      exit(EXIT_FAILURE);
                   }
+
+                  fprintf(stderr, "> packet send...\n");
                }
 
                sleep(1);
@@ -350,6 +351,7 @@ namespace NLCBSMM {
             packet_buffer = (uint8_t*) myheap.malloc(sizeof(char) * MAX_PACKET_SZ);
 
             while(1) {
+               // Clear the memory buffer each time
                memset(packet_buffer, 0, MAX_PACKET_SZ);
 
                // Just block for now
