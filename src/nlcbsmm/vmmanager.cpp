@@ -277,19 +277,35 @@ namespace NLCBSMM {
              */
             fprintf(stderr, "> uni-speaker\n");
 
+            uint32_t            sk     = 0;
+            struct sockaddr_in  addr   = {0};
+
+            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+               perror("vmmanager.cpp, socket");
+               exit(EXIT_FAILURE);
+            }
+
+            addr.sin_family      = AF_INET;
+            addr.sin_addr.s_addr = inet_addr(local_ip);
+            addr.sin_port        = htons(UNICAST_PORT);
+
+
             while(1) {
 
                // Wait for another thread's signal
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
+
                fprintf(stderr, "* uni-speaker got signalz yo *\n");
 
                WorkTupleType* work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
 
                if (work != NULL) {
-                  fprintf(stderr, "> uni-speaker needs to talk to %s\n", inet_ntoa(work->first.sin_addr));
-               }
-               else {
-                  fprintf(stderr, "> uni-speaker (null) work\n");
+                  //fprintf(stderr, "> uni-speaker needs to talk to %s\n", inet_ntoa(work->first.sin_addr));
+                  // Send whatever we just built
+                  if (sendto(sk, work->second, MAX_PACKET_SZ, 0, (struct sockaddr *) &work->first, sizeof(work->second)) < 0) {
+                     perror("vmmanager.cpp, sendto");
+                     exit(EXIT_FAILURE);
+                  }
                }
 
                sleep(1);
@@ -334,9 +350,20 @@ namespace NLCBSMM {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
                }
+
+               uni_listener_event_loop();
             }
 
             return 0;
+         }
+
+
+         static void uni_listener_event_loop() {
+            /**
+             *
+             */
+            fprintf(stderr, "> uni_listener FIRED\n");
+            return;
          }
 
 
@@ -529,16 +556,11 @@ namespace NLCBSMM {
                if (_uuid == 0) {
 
                   fprintf(stderr, "> %s trying to join...\n", payload_buf);
-                  fprintf(stderr, "> %p | %p <\n", &main, (void*) ntohl(mjp->main_addr));
-                  fprintf(stderr, "> %p | %p <\n", &_end, (void*) ntohl(mjp->end_addr));
-                  fprintf(stderr, "> %p | %p <\n", &__data_start, (void*) ntohl(mjp->data_start_addr));
 
                   // Verify request's address space requirements
                   if ((uint32_t) &main == ntohl(mjp->main_addr)
                         && (uint32_t) &_end == ntohl(mjp->end_addr)
                         && (uint32_t) &__data_start == ntohl(mjp->data_start_addr)) {
-
-                     fprintf(stderr, "> address space verified\n");
 
                      // Build acceptance packet
                      packet_memory = myheap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
@@ -686,7 +708,7 @@ namespace NLCBSMM {
 
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
-      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", (void*) main, (void*) _end, (void*) __data_start);
+      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
       fprintf(stderr, "> uuid: %d <\n", _uuid);
       fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
