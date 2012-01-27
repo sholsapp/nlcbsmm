@@ -29,4 +29,4 @@ clean:
 	rm -rf core* *.o *.gch go-pipe libhoard.so $(ALL)
 
 test:
-	make clean; cp ../../src/libhoard.so .; make $(ALL)
+	cd ../../src; make; cd ../experiments/benchmark; make clean; cp ../../src/libhoard.so .; make $(ALL)

@@ -687,6 +687,7 @@ namespace NLCBSMM {
 
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
+      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", main, _end, __data_start);
       fprintf(stderr, "> uuid: %d <\n", _uuid);
       fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
