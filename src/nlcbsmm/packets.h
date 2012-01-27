@@ -20,8 +20,12 @@ class Packet {
          return ntohl(((uint32_t*) this)[0]);
       }
 
+      uint32_t get_payload_sz() {
+        return ntohl(((uint32_t*) this)[1]);
+      }
+
       uint8_t get_flag() {
-         return ((uint8_t*) this)[4];
+         return ((uint8_t*) this)[8];
       }
 
       uint8_t* get_payload_ptr() {
@@ -36,11 +40,13 @@ class MulticastHeartbeat : public Packet {
     */
    public:
       uint32_t sequence;
+      uint32_t payload_sz;
       uint32_t flags;
 
-      MulticastHeartbeat() {
-         sequence = htonl(0);
-         flags = MULTICAST_HEARTBEAT_F;
+      MulticastHeartbeat(uint32_t user_length) {
+         sequence   = htonl(0);
+         payload_sz = htonl(user_length);
+         flags      = MULTICAST_HEARTBEAT_F;
       }
 
 };
@@ -53,23 +59,23 @@ class MulticastJoin : public Packet {
     */
    public:
       uint32_t sequence;
+      uint32_t payload_sz;
       uint8_t  flag;
 
       uint32_t main_addr;
       uint32_t end_addr;
       uint32_t data_start_addr;
-      uint32_t payload_sz;
 
       MulticastJoin(uint32_t user_length, uint8_t** _main_addr, uint8_t** _end_addr, uint8_t** __data_start_addr) {
          /**
           *
           */
          sequence        = htonl(0);
+         payload_sz      = htonl(user_length);
          flag            = MULTICAST_JOIN_F;
          main_addr       = htonl(reinterpret_cast<uint32_t>(_main_addr));
          end_addr        = htonl(reinterpret_cast<uint32_t>(_end_addr));
          data_start_addr = htonl(reinterpret_cast<uint32_t>(__data_start_addr));
-         payload_sz      = htonl(user_length);
       }
 }__attribute__((packed));
 
@@ -82,22 +88,21 @@ class UnicastJoinAcceptance : public Packet {
     */
    public:
       uint32_t sequence;
+      uint32_t payload_sz;
       uint8_t  flag;
 
       uint32_t start_page_table;
       uint32_t end_page_table;
       uint32_t uuid;
 
-      uint32_t payload_sz;
-
       UnicastJoinAcceptance(uint32_t user_length, uint32_t _start_pt, uint32_t _end_pt, uint32_t _uuid) {
 
          sequence          = htonl(0);
+         payload_sz        = htonl(user_length);
          flag              = UNICAST_JOIN_ACCEPT_F;
          start_page_table  = htonl(_start_pt);
          end_page_table    = htonl(_end_pt);
          uuid              = htonl(_uuid);
-         payload_sz        = htonl(user_length);
       }
 
 }__attribute__((packed));

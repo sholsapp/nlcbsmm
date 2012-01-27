@@ -361,6 +361,12 @@ namespace NLCBSMM {
                memset(memory, 0, psz);
 
                if (MS_STATE == JOIN && cnt > MAX_JOIN_ATTEMPTS) {
+                  // I am in JOIN state, and still haven't received a UUID from a master
+                  if (_uuid == (uint32_t) -1) {
+                     // I am master
+                     _uuid = 0;
+
+                  }
                   MS_STATE = HEARTBEAT;
                }
 
@@ -393,8 +399,10 @@ namespace NLCBSMM {
                break;
 
             case HEARTBEAT:
-               fprintf(stderr, "Building hearbeat\n");
-               p = new (buffer) MulticastHeartbeat();
+               // Build packet
+               p = new (buffer) MulticastHeartbeat(strlen(local_ip));
+               // Add packet payload (the user IP address)
+               memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
                break;
 
             }
@@ -453,16 +461,23 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
+            // Get a new buffer from our hoard allocator
+            packet_buffer = (uint8_t*) myheap.malloc(MAX_PACKET_SZ);
+
             while (1) {
 
-               // Get a new buffer from our hoard allocator
-               packet_buffer = (uint8_t*) myheap.malloc(MAX_PACKET_SZ);
+               // Clear the buffer
+               memset(packet_buffer, 0, MAX_PACKET_SZ);
 
                if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
                }
 
+               // Send the buffer off for processing
+               multi_listener_event_loop(packet_buffer, nbytes);
+
+               /*
                // Some debug output
                Packet* p            = reinterpret_cast<Packet*>(packet_buffer);
                MulticastJoin* mjp   = reinterpret_cast<MulticastJoin*>(packet_buffer);
@@ -476,15 +491,64 @@ namespace NLCBSMM {
 
                // If this isn't me
                if (strcmp(user, local_ip) != 0) {
-                  // TODO: push a non-NULL packet for uni_speaker to send
-                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock, NULL);
-                  cond_signal(&uni_speaker_cond);
+               // TODO: push a non-NULL packet for uni_speaker to send
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock, NULL);
+               cond_signal(&uni_speaker_cond);
                }
-
-               // Shit is scarce, son!
-               myheap.free(packet_buffer);
+                */
             }
+            // Shit is scarce, son!
+            myheap.free(packet_buffer);
             return 0;
+         }
+
+
+         static void multi_listener_event_loop(void* buffer, uint32_t nbytes) {
+            /**
+             *
+             */
+            Packet*             p           = NULL;
+            MulticastJoin*      mjp         = NULL;
+            MulticastHeartbeat* mjh         = NULL;
+            char*               payload_buf = NULL;
+            uint32_t            main_addr   = 0;
+            uint32_t            payload_sz  = 0;
+
+            p           = reinterpret_cast<Packet*>(buffer);
+            payload_sz  = p->get_payload_sz();
+            payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
+
+            switch (p->get_flag()) {
+
+            case MULTICAST_JOIN_F:
+               mjp = reinterpret_cast<MulticastJoin*>(buffer);
+               // If we're the master
+               if (_uuid == 0) {
+
+                  fprintf(stderr, "> %s trying to join...\n", payload_buf);
+
+                  // If this isn't me
+                  if (strcmp(payload_buf, local_ip) != 0) {
+                     // Build acceptance packet
+                     main_addr = ntohl(mjp->main_addr);
+                     // Push acceptance work for unicast speaker
+                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock, NULL);
+                     // Signal unicast speaker there is queued work
+                     cond_signal(&uni_speaker_cond);
+                  }
+               }
+               break;
+
+            case MULTICAST_HEARTBEAT_F:
+               mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
+               fprintf(stderr, "%s: <3\n", payload_buf);
+               break;
+
+            default:
+               break;
+
+            }
+
          }
 
       private:
@@ -586,7 +650,7 @@ namespace NLCBSMM {
       page_table        = new (raw) PageTableType();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
-      _uuid             = (uint32_t) 0;
+      _uuid             = (uint32_t) -1;
 
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
