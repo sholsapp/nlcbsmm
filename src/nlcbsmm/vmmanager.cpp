@@ -104,8 +104,12 @@ namespace NLCBSMM {
 
 namespace NLCBSMM {
 
-   typedef std::deque<Packet*,
-           HoardAllocator<Packet*> > PacketQueueType;
+   // Who to contact, and with what
+   typedef std::pair<struct sockaddr_in, Packet*> WorkTupleType;
+
+   // A queue of work
+   typedef std::deque<WorkTupleType*,
+           HoardAllocator<WorkTupleType* > > PacketQueueType;
 
    PacketQueueType uni_speaker_work_deque;
 
@@ -117,24 +121,24 @@ namespace NLCBSMM {
    mutex uni_speaker_lock;
    mutex multi_speaker_lock;
 
-   Packet* safe_pop(PacketQueueType* queue, mutex* m) {
+   WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
       /**
        *
        */
-      Packet* p = NULL;
+      WorkTupleType* work = NULL;
       mutex_lock(m);
-      p = queue->front();
+      work = queue->front();
       queue->pop_front();
       mutex_unlock(m);
-      return p;
+      return work;
    }
 
-   void safe_push(PacketQueueType* queue, mutex* m, Packet* p) {
+   void safe_push(PacketQueueType* queue, mutex* m, WorkTupleType* work) {
       /**
        *
        */
       mutex_lock(m);
-      queue->push_back(p);
+      queue->push_back(work);
       mutex_unlock(m);
       return;
    }
@@ -162,6 +166,7 @@ namespace NLCBSMM {
    uint32_t _start_page_table = 0;
    uint32_t _end_page_table   = 0;
    uint32_t _uuid             = 0;
+   uint32_t _next_uuid        = 1;
 
 }
 
@@ -276,13 +281,20 @@ namespace NLCBSMM {
 
                // Wait for another thread's signal
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
-
                fprintf(stderr, "* uni-speaker got signalz yo *\n");
+
+               WorkTupleType* work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
+
+               if (work != NULL) {
+                  fprintf(stderr, "> uni-speaker needs to talk to %s\n", inet_ntoa(work->first.sin_addr));
+
+               }
+
 
                sleep(1);
 
             }
-
+             
             return 0;
          }
 
@@ -351,7 +363,8 @@ namespace NLCBSMM {
             addr.sin_addr.s_addr = inet_addr(MULTICAST_GRP);
             addr.sin_port        = htons(MULTICAST_PORT);
 
-            psz     = PACKET_HEADER_SZ + strlen(local_ip);
+            //psz     = PACKET_HEADER_SZ + strlen(local_ip);
+            psz     = MAX_PACKET_SZ;
             memory  = myheap.malloc(psz);
 
             MS_STATE = JOIN;
@@ -423,13 +436,13 @@ namespace NLCBSMM {
              */
             fprintf(stderr, "> multi-listener\n");
 
-            uint8_t  *packet_buffer   = NULL;
-            uint32_t sk               =  0;
-            uint32_t nbytes           =  0;
-            uint32_t addrlen          =  0;
-            uint32_t yes              =  1;
-            struct   ip_mreq mreq     = {0};
-            struct   sockaddr_in addr = {0};
+            uint8_t  *packet_buffer      = NULL;
+            uint32_t sk                  =  0;
+            uint32_t nbytes              =  0;
+            uint32_t addrlen             =  0;
+            uint32_t yes                 =  1;
+            struct   ip_mreq mreq        = {0};
+            struct   sockaddr_in addr    = {0};
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
@@ -477,25 +490,6 @@ namespace NLCBSMM {
                // Send the buffer off for processing
                multi_listener_event_loop(packet_buffer, nbytes);
 
-               /*
-               // Some debug output
-               Packet* p            = reinterpret_cast<Packet*>(packet_buffer);
-               MulticastJoin* mjp   = reinterpret_cast<MulticastJoin*>(packet_buffer);
-               uint32_t seq         = p->get_sequence();
-               uint8_t  flag        = p->get_flag();
-               uint32_t main_addr   = ntohl(mjp->main_addr);
-               uint32_t payload_sz  = ntohl(mjp->payload_sz);
-               char*    user        = (char*) myheap.malloc(sizeof(char) * payload_sz);
-               memcpy(user, p->get_payload_ptr(), payload_sz);
-               fprintf(stderr, "User %s - Flag 0x%x - Main Addr: %p\n", user, flag, (void*) main_addr);
-
-               // If this isn't me
-               if (strcmp(user, local_ip) != 0) {
-               // TODO: push a non-NULL packet for uni_speaker to send
-               safe_push(&uni_speaker_work_deque, &uni_speaker_lock, NULL);
-               cond_signal(&uni_speaker_cond);
-               }
-                */
             }
             // Shit is scarce, son!
             myheap.free(packet_buffer);
@@ -507,13 +501,22 @@ namespace NLCBSMM {
             /**
              *
              */
-            Packet*             p           = NULL;
-            MulticastJoin*      mjp         = NULL;
-            MulticastHeartbeat* mjh         = NULL;
+            Packet*                p        = NULL;
+            MulticastJoin*         mjp      = NULL;
+            MulticastHeartbeat*    mjh      = NULL;
+            UnicastJoinAcceptance* uja      = NULL;
+
+            WorkTupleType*         work            = NULL;
+
+            void*                  packet_memory   = NULL;
+            void*                  work_memory     = NULL;
+
             char*               payload_buf = NULL;
-            uint32_t            main_addr   = 0;
             uint32_t            payload_sz  = 0;
 
+            struct   sockaddr_in retaddr = {0};
+
+            // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
@@ -527,12 +530,24 @@ namespace NLCBSMM {
 
                   fprintf(stderr, "> %s trying to join...\n", payload_buf);
 
-                  // If this isn't me
-                  if (strcmp(payload_buf, local_ip) != 0) {
+                  // Verify request's address space requirements
+                  if ((uint32_t) main == ntohl(mjp->main_addr)
+                        && (uint32_t) _end == ntohl(mjp->end_addr)
+                        && (uint32_t) __data_start == ntohl(mjp->data_start_addr)) {
                      // Build acceptance packet
-                     main_addr = ntohl(mjp->main_addr);
+                     packet_memory = myheap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                     work_memory = myheap.malloc(sizeof(WorkTupleType));
+                     // Who to contact
+                     retaddr.sin_family      = AF_INET;
+                     retaddr.sin_addr.s_addr = inet_addr(payload_buf);
+                     retaddr.sin_port        = htons(MULTICAST_PORT);
+                     // Contact who with this
+                     uja = new (packet_memory) UnicastJoinAcceptance(strlen(local_ip), _start_page_table, _end_page_table, _next_uuid++);
+                     // The work tuple
+                     work = new (work_memory) WorkTupleType(retaddr, uja);
+
                      // Push acceptance work for unicast speaker
-                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock, NULL);
+                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock, work);
                      // Signal unicast speaker there is queued work
                      cond_signal(&uni_speaker_cond);
                   }
@@ -548,7 +563,6 @@ namespace NLCBSMM {
                break;
 
             }
-
          }
 
       private:
