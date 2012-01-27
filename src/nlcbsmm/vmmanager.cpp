@@ -529,15 +529,14 @@ namespace NLCBSMM {
                if (_uuid == 0) {
 
                   fprintf(stderr, "> %s trying to join...\n", payload_buf);
-
-                  fprintf(stderr, "> %d | %d <\n", (uint32_t) main, ntohl(mjp->main_addr));
-                  fprintf(stderr, "> %d | %d <\n", (uint32_t) _end, ntohl(mjp->end_addr));
-                  fprintf(stderr, "> %d | %d <\n", (uint32_t) __data_start, ntohl(mjp->data_start_addr));
+                  fprintf(stderr, "> %p | %p <\n", &main, (void*) ntohl(mjp->main_addr));
+                  fprintf(stderr, "> %p | %p <\n", &_end, (void*) ntohl(mjp->end_addr));
+                  fprintf(stderr, "> %p | %p <\n", &__data_start, (void*) ntohl(mjp->data_start_addr));
 
                   // Verify request's address space requirements
-                  if ((uint32_t) main == ntohl(mjp->main_addr)
-                        && (uint32_t) _end == ntohl(mjp->end_addr)
-                        && (uint32_t) __data_start == ntohl(mjp->data_start_addr)) {
+                  if ((uint32_t) &main == ntohl(mjp->main_addr)
+                        && (uint32_t) &_end == ntohl(mjp->end_addr)
+                        && (uint32_t) &__data_start == ntohl(mjp->data_start_addr)) {
 
                      fprintf(stderr, "> address space verified\n");
 
@@ -687,7 +686,7 @@ namespace NLCBSMM {
 
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
-      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", main, _end, __data_start);
+      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", (void*) main, (void*) _end, (void*) __data_start);
       fprintf(stderr, "> uuid: %d <\n", _uuid);
       fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
