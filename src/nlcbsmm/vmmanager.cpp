@@ -354,6 +354,8 @@ namespace NLCBSMM {
                // Clear the memory buffer each time
                memset(packet_buffer, 0, MAX_PACKET_SZ);
 
+               fprintf(stderr, "> uni-listener waiting...\n");
+
                // Just block for now
                if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
@@ -579,7 +581,7 @@ namespace NLCBSMM {
                      // Who to contact
                      retaddr.sin_family      = AF_INET;
                      retaddr.sin_addr.s_addr = inet_addr(payload_buf);
-                     retaddr.sin_port        = htons(MULTICAST_PORT);
+                     retaddr.sin_port        = htons(UNICAST_PORT);
                      // Contact who with this
                      uja = new (packet_memory) UnicastJoinAcceptance(strlen(local_ip), _start_page_table, _end_page_table, _next_uuid++);
                      // The work tuple
