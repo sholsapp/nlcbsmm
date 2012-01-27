@@ -6,6 +6,7 @@
 
 #define MULTICAST_JOIN_F 0xFF
 #define UNICAST_JOIN_ACCEPT_F 0xFE
+#define MULTICAST_HEARTBEAT_F 0x00
 
 #include "constants.h"
 
@@ -26,6 +27,23 @@ class Packet {
       uint8_t* get_payload_ptr() {
          return &(((uint8_t*) this)[PACKET_HEADER_SZ]);
       }
+};
+
+
+class MulticastHeartbeat : public Packet {
+   /**
+    * When a multicast thread has no work, its heart beats.
+    */
+   public:
+      uint32_t sequence;
+      uint32_t flags;
+
+      MulticastHeartbeat() {
+         sequence = htonl(0);
+         flags = MULTICAST_HEARTBEAT_F;
+
+      }
+
 };
 
 class MulticastJoin : public Packet {

@@ -111,8 +111,11 @@ namespace NLCBSMM {
 
    PacketQueueType multi_speaker_work_deque;
 
+   cv    uni_speaker_cond;
+   mutex uni_speaker_cond_lock;
+
    mutex uni_speaker_lock;
-   mutex multi_speaker_lock; 
+   mutex multi_speaker_lock;
 
    Packet* safe_pop(PacketQueueType* queue, mutex* m) {
       /**
@@ -136,6 +139,16 @@ namespace NLCBSMM {
       return;
    }
 
+   int safe_size(PacketQueueType* queue, mutex* m) {
+      /**
+       *
+       */
+      int s = 0;
+      mutex_lock(m);
+      s = queue->size();
+      mutex_unlock(m);
+      return s;
+   }
 
 }
 
@@ -255,6 +268,18 @@ namespace NLCBSMM {
              *
              */
             fprintf(stderr, "> uni-speaker\n");
+
+            while(1) {
+
+               // Wait for another thread's signal
+               cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
+
+               fprintf(stderr, "* uni-speaker got signalz yo *\n");
+
+               sleep(1);
+
+            }
+
             return 0;
          }
 
@@ -265,13 +290,13 @@ namespace NLCBSMM {
              */
             fprintf(stderr, "> uni-listener\n");
 
-            uint8_t  *packet_buffer = NULL;
-            uint32_t sk             =  0;
-            uint32_t nbytes         =  0;
-            uint32_t addrlen        =  0;
-            uint32_t yes            =  1;
-            struct ip_mreq mreq     = {0};
-            struct sockaddr_in addr = {0};
+            uint8_t  *packet_buffer   = NULL;
+            uint32_t sk               =  0;
+            uint32_t nbytes           =  0;
+            uint32_t addrlen          =  0;
+            uint32_t yes              =  1;
+            struct   ip_mreq mreq     = {0};
+            struct   sockaddr_in addr = {0};
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
@@ -288,10 +313,12 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            // Just block for now
-            if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
-               perror("recvfrom");
-               exit(EXIT_FAILURE);
+            while(1) {
+               // Just block for now
+               if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
+                  perror("recvfrom");
+                  exit(EXIT_FAILURE);
+               }
             }
 
             return 0;
@@ -324,20 +351,36 @@ namespace NLCBSMM {
             psz     = PACKET_HEADER_SZ + strlen(local_ip);
             memory  = myheap.malloc(psz);
 
-            // Build packet
-            p = new (memory) MulticastJoin(strlen(local_ip), &main, &_end, &__data_start);
-            // Add packet payload (the user IP address)
-            memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
+            // Push some fake work on to queue to force join packets
+            for (int i = 0; i < 5; i++) {
+               safe_push(&multi_speaker_work_deque, &multi_speaker_lock, NULL);
+            }
 
             while (1) {
+
+               int queue_size = safe_size(&multi_speaker_work_deque, &multi_speaker_lock);
+
+               if (queue_size > 0) {
+                  Packet* dgaf = safe_pop(&multi_speaker_work_deque, &multi_speaker_lock);
+                  // Build packet
+                  p = new (memory) MulticastJoin(strlen(local_ip), &main, &_end, &__data_start);
+                  // Add packet payload (the user IP address)
+                  memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
+               }
+               else {
+                  p = new (memory) MulticastHeartbeat();
+               }
+
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                   perror("vmmanager.cpp, sendto");
                   exit(EXIT_FAILURE);
                }
+
+               myheap.free(memory);
+
                sleep(1);
             }
 
-            myheap.free(memory);
             return 0;
          }
 
@@ -348,13 +391,13 @@ namespace NLCBSMM {
              */
             fprintf(stderr, "> multi-listener\n");
 
-            uint8_t  *packet_buffer = NULL;
-            uint32_t sk             =  0;
-            uint32_t nbytes         =  0;
-            uint32_t addrlen        =  0;
-            uint32_t yes            =  1;
-            struct ip_mreq mreq     = {0};
-            struct sockaddr_in addr = {0};
+            uint8_t  *packet_buffer   = NULL;
+            uint32_t sk               =  0;
+            uint32_t nbytes           =  0;
+            uint32_t addrlen          =  0;
+            uint32_t yes              =  1;
+            struct   ip_mreq mreq     = {0};
+            struct   sockaddr_in addr = {0};
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
@@ -406,6 +449,13 @@ namespace NLCBSMM {
                char*    user        = (char*) myheap.malloc(sizeof(char) * payload_sz);
                memcpy(user, p->get_payload_ptr(), payload_sz);
                fprintf(stderr, "User %s - Flag 0x%x - Main Addr: %p\n", user, flag, (void*) main_addr);
+
+               // If this isn't me
+               if (strcmp(user, local_ip) != 0) {
+                  // TODO: push a non-NULL packet for uni_speaker to send
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock, NULL);
+                  cond_signal(&uni_speaker_cond);
+               }
 
                // Shit is scarce, son!
                myheap.free(packet_buffer);
@@ -517,8 +567,11 @@ namespace NLCBSMM {
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
-      mutex_init(&uni_speaker_lock, NULL);
-      mutex_init(&multi_speaker_lock, NULL);
+      cond_init(&uni_speaker_cond,       NULL);
+
+      mutex_init(&uni_speaker_cond_lock, NULL);
+      mutex_init(&uni_speaker_lock,      NULL);
+      mutex_init(&multi_speaker_lock,    NULL);
 
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);

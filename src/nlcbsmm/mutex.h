@@ -128,12 +128,9 @@ extern "C" {
 
    int cond_init(cv *c, pthread_condattr_t *a) {
       (void) a;
-
       c->m = NULL;
-
       /* Sequence variable doesn't actually matter, but keep valgrind happy */
       c->seq = 0;
-
       return 0;
    }
 
@@ -177,6 +174,7 @@ extern "C" {
 
          /* Atomically set mutex inside cv */
          cmpxchg(&c->m, NULL, m);
+
          if (c->m != m) return EINVAL;
       }
 
