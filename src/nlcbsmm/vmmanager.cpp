@@ -287,14 +287,14 @@ namespace NLCBSMM {
 
                if (work != NULL) {
                   fprintf(stderr, "> uni-speaker needs to talk to %s\n", inet_ntoa(work->first.sin_addr));
-
                }
-
+               else {
+                  fprintf(stderr, "> uni-speaker (null) work\n");
+               }
 
                sleep(1);
 
             }
-             
             return 0;
          }
 
@@ -534,6 +534,9 @@ namespace NLCBSMM {
                   if ((uint32_t) main == ntohl(mjp->main_addr)
                         && (uint32_t) _end == ntohl(mjp->end_addr)
                         && (uint32_t) __data_start == ntohl(mjp->data_start_addr)) {
+
+                     fprintf(stderr, "> address space verified\n");
+
                      // Build acceptance packet
                      packet_memory = myheap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                      work_memory = myheap.malloc(sizeof(WorkTupleType));
@@ -550,6 +553,9 @@ namespace NLCBSMM {
                      safe_push(&uni_speaker_work_deque, &uni_speaker_lock, work);
                      // Signal unicast speaker there is queued work
                      cond_signal(&uni_speaker_cond);
+                  }
+                  else {
+                     fprintf(stderr, "> invalid address space detected\n");
                   }
                }
                break;
