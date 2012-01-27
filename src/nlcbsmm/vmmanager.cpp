@@ -530,6 +530,10 @@ namespace NLCBSMM {
 
                   fprintf(stderr, "> %s trying to join...\n", payload_buf);
 
+                  fprintf(stderr, "> %d | %d <\n", (uint32_t) main, ntohl(mjp->main_addr));
+                  fprintf(stderr, "> %d | %d <\n", (uint32_t) _end, ntohl(mjp->end_addr));
+                  fprintf(stderr, "> %d | %d <\n", (uint32_t) __data_start, ntohl(mjp->data_start_addr));
+
                   // Verify request's address space requirements
                   if ((uint32_t) main == ntohl(mjp->main_addr)
                         && (uint32_t) _end == ntohl(mjp->end_addr)
