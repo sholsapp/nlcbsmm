@@ -41,7 +41,6 @@ class MulticastHeartbeat : public Packet {
       MulticastHeartbeat() {
          sequence = htonl(0);
          flags = MULTICAST_HEARTBEAT_F;
-
       }
 
 };

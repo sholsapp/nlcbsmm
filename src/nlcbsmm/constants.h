@@ -1,4 +1,6 @@
+
 #define PAGE_SIZE 4096
+#define MAX_JOIN_ATTEMPTS 5
 
 
 extern uint32_t     CLONE_STACK_SZ;

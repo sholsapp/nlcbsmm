@@ -167,6 +167,9 @@ namespace NLCBSMM {
 
 namespace NLCBSMM {
 
+   enum multi_speaker_state { NONE, JOIN, HEARTBEAT };
+   multi_speaker_state MS_STATE = NONE;
+
    class NetworkManager {
 
       public:
@@ -351,37 +354,58 @@ namespace NLCBSMM {
             psz     = PACKET_HEADER_SZ + strlen(local_ip);
             memory  = myheap.malloc(psz);
 
-            // Push some fake work on to queue to force join packets
-            for (int i = 0; i < 5; i++) {
-               safe_push(&multi_speaker_work_deque, &multi_speaker_lock, NULL);
-            }
+            MS_STATE = JOIN;
 
-            while (1) {
+            for (cnt = 0; ; cnt++) {
+               // Clear the memory buffer each time
+               memset(memory, 0, psz);
 
-               int queue_size = safe_size(&multi_speaker_work_deque, &multi_speaker_lock);
-
-               if (queue_size > 0) {
-                  Packet* dgaf = safe_pop(&multi_speaker_work_deque, &multi_speaker_lock);
-                  // Build packet
-                  p = new (memory) MulticastJoin(strlen(local_ip), &main, &_end, &__data_start);
-                  // Add packet payload (the user IP address)
-                  memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
-               }
-               else {
-                  p = new (memory) MulticastHeartbeat();
+               if (MS_STATE == JOIN && cnt > MAX_JOIN_ATTEMPTS) {
+                  MS_STATE = HEARTBEAT;
                }
 
-               if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-                  perror("vmmanager.cpp, sendto");
-                  exit(EXIT_FAILURE);
-               }
-
-               myheap.free(memory);
+               multi_speaker_event_loop(memory, psz, sk, addr);
 
                sleep(1);
+
             }
 
+            myheap.free(memory);
+
             return 0;
+         }
+
+
+
+         static void multi_speaker_event_loop(void* buffer, size_t buffer_sz, uint32_t sk, struct sockaddr_in&  addr) {
+            /**
+             *
+             */
+            Packet* p    = NULL;
+
+            switch (MS_STATE) {
+
+            case JOIN:
+               // Build packet
+               p = new (buffer) MulticastJoin(strlen(local_ip), &main, &_end, &__data_start);
+               // Add packet payload (the user IP address)
+               memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
+               break;
+
+            case HEARTBEAT:
+               fprintf(stderr, "Building hearbeat\n");
+               p = new (buffer) MulticastHeartbeat();
+               break;
+
+            }
+
+            // Send whatever we just built
+            if (sendto(sk, buffer, buffer_sz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+               perror("vmmanager.cpp, sendto");
+               exit(EXIT_FAILURE);
+            }
+
+            return;
          }
 
 
