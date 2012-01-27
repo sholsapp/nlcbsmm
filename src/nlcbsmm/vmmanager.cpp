@@ -289,7 +289,6 @@ namespace NLCBSMM {
             addr.sin_addr.s_addr = inet_addr(local_ip);
             addr.sin_port        = htons(UNICAST_PORT);
 
-
             while(1) {
 
                // Wait for another thread's signal
@@ -348,7 +347,11 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
+            packet_buffer = (uint8_t*) myheap.malloc(sizeof(char) * MAX_PACKET_SZ);
+
             while(1) {
+               memset(packet_buffer, 0, MAX_PACKET_SZ);
+
                // Just block for now
                if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
@@ -357,6 +360,8 @@ namespace NLCBSMM {
 
                uni_listener_event_loop();
             }
+
+            myheap.free(packet_buffer);
 
             return 0;
          }
