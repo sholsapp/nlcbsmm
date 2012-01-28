@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <sys/mman.h>
 #include <time.h>
 
 #include <vector>
@@ -297,15 +298,17 @@ namespace NLCBSMM {
                work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
 
                if (work != NULL) {
+
                   addr = work->first;
                   p    = work->second;
-                  //uja = reinterpret_cast<UnicastJoinAcceptance*>(work->second);
-                  //fprintf(stderr, "> talk to: %s\n", inet_ntoa(work->first.sin_addr));
-                  //fprintf(stderr, "> packet type: %d\n", uja->get_flag());
+
                   if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
                      perror("vmmanager.cpp, sendto");
                      exit(EXIT_FAILURE);
                   }
+
+                  myheap.free(p);
+                  myheap.free(work);
                }
 
                // TODO: do we need this?
@@ -376,6 +379,9 @@ namespace NLCBSMM {
             char*                  payload_buf    = NULL;
             uint32_t               payload_sz     = 0;
 
+            // mremap test variable
+            void* test = NULL;
+
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
             payload_sz  = p->get_payload_sz();
@@ -393,6 +399,13 @@ namespace NLCBSMM {
 
                fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
+
+               test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
+               if (test != (void*) -1) {
+                  fprintf(stderr, "mremap worked: %p\n", test);
+               } else {
+                  fprintf(stderr, "mremap failed\n");
+               }
 
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
