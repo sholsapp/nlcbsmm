@@ -240,28 +240,28 @@ namespace NLCBSMM {
             multi_speaker_ptr    = (void*) (((int) multi_speaker_stack)  + CLONE_STACK_SZ);
             multi_listener_ptr   = (void*) (((int) multi_listener_stack) + CLONE_STACK_SZ);
 
-            if((multi_listener_thread_id = clone(&multi_listener, multi_listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+            if((multi_listener_thread_id = clone(&multi_listener, multi_listener_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
                perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
 
             sleep(0.5);
 
-            if((uni_listener_thread_id = clone(&uni_listener, uni_listener_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+            if((uni_listener_thread_id = clone(&uni_listener, uni_listener_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
                perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
 
             sleep(0.5);
 
-            if((multi_speaker_thread_id = clone(&multi_speaker, multi_speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+            if((multi_speaker_thread_id = clone(&multi_speaker, multi_speaker_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
 
             sleep(0.5);
 
-            if((uni_speaker_thread_id = clone(&uni_speaker, uni_speaker_ptr, CLONE_VM | CLONE_FILES, argument)) == -1) {
+            if((uni_speaker_thread_id = clone(&uni_speaker, uni_speaker_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
@@ -794,7 +794,7 @@ namespace NLCBSMM {
       // End Debug
 
       // Register SIGSEGV handler
-      //register_signal_handlers();
+      register_signal_handlers();
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();
