@@ -803,23 +803,21 @@ namespace NLCBSMM {
       print_log_sep(40);
 
       // Debug
-      PageVectorType* page_list    = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      //Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
-      //Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
+      (*page_table)["127.0.0.1"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(666));
+      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(666));
 
-      Page* page3 = new (myheap.malloc(sizeof(Page))) Page(666);
-      Page* page4 = new (myheap.malloc(sizeof(Page))) Page(777);
+      (*page_table)["127.0.0.2"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
+      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
 
-      (*page_table)["127.0.0.1"]   = page_list;
-      (*page_table)["127.0.0.1"]->push_back(page3);
-      (*page_table)["127.0.0.1"]->push_back(page4);
+      fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
+      fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
 
-      PageVectorType* test         = (*page_table)["127.0.0.1"];
-
-      fprintf(stderr, "TEST: page_table @ %p\n", page_table);
-      fprintf(stderr, "TEST: page_list @ %p | TEST: retreived @ %p\n", page_list, test);
-      fprintf(stderr, "TEST: page1 @ %p\n", page3);
-      fprintf(stderr, "TEST: page2 @ %p\n", page4);
+      //fprintf(stderr, "TEST: page_table @ %p\n", page_table);
+      //fprintf(stderr, "TEST: page_list @ %p | TEST: retreived @ %p\n", page_list, test);
+      //fprintf(stderr, "TEST: page1 @ %p\n", page3);
+      //fprintf(stderr, "TEST: page2 @ %p\n", page4);
       // End Debug
 
       // Register SIGSEGV handler
