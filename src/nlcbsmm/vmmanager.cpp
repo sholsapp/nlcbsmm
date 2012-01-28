@@ -808,8 +808,8 @@ namespace NLCBSMM {
       (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(666));
 
       (*page_table)["127.0.0.2"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
-      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
+      (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
+      (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
 
       fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
       fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
