@@ -37,24 +37,3 @@ For compiling applications with Hoard, you may need to use the '-Wl,--no-as-need
  (thanks to cyk on irc.freenode.net #stackoverflow for this http://stackoverflow.com/questions/8814707/shared-library-mysteriously-doesnt-get-linked-to-application)
 
 > g++ -O2 -Wall -o hoard_test hoard_test.cpp -Wl,--no-as-needed -Wl,-R,/home/sholsapp/workspace/nlcbsmm/experiments/hoard -L. -lhoard
-
-
-*******************************************************************************
-********************************** TODO ***************************************
-*******************************************************************************
-
-1) Testbed clients.
-
-  a) Handshake to get addr space information from master.
-  
-  b) Identify .text addr space info from the master.
-  
-  c) Ability to list pages available on the server.
-  
-  d) Ability to fault in pages available on the server (manually).
-  
-  e) Ability to tell server that it wants to fault back a page the nlcbsmm-client currently has.
- 
-2) Intercepting pthread_create().
-
-3) Virtual memory manager.

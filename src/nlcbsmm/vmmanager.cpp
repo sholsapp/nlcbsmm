@@ -273,47 +273,43 @@ namespace NLCBSMM {
 
          static int uni_speaker(void* t) {
             /**
-             *
+             * TODO: this class is incomplete... it can only handle one type of work.
              */
             fprintf(stderr, "> uni-speaker\n");
 
-            uint32_t            sk     = 0;
-            //struct sockaddr_in  addr   = {0};
+            uint32_t               sk     = 0;
+            struct sockaddr_in     addr   = {0};
+            Packet*                p      = NULL;
+            UnicastJoinAcceptance* uja    = NULL;
+            WorkTupleType*         work   = NULL;
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
                exit(EXIT_FAILURE);
             }
 
-            //addr.sin_family      = AF_INET;
-            //addr.sin_addr.s_addr = htonl(INADDR_ANY);
-            //addr.sin_port        = htons(UNICAST_PORT);
-
             while(1) {
 
-               // Wait for another thread's signal
+               // Wait for work (blocks until signal from other thread)
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
-               //fprintf(stderr, "* uni-speaker got signalz yo *\n");
 
-               WorkTupleType* work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
+               // Pop work from work queue
+               work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
 
                if (work != NULL) {
-                  struct sockaddr_in s = work->first;
-                  Packet* p = work->second;
-                  UnicastJoinAcceptance* uja = (UnicastJoinAcceptance*) work->second;
-                  fprintf(stderr, "> talk to: %s\n", inet_ntoa(work->first.sin_addr));
-                  fprintf(stderr, "> packet type: %d\n", uja->get_flag());
-
-                  if (sendto(sk, uja, MAX_PACKET_SZ, 0, (struct sockaddr *) &s , sizeof(s)) < 0) {
+                  addr = work->first;
+                  p    = work->second;
+                  //uja = reinterpret_cast<UnicastJoinAcceptance*>(work->second);
+                  //fprintf(stderr, "> talk to: %s\n", inet_ntoa(work->first.sin_addr));
+                  //fprintf(stderr, "> packet type: %d\n", uja->get_flag());
+                  if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
                      perror("vmmanager.cpp, sendto");
                      exit(EXIT_FAILURE);
                   }
-
-                  fprintf(stderr, "> packet send...\n");
                }
 
+               // TODO: do we need this?
                sleep(1);
-
             }
             return 0;
          }
@@ -386,11 +382,18 @@ namespace NLCBSMM {
             payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
 
             switch (p->get_flag()) {
+
             case UNICAST_JOIN_ACCEPT_F:
                fprintf(stderr, "> received join acknowledgement\n");
-
+               // record our uuid from the master
+               // munmap our version of the page table
+               // mmap the new version of the page table (from packet info)
+               // build an ack (echo the same packet back at the other speaker)
+               // go to "SYNC_PAGETABLE_STATE"
+               // TODO: change state with a lock... this is a race condition
                MS_STATE = HEARTBEAT;
                break;
+
             default:
                break;
             }
@@ -400,7 +403,12 @@ namespace NLCBSMM {
 
          static int multi_speaker(void* t) {
             /**
+             * Initialize the multicast speaker socket and enter daemon mode.  The outer event
+             * loop is responsible for determining "state" before entering an inner event loop,
+             * which is responsible for implementing whatever behavior "state" might be.
              *
+             * E.g., if the output loop determines the speaker's state is "HEARTBEAT", the inner
+             * event loop is responsible for sending the "HEARTBEAT" packet.
              */
             fprintf(stderr, "> multi-speaker\n");
 
@@ -421,37 +429,39 @@ namespace NLCBSMM {
             addr.sin_addr.s_addr = inet_addr(MULTICAST_GRP);
             addr.sin_port        = htons(MULTICAST_PORT);
 
+            // This buffer is big enough to hold the biggest packet
             psz     = MAX_PACKET_SZ;
             memory  = myheap.malloc(psz);
 
+            // Initial state
             MS_STATE = JOIN;
 
             for (cnt = 0; ; cnt++) {
                // Clear the memory buffer each time
                memset(memory, 0, psz);
 
+               // If in JOIN state and received no response from a master
                if (MS_STATE == JOIN && cnt > MAX_JOIN_ATTEMPTS) {
-                  // I am in JOIN state, and still haven't received a UUID from a master
                   if (_uuid == (uint32_t) -1) {
                      // I am master
                      _uuid = 0;
-
                   }
+                  // Go to HEARTBEAT state
+                  // TODO: maybe enter a TIMEOUT state?
                   MS_STATE = HEARTBEAT;
                }
 
                multi_speaker_event_loop(memory, psz, sk, addr);
 
+               // TODO: replace sleeping with checking the work queue for work?
                sleep(1);
 
             }
 
             // Shit is scarce, son!
             myheap.free(memory);
-
             return 0;
          }
-
 
 
          static void multi_speaker_event_loop(void* buffer, size_t buffer_sz, uint32_t sk, struct sockaddr_in&  addr) {
@@ -557,7 +567,12 @@ namespace NLCBSMM {
 
          static void multi_listener_event_loop(void* buffer, uint32_t nbytes) {
             /**
+             * Process the packet in buffer (which is nbytes long) and take appropriate
+             * action (if applicable).
              *
+             * E.g., if we receive a packet of type MULTICAST_JOIN_F, then verify address
+             * space information, build a UnicastJoinAcceptance packet, queue the new packet
+             * for process in the unicast_speaker's work queue, and return.
              */
             Packet*                p              = NULL;
             MulticastJoin*         mjp            = NULL;
