@@ -408,10 +408,20 @@ namespace NLCBSMM {
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
                if (test != (void*) -1) {
                   fprintf(stderr, "mremap worked: %p\n", test);
+
+                  _start_page_table = (uint32_t) test;
+                  _end_page_table = (uint32_t) ((uint8_t*) test) + PAGE_TABLE_SZ;
+
+                  page_table = (PageTableType*) _start_page_table;
+
+
+
                   fprintf(stderr, "page table pointer: %p\n", page_table);
+
                   fprintf(stderr, "Accessing page table...");
                   page_list = (*page_table)["127.0.0.1"];
                   fprintf(stderr, "done.\n");
+
                } else {
                   fprintf(stderr, "mremap failed\n");
                }
