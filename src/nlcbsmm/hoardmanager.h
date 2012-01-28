@@ -380,7 +380,7 @@ namespace Hoard {
 
                fprintf(stderr, "%s is adding superblock entry (%p) to metadata...", local_ip, entry->sb);
                //metadata.insert(entry);
-               metadata_vector.push_back(entry);
+               //metadata_vector.push_back(entry);
                fprintf(stderr, "done.\n");
 
             }
@@ -394,10 +394,10 @@ namespace Hoard {
             unsigned char* s = pageAlign((unsigned char*)sb->getHeader()->getPosition());
             //fprintf(stderr, "Superblock (%p - %p)\n", s, s + (PAGESIZE * 16));
             for (int page = 0; page < 16; page++) {
-               if (mprotect(s + (PAGESIZE * page), PAGESIZE, PROT_NONE)) {
-                  perror("hoardmanager.h: mprotect");
-                  exit(errno);
-               }
+               //if (mprotect(s + (PAGESIZE * page), PAGESIZE, PROT_NONE)) {
+               //   perror("hoardmanager.h: mprotect");
+               //   exit(errno);
+               //}
             }
             // Who put this here?
             //mprotect(s, PAGESIZE,PROT_READ|PROT_WRITE);

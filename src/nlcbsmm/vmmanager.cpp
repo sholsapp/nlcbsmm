@@ -701,10 +701,10 @@ namespace NLCBSMM {
       //fprintf(stderr,"Found the page\n");
       // Set the permissions on the page
 
-      if (mprotect(p, PAGESIZE, PROT_READ | PROT_WRITE)) {
-         perror("vmmanager.cpp: mprotect");
-         exit(EXIT_FAILURE);
-      }
+      //if (mprotect(p, PAGESIZE, PROT_READ | PROT_WRITE)) {
+      //   perror("vmmanager.cpp: mprotect");
+      //   exit(EXIT_FAILURE);
+      //}
 
       //else {
       //    fprintf(stderr, "Set PROT_READ | PROT_WRITE on %p\n", p);
