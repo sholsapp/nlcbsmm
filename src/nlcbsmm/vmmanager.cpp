@@ -248,33 +248,26 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            sleep(0.5);
-
             if((uni_listener_thread_id = clone(&uni_listener, uni_listener_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
                perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
-
-            sleep(0.5);
 
             if((multi_speaker_thread_id = clone(&multi_speaker, multi_speaker_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
 
-            sleep(0.5);
-
             if((uni_speaker_thread_id = clone(&uni_speaker, uni_speaker_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
 
-            sleep(0.5);
-
+            // DEBUG
+            fprintf(stderr, "clone %d <%p - %p>\n", uni_listener_thread_id, uni_listener_ptr, (uint8_t*) uni_listener_ptr + CLONE_STACK_SZ);
+            fprintf(stderr, "clone %d <%p - %p>\n", uni_speaker_thread_id, uni_speaker_ptr, (uint8_t*) uni_speaker_ptr + CLONE_STACK_SZ);
             fprintf(stderr, "clone %d <%p - %p>\n", multi_listener_thread_id, multi_listener_ptr, (uint8_t*) multi_listener_ptr + CLONE_STACK_SZ);
-            fprintf(stderr, "clone %d <%p - %p>\n", uni_listener_thread_id, uni_listener_ptr, (uint8_t*) uni_listener_ptr + CLONE_STACK_SZ);
             fprintf(stderr, "clone %d <%p - %p>\n", multi_speaker_thread_id, multi_speaker_ptr, (uint8_t*) multi_speaker_ptr + CLONE_STACK_SZ);
-            fprintf(stderr, "clone %d <%p - %p>\n", uni_listener_thread_id, uni_listener_ptr, (uint8_t*) uni_listener_ptr + CLONE_STACK_SZ);
 
             return;
          }
@@ -805,8 +798,13 @@ namespace NLCBSMM {
       (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
       (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
 
+      (*page_table)["127.0.0.3"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+      (*page_table)["127.0.0.3"]->push_back(new (myheap.malloc(sizeof(Page))) Page(888));
+      (*page_table)["127.0.0.3"]->push_back(new (myheap.malloc(sizeof(Page))) Page(888));
+
       fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
       fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
+      fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
 
       //fprintf(stderr, "TEST: page_table @ %p\n", page_table);
       //fprintf(stderr, "TEST: page_list @ %p | TEST: retreived @ %p\n", page_list, test);
