@@ -794,7 +794,7 @@ namespace NLCBSMM {
       // End Debug
 
       // Register SIGSEGV handler
-      register_signal_handlers();
+      //register_signal_handlers();
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();
