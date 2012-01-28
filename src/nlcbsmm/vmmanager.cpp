@@ -389,9 +389,10 @@ namespace NLCBSMM {
                // record our uuid from the master
                _uuid = ntohl(uja->uuid);
 
-               fprintf(stderr, "master start_pt: %p\n", (void*) ntohl(uja->start_page_table));
-               fprintf(stderr, "master end_pt %p\n", (void*) ntohl(uja->end_page_table));
                fprintf(stderr, "my uuid: %d\n", _uuid);
+
+               fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
+               fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
@@ -618,7 +619,7 @@ namespace NLCBSMM {
                      retaddr.sin_family      = AF_INET;
                      retaddr.sin_addr.s_addr = inet_addr(payload_buf);
                      retaddr.sin_port        = htons(UNICAST_PORT);
-                     // Contact who with this
+                     // Contact with this
                      uja = new (packet_memory) UnicastJoinAcceptance(strlen(local_ip), _start_page_table, _end_page_table, _next_uuid++);
                      // The work tuple
                      work = new (work_memory) WorkTupleType(retaddr, uja);
@@ -758,17 +759,22 @@ namespace NLCBSMM {
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
       fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
-      fprintf(stderr, "> uuid: %d <\n", _uuid);
+      fprintf(stderr, "> local heap object lives in %p <\n", &myheap);
       fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
 
       // Debug
-      //PageVectorType* page_list    = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
-      //Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
-      //Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
-      //(*page_table)["127.0.0.1"]   = page_list;
-      //(*page_table)["127.0.0.1"]->push_back(page1);
-      //(*page_table)["127.0.0.1"]->push_back(page2);
+      PageVectorType* page_list    = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
+      Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
+      Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
+      (*page_table)["127.0.0.1"]   = page_list;
+      (*page_table)["127.0.0.1"]->push_back(page1);
+      (*page_table)["127.0.0.1"]->push_back(page2);
+
+      fprintf(stderr, "TEST: page_table @ %p\n", page_table);
+      fprintf(stderr, "TEST: page_list @ %p\n", page_list);
+      fprintf(stderr, "TEST: page1 @ %p\n", page1);
+      fprintf(stderr, "TEST: page2 @ %p\n", page2);
       // End Debug
 
       // Register SIGSEGV handler
