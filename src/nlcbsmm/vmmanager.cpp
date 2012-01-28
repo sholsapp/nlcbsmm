@@ -403,19 +403,14 @@ namespace NLCBSMM {
                fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
+
+               fprintf(stderr, "page table size: %d\n", page_table->size());
+
                //fprintf(stderr, "Accessing page table...");
                //mutex_lock(&page_table_lock);
                //page_list = (*page_table)["127.0.0.1"];
                //mutex_unlock(&page_table_lock);
                //fprintf(stderr, "done.\n");
-
-
-               for (int i = 0; i < (_end_page_table - _start_page_table); i++) {
-                  fprintf(stderr, "%u", ((uint32_t*) _start_page_table) [i]);
-                  if ((i % 8) == 0) {
-                     fprintf(stderr, "\n");
-                  }
-               }
 
                /*
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
