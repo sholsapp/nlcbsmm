@@ -791,7 +791,7 @@ namespace NLCBSMM {
       print_log_sep(40);
 
       // Debug
-      PageVectorType* page_list    = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
+      PageVectorType* page_list    = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
       //Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
       //Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
 
