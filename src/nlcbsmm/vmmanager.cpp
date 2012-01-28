@@ -381,6 +381,7 @@ namespace NLCBSMM {
 
             // mremap test variable
             void* test = NULL;
+            PageVectorType* page_list = NULL;
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
@@ -400,10 +401,17 @@ namespace NLCBSMM {
                fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
+               fprintf(stderr, "Accessing page table...");
+               page_list = (*page_table)["127.0.0.1"];
+               fprintf(stderr, "done.\n");
+
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
                if (test != (void*) -1) {
                   fprintf(stderr, "mremap worked: %p\n", test);
                   fprintf(stderr, "page table pointer: %p\n", page_table);
+                  fprintf(stderr, "Accessing page table...");
+                  page_list = (*page_table)["127.0.0.1"];
+                  fprintf(stderr, "done.\n");
                } else {
                   fprintf(stderr, "mremap failed\n");
                }
@@ -696,31 +704,13 @@ namespace NLCBSMM {
       //SBEntry* entry = metadata.findSuperblock((void*) p);
       //if (entry) {
 
-      // Find out what page in the entry faulted
-      //int whichPage = pageIndex((unsigned char*)p, (unsigned char*)entry->sb);
-      //fprintf(stderr,"Found the page\n");
       // Set the permissions on the page
-
       //if (mprotect(p, PAGESIZE, PROT_READ | PROT_WRITE)) {
       //   perror("vmmanager.cpp: mprotect");
       //   exit(EXIT_FAILURE);
       //}
-
       //else {
       //    fprintf(stderr, "Set PROT_READ | PROT_WRITE on %p\n", p);
-      //}
-
-      // Lookup where it is (by its Location class)
-      // Copy the data into the real page
-      //void* actualPage = entry->page[whichPage].getLocation()->getPage();
-      //memcpy(p, actualPage, PAGESIZE);
-
-      // Debug
-      //fprintf(stderr, "Fault Resolved\n");
-      //}
-      //else {
-      //    fprintf(stderr, ">> Seg Fault << \n");
-      //    exit(1);
       //}
 
       // Unblock sigsegv
@@ -785,8 +775,10 @@ namespace NLCBSMM {
       (*page_table)["127.0.0.1"]->push_back(page1);
       (*page_table)["127.0.0.1"]->push_back(page2);
 
+      PageVectorType* test         = (*page_table)["127.0.0.1"];
+
       fprintf(stderr, "TEST: page_table @ %p\n", page_table);
-      fprintf(stderr, "TEST: page_list @ %p\n", page_list);
+      fprintf(stderr, "TEST: page_list @ %p | TEST: retreived @ %p\n", page_list, test);
       fprintf(stderr, "TEST: page1 @ %p\n", page1);
       fprintf(stderr, "TEST: page2 @ %p\n", page2);
       // End Debug
@@ -798,4 +790,4 @@ namespace NLCBSMM {
       networkmanager.start_comms();
    }
 
-}
+   }
