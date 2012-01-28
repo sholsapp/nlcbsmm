@@ -411,9 +411,19 @@ namespace NLCBSMM {
                fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
                mutex_unlock(&page_table_lock);
 
+               fprintf(stderr, "Adding element in page_table...");
+
+
+
+               (*page_table)["127.0.0.2"]   = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+               (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(111));
+
+
+               fprintf(stderr, "Done\n");
+
                /*
-               test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
-               if (test != (void*) -1) {
+                  test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
+                  if (test != (void*) -1) {
                   fprintf(stderr, "mremap worked: %p\n", test);
 
                   _start_page_table = (uint32_t) test;
@@ -434,10 +444,10 @@ namespace NLCBSMM {
                   mutex_unlock(&page_table_lock);
                   fprintf(stderr, "done.\n");
 
-               } else {
+                  } else {
                   fprintf(stderr, "mremap failed\n");
-               }
-               */
+                  }
+                */
 
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
