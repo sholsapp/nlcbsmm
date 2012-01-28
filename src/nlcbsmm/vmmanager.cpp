@@ -403,7 +403,6 @@ namespace NLCBSMM {
                fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
-               /*
                   fprintf(stderr, "page table size: %d\n", page_table->size());
                   mutex_lock(&page_table_lock);
                   fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
@@ -412,7 +411,6 @@ namespace NLCBSMM {
                   (*page_table)["127.0.0.2"]   = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
                   (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(111));
                   fprintf(stderr, "Done\n");
-                */
 
                /*
                   test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
