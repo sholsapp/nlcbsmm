@@ -407,11 +407,9 @@ namespace NLCBSMM {
 
                fprintf(stderr, "page table size: %d\n", page_table->size());
 
-               fprintf(stderr, "Accessing page table...");
                mutex_lock(&page_table_lock);
-               it = page_table->find("127.0.0.1");
+               fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
                mutex_unlock(&page_table_lock);
-               fprintf(stderr, "done.\n");
 
                /*
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
