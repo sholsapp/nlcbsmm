@@ -1,32 +1,25 @@
-#include "location.h"
+#include <unistd.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
-/**
- * Bitwise flags for a Page's state
- */
-#define INIT          0x00000000
-#define COPY_ON_WRITE 0x00000001
+#include "constants.h"
 
 namespace NLCBSMM {
 
-
    class Page {
+
       public:
-         Page() {
-            loc = NULL;
-            state = INIT;
+         uint32_t address;
+         //struct sockaddr_in owner;
+
+         Page(uint32_t _address) {
+            address = _address;
+            //owner.sin_family = AF_INET;
+            //owner.sin_addr.s_addr = htonl(INADDR_ANY);
+            //owner.sin_port = htons(UNICAST_PORT);
          }
-
-         Location* getLocation() {return loc;}
-         void setLocation(Location* l) {loc = l;}
-
-         unsigned int getState() {return state;}
-         void setState(int s) {state = s;}
-
-         bool isCOW() {return state & COPY_ON_WRITE;}
-
-      private:
-         Location* loc;
-         unsigned int state;
 
    }__attribute__((packed));
 }

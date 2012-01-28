@@ -368,17 +368,15 @@ namespace Hoard {
                sb = new (ptr) SuperblockType (sz);
 
                // Recording the *new* superblock information + size
-               entry = (SBEntry*) myheap.malloc(sizeof(SBEntry));
-               entry->sb = reinterpret_cast<void*>(sb);
+               //entry = (SBEntry*) myheap.malloc(sizeof(SBEntry));
+               //entry->sb = reinterpret_cast<void*>(sb);
+               //unsigned char* s = pageAlign((unsigned char*)sb->getHeader()->getPosition());
+               //for (int page = 0; page < 16; page++) {
+               //   void* placement = myheap.malloc(sizeof(MemoryLocation));
+               //   entry->page[page].setLocation(new (placement) MemoryLocation((void*) (s + (page * PAGESIZE))));
+               //}
 
-               unsigned char* s = pageAlign((unsigned char*)sb->getHeader()->getPosition());
-
-               for (int page = 0; page < 16; page++) {
-                  void* placement = myheap.malloc(sizeof(MemoryLocation));
-                  entry->page[page].setLocation(new (placement) MemoryLocation((void*) (s + (page * PAGESIZE))));
-               }
-
-               fprintf(stderr, "%s is adding superblock entry (%p) to metadata...", local_ip, entry->sb);
+               fprintf(stderr, "%s is adding superblock entry (%p) to metadata...", local_ip, sb);
                //metadata.insert(entry);
                //metadata_vector.push_back(entry);
                fprintf(stderr, "done.\n");
