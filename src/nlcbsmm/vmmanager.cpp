@@ -122,6 +122,8 @@ namespace NLCBSMM {
    mutex uni_speaker_lock;
    mutex multi_speaker_lock;
 
+   mutex page_table_lock;
+
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
       /**
        *
@@ -402,7 +404,9 @@ namespace NLCBSMM {
                fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
                fprintf(stderr, "Accessing page table...");
+               mutex_lock(&page_table_lock);
                page_list = (*page_table)["127.0.0.1"];
+               mutex_unlock(&page_table_lock);
                fprintf(stderr, "done.\n");
 
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
@@ -412,14 +416,19 @@ namespace NLCBSMM {
                   _start_page_table = (uint32_t) test;
                   _end_page_table = (uint32_t) ((uint8_t*) test) + PAGE_TABLE_SZ;
 
+
+                  mutex_lock(&page_table_lock);
                   page_table = (PageTableType*) _start_page_table;
+                  mutex_unlock(&page_table_lock);
 
 
 
                   fprintf(stderr, "page table pointer: %p\n", page_table);
 
                   fprintf(stderr, "Accessing page table...");
+                  mutex_lock(&page_table_lock);
                   page_list = (*page_table)["127.0.0.1"];
+                  mutex_unlock(&page_table_lock);
                   fprintf(stderr, "done.\n");
 
                } else {
@@ -769,6 +778,8 @@ namespace NLCBSMM {
       mutex_init(&uni_speaker_cond_lock, NULL);
       mutex_init(&uni_speaker_lock,      NULL);
       mutex_init(&multi_speaker_lock,    NULL);
+
+      mutex_init(&page_table_lock,       NULL);
 
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
