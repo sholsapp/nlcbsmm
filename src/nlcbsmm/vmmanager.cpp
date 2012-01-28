@@ -768,7 +768,7 @@ namespace NLCBSMM {
 
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap(NULL, PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      page_table        = new (raw) PageTableType();
+      page_table        = new (myheap.malloc(sizeof(PageTableType))) PageTableType();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
