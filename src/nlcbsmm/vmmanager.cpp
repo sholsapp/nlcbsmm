@@ -412,7 +412,9 @@ namespace NLCBSMM {
 
                for (int i = 0; i < (_end_page_table - _start_page_table); i++) {
 
-                  fprintf(stderr, "%x", ((unsigned char*) _start_page_table) [i]);
+                  fprintf(stderr, "%d", ((uint32_t*) _start_page_table) [i]);
+
+                  if (i % 16 == 0) fprintf(stderr, "\n");
 
                }
 
