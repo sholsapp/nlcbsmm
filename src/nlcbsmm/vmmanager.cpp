@@ -409,6 +409,13 @@ namespace NLCBSMM {
                //mutex_unlock(&page_table_lock);
                //fprintf(stderr, "done.\n");
 
+
+               for (int i = 0; i < (_end_page_table - _start_page_table); i++) {
+
+                  fprintf(stderr, "%x", ((unsigned char*) _start_page_table) [i]);
+
+               }
+
                /*
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
                if (test != (void*) -1) {
