@@ -414,7 +414,9 @@ namespace NLCBSMM {
 
                   fprintf(stderr, "%d", ((uint32_t*) _start_page_table) [i]);
 
-                  if (i % 16 == 0) fprintf(stderr, "\n");
+                  if ((i % 16) == 0) {
+                     fprintf(stderr, "\n");
+                  }
 
                }
 
