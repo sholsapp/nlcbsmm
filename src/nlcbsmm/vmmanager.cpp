@@ -403,6 +403,7 @@ namespace NLCBSMM {
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
                if (test != (void*) -1) {
                   fprintf(stderr, "mremap worked: %p\n", test);
+                  fprintf(stderr, "page table pointer: %p\n", page_table);
                } else {
                   fprintf(stderr, "mremap failed\n");
                }
@@ -679,18 +680,18 @@ namespace NLCBSMM {
        * The actual signal handler for SIGSEGV
        */
 
-      //sigset_t oset;
-      //sigset_t set;
+      sigset_t oset;
+      sigset_t set;
 
       //block SIGSEGV
-      //sigemptyset(&set);
-      //sigaddset(&set, SIGSEGV);
-      //sigprocmask(SIG_BLOCK, &set, &oset);
+      sigemptyset(&set);
+      sigaddset(&set, SIGSEGV);
+      sigprocmask(SIG_BLOCK, &set, &oset);
 
       //fprintf(stderr, "SIGSEGV Caught\n");
 
       unsigned char* p = pageAlign((unsigned char*) info->si_addr);
-      //fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
+      fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
 
       //SBEntry* entry = metadata.findSuperblock((void*) p);
       //if (entry) {
@@ -722,8 +723,8 @@ namespace NLCBSMM {
       //    exit(1);
       //}
 
-      //unblock sigsegv
-      //sigprocmask(SIG_UNBLOCK, &set, &oset);
+      // Unblock sigsegv
+      sigprocmask(SIG_UNBLOCK, &set, &oset);
    }
 
    void register_signal_handlers() {
