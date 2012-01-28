@@ -176,6 +176,7 @@ namespace NLCBSMM {
 namespace NLCBSMM {
 
    enum multi_speaker_state { NONE, JOIN, HEARTBEAT };
+
    multi_speaker_state MS_STATE = NONE;
 
    class NetworkManager {
@@ -404,46 +405,32 @@ namespace NLCBSMM {
                fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
-
-               fprintf(stderr, "page table size: %d\n", page_table->size());
-
-               mutex_lock(&page_table_lock);
-               fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
-               mutex_unlock(&page_table_lock);
-
-               fprintf(stderr, "Adding element in page_table...");
-
-
-
-               (*page_table)["127.0.0.2"]   = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-               (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(111));
-
-
-               fprintf(stderr, "Done\n");
+               /*
+                  fprintf(stderr, "page table size: %d\n", page_table->size());
+                  mutex_lock(&page_table_lock);
+                  fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
+                  mutex_unlock(&page_table_lock);
+                  fprintf(stderr, "Adding element in page_table...");
+                  (*page_table)["127.0.0.2"]   = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+                  (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(111));
+                  fprintf(stderr, "Done\n");
+                */
 
                /*
                   test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
                   if (test != (void*) -1) {
                   fprintf(stderr, "mremap worked: %p\n", test);
-
                   _start_page_table = (uint32_t) test;
                   _end_page_table = (uint32_t) ((uint8_t*) test) + PAGE_TABLE_SZ;
-
-
                   mutex_lock(&page_table_lock);
                   page_table = (PageTableType*) _start_page_table;
                   mutex_unlock(&page_table_lock);
-
-
-
                   fprintf(stderr, "page table pointer: %p\n", page_table);
-
                   fprintf(stderr, "Accessing page table...");
                   mutex_lock(&page_table_lock);
                   page_list = (*page_table)["127.0.0.1"];
                   mutex_unlock(&page_table_lock);
                   fprintf(stderr, "done.\n");
-
                   } else {
                   fprintf(stderr, "mremap failed\n");
                   }
@@ -566,6 +553,8 @@ namespace NLCBSMM {
              *
              */
             fprintf(stderr, "> multi-listener\n");
+            fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
+            fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
 
             uint8_t  *packet_buffer      = NULL;
             uint32_t sk                  =  0;
