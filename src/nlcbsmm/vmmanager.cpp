@@ -792,18 +792,22 @@ namespace NLCBSMM {
 
       // Debug
       PageVectorType* page_list    = (PageVectorType*) myheap.malloc(sizeof(PageVectorType));
-      Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
-      Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
+      //Page*           page1        = (Page*)           myheap.malloc(sizeof(Page));
+      //Page*           page2        = (Page*)           myheap.malloc(sizeof(Page));
+
+      Page* page3 = new (myheap.malloc(sizeof(Page))) Page(666);
+      Page* page4 = new (myheap.malloc(sizeof(Page))) Page(777);
+
       (*page_table)["127.0.0.1"]   = page_list;
-      (*page_table)["127.0.0.1"]->push_back(page1);
-      (*page_table)["127.0.0.1"]->push_back(page2);
+      (*page_table)["127.0.0.1"]->push_back(page3);
+      (*page_table)["127.0.0.1"]->push_back(page4);
 
       PageVectorType* test         = (*page_table)["127.0.0.1"];
 
       fprintf(stderr, "TEST: page_table @ %p\n", page_table);
       fprintf(stderr, "TEST: page_list @ %p | TEST: retreived @ %p\n", page_list, test);
-      fprintf(stderr, "TEST: page1 @ %p\n", page1);
-      fprintf(stderr, "TEST: page2 @ %p\n", page2);
+      fprintf(stderr, "TEST: page1 @ %p\n", page3);
+      fprintf(stderr, "TEST: page2 @ %p\n", page4);
       // End Debug
 
       // Register SIGSEGV handler
