@@ -384,6 +384,7 @@ namespace NLCBSMM {
             // mremap test variable
             void* test = NULL;
             PageVectorType* page_list = NULL;
+            PageTableType::iterator it;
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
@@ -406,11 +407,11 @@ namespace NLCBSMM {
 
                fprintf(stderr, "page table size: %d\n", page_table->size());
 
-               //fprintf(stderr, "Accessing page table...");
-               //mutex_lock(&page_table_lock);
-               //page_list = (*page_table)["127.0.0.1"];
-               //mutex_unlock(&page_table_lock);
-               //fprintf(stderr, "done.\n");
+               fprintf(stderr, "Accessing page table...");
+               mutex_lock(&page_table_lock);
+               it = page_table->find("127.0.0.1");
+               mutex_unlock(&page_table_lock);
+               fprintf(stderr, "done.\n");
 
                /*
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
