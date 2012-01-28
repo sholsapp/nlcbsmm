@@ -409,6 +409,7 @@ namespace NLCBSMM {
                mutex_unlock(&page_table_lock);
                fprintf(stderr, "done.\n");
 
+               /*
                test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
                if (test != (void*) -1) {
                   fprintf(stderr, "mremap worked: %p\n", test);
@@ -434,6 +435,7 @@ namespace NLCBSMM {
                } else {
                   fprintf(stderr, "mremap failed\n");
                }
+               */
 
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
