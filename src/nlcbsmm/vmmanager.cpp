@@ -385,7 +385,14 @@ namespace NLCBSMM {
 
             case UNICAST_JOIN_ACCEPT_F:
                fprintf(stderr, "> received join acknowledgement\n");
+               uja = reinterpret_cast<UnicastJoinAcceptance*>(buffer);
                // record our uuid from the master
+               _uuid = ntohl(uja->uuid);
+
+               fprintf(stderr, "master start_pt: %p\n", (void*) ntohl(uja->start_page_table));
+               fprintf(stderr, "master end_pt %p\n", (void*) ntohl(uja->end_page_table));
+               fprintf(stderr, "my uuid: %d\n", _uuid);
+
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
                // build an ack (echo the same packet back at the other speaker)
