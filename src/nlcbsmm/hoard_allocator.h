@@ -1,6 +1,8 @@
 #include <limits>
 #include <iostream>
 
+#include "allocator.h"
+
 namespace NLCBSMM {
 
    template <class T> class HoardAllocator {

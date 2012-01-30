@@ -9,7 +9,8 @@
 
 #include <vector>
 
-#include "sbentry.h"
+//#include "sbentry.h"
+#include "page.h"
 #include "hoard_allocator.h"
 
 
@@ -25,6 +26,15 @@ namespace NLCBSMM {
            std::less<const char*>,
            HoardAllocator<std::pair<const char*, PageVectorType*> > > PageTableType;
 
+   typedef std::vector<Page,
+           HoardAllocator<Page> > PageVectorType2;
+   
+   typedef std::map<const char*,
+           PageVectorType2,
+           std::less<const char*>,
+           HoardAllocator<std::pair<const char*, PageVectorType2> > > PageTableType2;
+
+
 }
 
 namespace NLCBSMM {
@@ -32,7 +42,7 @@ namespace NLCBSMM {
    extern const char* local_ip;
 
    // The page table
-   extern std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
+   //extern std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
 
    // Helper function to page align a pointer
    unsigned char* pageAlign(unsigned char* p);

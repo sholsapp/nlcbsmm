@@ -15,7 +15,7 @@
 
 // Order matters
 #include "vmmanager.h"
-#include "hoard.h"
+//#include "hoard.h"
 #include "packets.h"
 
 #include "constants.h"
@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <netdb.h>
 
+#define PAGESIZE 4096
 
 /**
  * Symbols defined by the end application.
@@ -162,9 +163,7 @@ namespace NLCBSMM {
 
 namespace NLCBSMM {
 
-   std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
-
-   PageTableType* page_table;
+   PageTableType2* page_table;
 
    uint32_t _start_page_table = 0;
    uint32_t _end_page_table   = 0;
@@ -380,11 +379,6 @@ namespace NLCBSMM {
             char*                  payload_buf    = NULL;
             uint32_t               payload_sz     = 0;
 
-            // mremap test variable
-            void* test = NULL;
-            PageVectorType* page_list = NULL;
-            PageTableType::iterator it;
-
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
             payload_sz  = p->get_payload_sz();
@@ -400,37 +394,16 @@ namespace NLCBSMM {
 
                fprintf(stderr, "my uuid: %d\n", _uuid);
 
-               fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
-               fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
-
-                  fprintf(stderr, "page table size: %d\n", page_table->size());
-                  mutex_lock(&page_table_lock);
-                  fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
-                  mutex_unlock(&page_table_lock);
-                  fprintf(stderr, "Adding element in page_table...");
-                  (*page_table)["127.0.0.2"]   = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-                  (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(111));
-                  fprintf(stderr, "Done\n");
-
-               /*
-                  test = mremap((void*) _start_page_table, PAGE_TABLE_SZ, PAGE_TABLE_SZ, MREMAP_MAYMOVE | MREMAP_FIXED, (void*) ntohl(uja->start_page_table));
-                  if (test != (void*) -1) {
-                  fprintf(stderr, "mremap worked: %p\n", test);
-                  _start_page_table = (uint32_t) test;
-                  _end_page_table = (uint32_t) ((uint8_t*) test) + PAGE_TABLE_SZ;
-                  mutex_lock(&page_table_lock);
-                  page_table = (PageTableType*) _start_page_table;
-                  mutex_unlock(&page_table_lock);
-                  fprintf(stderr, "page table pointer: %p\n", page_table);
-                  fprintf(stderr, "Accessing page table...");
-                  mutex_lock(&page_table_lock);
-                  page_list = (*page_table)["127.0.0.1"];
-                  mutex_unlock(&page_table_lock);
-                  fprintf(stderr, "done.\n");
-                  } else {
-                  fprintf(stderr, "mremap failed\n");
-                  }
-                */
+               //fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
+               //fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
+               //fprintf(stderr, "page table size: %d\n", page_table->size());
+               //mutex_lock(&page_table_lock);
+               //fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
+               //mutex_unlock(&page_table_lock);
+               //fprintf(stderr, "Adding element in page_table...");
+               //(*page_table)["127.0.0.2"]   = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+               //(*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(111));
+               //fprintf(stderr, "Done\n");
 
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
@@ -549,8 +522,6 @@ namespace NLCBSMM {
              *
              */
             fprintf(stderr, "> multi-listener\n");
-            fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
-            fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
 
             uint8_t  *packet_buffer      = NULL;
             uint32_t sk                  =  0;
@@ -719,18 +690,6 @@ namespace NLCBSMM {
       unsigned char* p = pageAlign((unsigned char*) info->si_addr);
       fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
 
-      //SBEntry* entry = metadata.findSuperblock((void*) p);
-      //if (entry) {
-
-      // Set the permissions on the page
-      //if (mprotect(p, PAGESIZE, PROT_READ | PROT_WRITE)) {
-      //   perror("vmmanager.cpp: mprotect");
-      //   exit(EXIT_FAILURE);
-      //}
-      //else {
-      //    fprintf(stderr, "Set PROT_READ | PROT_WRITE on %p\n", p);
-      //}
-
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
    }
@@ -762,9 +721,11 @@ namespace NLCBSMM {
        * Hook entry.
        */
 
+      fprintf(stderr, ">>> program break: %p\n", sbrk(0));
+
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap(NULL, PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-      page_table        = new (raw) PageTableType();
+      page_table        = new (raw) PageTableType2();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
@@ -785,36 +746,37 @@ namespace NLCBSMM {
       fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
       fprintf(stderr, "> local heap object lives in %p <\n", &myheap);
       fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
+      fprintf(stderr, "> new sbrk at %p\n", sbrk(0));
       print_log_sep(40);
 
+      fprintf(stderr, "Size of PageVectorType2 = %d\n", sizeof(PageVectorType2));
+      (*page_table)["XXX"] = PageVectorType2();
+      (*page_table)["XXX"].push_back(Page(666));
+      (*page_table)["YYY"] = PageVectorType2();
+      (*page_table)["YYY"].push_back(Page(666));
+
       // Debug
-      (*page_table)["127.0.0.1"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(666));
-      (*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(666));
+      //(*page_table)["127.0.0.1"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+      //(*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(666));
+      //(*page_table)["127.0.0.2"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+      //(*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
+      //(*page_table)["127.0.0.3"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
+      //(*page_table)["127.0.0.3"]->push_back(new (myheap.malloc(sizeof(Page))) Page(888));
 
-      (*page_table)["127.0.0.2"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
-      (*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
+      //fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
+      //fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
+      //fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
 
-      (*page_table)["127.0.0.3"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      (*page_table)["127.0.0.3"]->push_back(new (myheap.malloc(sizeof(Page))) Page(888));
-      (*page_table)["127.0.0.3"]->push_back(new (myheap.malloc(sizeof(Page))) Page(888));
-
-      fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
-      fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
-      fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
-
-      //fprintf(stderr, "TEST: page_table @ %p\n", page_table);
-      //fprintf(stderr, "TEST: page_list @ %p | TEST: retreived @ %p\n", page_list, test);
-      //fprintf(stderr, "TEST: page1 @ %p\n", page3);
-      //fprintf(stderr, "TEST: page2 @ %p\n", page4);
+      //fprintf(stderr, "&PageVectorType = %p\n", (*page_table)["127.0.0.1"]);
+      //fprintf(stderr, "&PageVectorType = %p\n", (*page_table)["127.0.0.2"]);
+      //fprintf(stderr, "&PageVectorType = %p\n", (*page_table)["127.0.0.3"]);
       // End Debug
 
       // Register SIGSEGV handler
       //register_signal_handlers();
 
       // Spawn the thread that speaks/listens to cluster
-      networkmanager.start_comms();
+      //networkmanager.start_comms();
    }
 
-   }
+}
