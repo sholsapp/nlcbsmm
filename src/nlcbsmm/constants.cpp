@@ -1,9 +1,20 @@
+#include <unistd.h>
 #include <netinet/in.h> // for types
 
 #define PAGE_SIZE 4096
 
-uint32_t     CLONE_STACK_SZ         = 4096 * 64;
-uint32_t     PAGE_TABLE_SZ          = 4096 * 16;
+/**
+ * Virtual memory constants
+ */
+uint32_t     CLONE_STACK_SZ            = 4096 * 64;
+uint32_t     PAGE_TABLE_SZ             = 4096 * 16;
+uint32_t     CLONE_HEAP_SZ             = 4096 * 512;
+uint32_t     PAGE_TABLE_ALLOC_HEAP_SZ  = 4096 * 16;
+uint32_t     PAGE_TABLE_HEAP_SZ        = 4096 * 512;
+
+/**
+ * Networking constants
+ */
 
 uint16_t     UNICAST_PORT           = 60000;
 uint16_t     MULTICAST_PORT         = 60001;
