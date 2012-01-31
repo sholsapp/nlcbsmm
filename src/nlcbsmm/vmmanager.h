@@ -12,22 +12,36 @@
 #include "page.h"
 #include "hoard_allocator.h"
 
+#include "stlallocator.h"
+
 
 namespace NLCBSMM {
 
    // A vector of NLCBSMM::Page objects
    typedef std::vector<Page*,
-           HoardAllocator<Page*> > PageVectorType;
+   HoardAllocator<Page*> > PageVectorType;
 
    // A mapping of 'ip address' to a NLCBSMM::PageVector
    typedef std::map<const char*,
-           PageVectorType*,
-           std::less<const char*>,
-           HoardAllocator<std::pair<const char*, PageVectorType*> > > PageTableType;
+   PageVectorType*,
+   std::less<const char*>,
+   HoardAllocator<std::pair<const char*, PageVectorType*> > > PageTableType;
+
+   /*
+      typedef FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> > PageTableHeapType;
+
+      typedef STLAllocator<Page, PageTableHeapType> PageAllocator;
+
+      typedef std::vector<Page, PageAllocator> PageVectorType3;
+
+      typedef STLAllocator<PageVectorType3, PageTableHeapType> PairAllocator;
+
+      typedef std::map<const char*, PageVectorType3, std::less<const char*>, PairAllocator> PageTableType3;
+    */
 
    typedef std::vector<Page,
            HoardAllocator<Page> > PageVectorType2;
-   
+
    typedef std::map<const char*,
            PageVectorType2,
            std::less<const char*>,

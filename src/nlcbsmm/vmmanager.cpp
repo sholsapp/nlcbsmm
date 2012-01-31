@@ -40,12 +40,10 @@ namespace NLCBSMM {
    // If we need memory to use for hoard, this is where we get it.
    FreelistHeap<MmapHeap> myheap;
 
-   FirstFitHeap<NlcbsmmMmapHeap<CLONE_ALLOC_HEAP_START> >       clone_alloc_heap;
+   //FirstFitHeap<NlcbsmmMmapHeap<CLONE_ALLOC_HEAP_START> >       clone_alloc_heap;
    FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> >             clone_heap;
-   FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_ALLOC_HEAP_START> >  pt_alloc_heap;
+   //FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_ALLOC_HEAP_START> >  pt_alloc_heap;
    FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> >        pt_heap;
-
-
 
    // This node's ip address
    const char* local_ip = NULL;
@@ -723,9 +721,7 @@ namespace NLCBSMM {
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n",           local_ip);
       fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
       fprintf(stderr, "> heap object (<old>) lives in %p <\n",        &myheap);
-      fprintf(stderr, "> heap object (cah) lives in %p <\n",          &clone_alloc_heap);
       fprintf(stderr, "> heap object (ch) lives in %p <\n",           &clone_heap);
-      fprintf(stderr, "> heap object (ptah) lives in %p <\n",         &pt_alloc_heap);
       fprintf(stderr, "> heap object (pth) lives in %p <\n",          &pt_heap);
       //fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
@@ -762,11 +758,16 @@ namespace NLCBSMM {
 
       print_init_message();
 
-      fprintf(stderr, "Size of PageVectorType2 = %d\n", sizeof(PageVectorType2));
-      (*page_table)["XXX"] = PageVectorType2();
-      (*page_table)["XXX"].push_back(Page(666));
-      (*page_table)["YYY"] = PageVectorType2();
-      (*page_table)["YYY"].push_back(Page(666));
+      //clone_alloc_heap.free(clone_alloc_heap.malloc(14));
+      clone_heap.free(clone_heap.malloc(15));
+      //pt_alloc_heap.free(pt_alloc_heap.malloc(16));
+      pt_heap.free(pt_heap.malloc(256));
+
+      //fprintf(stderr, "Size of PageVectorType2 = %d\n", sizeof(PageVectorType2));
+      //(*page_table)["XXX"] = PageVectorType2();
+      //(*page_table)["XXX"].push_back(Page(666));
+      //(*page_table)["YYY"] = PageVectorType2();
+      //(*page_table)["YYY"].push_back(Page(666));
 
       // Debug
       //(*page_table)["127.0.0.1"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();

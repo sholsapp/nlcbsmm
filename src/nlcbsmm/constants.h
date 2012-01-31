@@ -16,11 +16,11 @@
 #define CLONE_STACK_START            100
 #define PAGE_TABLE_START             101
 
-#define CLONE_ALLOC_HEAP_START       102
-#define CLONE_HEAP_START             103
+#define CLONE_HEAP_START             102
+#define CLONE_ALLOC_HEAP_START       103
 
-#define PAGE_TABLE_ALLOC_HEAP_START  104
-#define PAGE_TABLE_HEAP_START        105
+#define PAGE_TABLE_HEAP_START        104
+#define PAGE_TABLE_ALLOC_HEAP_START  105
 
 /**
  * Virtual memory constants
