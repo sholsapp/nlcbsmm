@@ -705,6 +705,9 @@ namespace NLCBSMM {
    }
 
    void print_log_sep(int len) {
+      /**
+       *
+       */
       fprintf(stderr, "\n");
       for (int i = 0; i < len; i++) {
          fprintf(stderr, "%c", (char) 144);
@@ -712,12 +715,34 @@ namespace NLCBSMM {
       fprintf(stderr, "\n\n");
    }
 
+   void print_init_message() {
+      /**
+       *
+       */
+      print_log_sep(40);
+      fprintf(stderr, "> nlcbsmm init on local ip: %s <\n",           local_ip);
+      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
+      fprintf(stderr, "> heap object (<old>) lives in %p <\n",        &myheap);
+      fprintf(stderr, "> heap object (cah) lives in %p <\n",          &clone_alloc_heap);
+      fprintf(stderr, "> heap object (ch) lives in %p <\n",           &clone_heap);
+      fprintf(stderr, "> heap object (ptah) lives in %p <\n",         &pt_alloc_heap);
+      fprintf(stderr, "> heap object (pth) lives in %p <\n",          &pt_heap);
+      //fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
+      print_log_sep(40);
+      fprintf(stderr, "> base %p (thread stacks go here)\n", BASE);
+      fprintf(stderr, "> clone alloc heap offset %p\n",      CLONE_ALLOC_HEAP_OFFSET);
+      fprintf(stderr, "> clone heap offset %p\n",            CLONE_HEAP_OFFSET);
+      fprintf(stderr, "> page table offset %p\n",            PAGE_TABLE_OFFSET);
+      fprintf(stderr, "> page table alloc heap offset %p\n", PAGE_TABLE_ALLOC_HEAP_OFFSET);
+      fprintf(stderr, "> page table heap offset %p\n",       PAGE_TABLE_HEAP_OFFSET);
+      print_log_sep(40);
+      return;
+   }
+
    void nlcbsmm_init() {
       /**
        * Hook entry.
        */
-
-      fprintf(stderr, ">>> program break: %p\n", sbrk(0));
 
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap(NULL, PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
@@ -729,19 +754,13 @@ namespace NLCBSMM {
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
+      // Setup condition and mutex variables
       cond_init(&uni_speaker_cond,       NULL);
-
       mutex_init(&uni_speaker_cond_lock, NULL);
       mutex_init(&uni_speaker_lock,      NULL);
       mutex_init(&multi_speaker_lock,    NULL);
 
-      print_log_sep(40);
-      fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
-      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
-      fprintf(stderr, "> local heap object lives in %p <\n", &myheap);
-      fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
-      fprintf(stderr, "> new sbrk at %p\n", sbrk(0));
-      print_log_sep(40);
+      print_init_message();
 
       fprintf(stderr, "Size of PageVectorType2 = %d\n", sizeof(PageVectorType2));
       (*page_table)["XXX"] = PageVectorType2();
