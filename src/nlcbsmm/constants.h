@@ -33,6 +33,14 @@ extern uint32_t     CLONE_HEAP_SZ;
 extern uint32_t     PAGE_TABLE_ALLOC_HEAP_SZ;
 extern uint32_t     PAGE_TABLE_HEAP_SZ;
 
+extern uint8_t*     BASE;
+extern uint8_t*     CLONE_ALLOC_HEAP_OFFSET;
+extern uint8_t*     CLONE_HEAP_OFFSET;
+
+extern uint8_t*     PAGE_TABLE_OFFSET;
+extern uint8_t*     PAGE_TABLE_ALLOC_HEAP_OFFSET;
+extern uint8_t*     PAGE_TABLE_HEAP_OFFSET;
+
 /**
  * Networking constants
  */
