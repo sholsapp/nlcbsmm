@@ -1,17 +1,26 @@
+#include <unistd.h>
+#include <netinet/in.h>
 
-#define PAGE_SIZE 4096
 #define MAX_JOIN_ATTEMPTS 5
+
+#define PAGE_SZ           4096
 
 
 /**
  * Allocator flags to determine fixed region of memory to
  * allocate data in.
+ *
+ * These are #define'd so we can use them in class template
+ * parameters.
  */
-#define PRIVATE_STACK_START         6666;
-#define PRIVATE_HEAP_START          6667;
-#define PAGE_TABLE_START            6668;
-#define PAGE_TABLE_ALLOC_HEAP_START 6669;
-#define PAGE_TABLE_HEAP_START       6670;
+#define CLONE_STACK_START            100
+#define PAGE_TABLE_START             101
+
+#define CLONE_ALLOC_HEAP_START       102
+#define CLONE_HEAP_START             103
+
+#define PAGE_TABLE_ALLOC_HEAP_START  104
+#define PAGE_TABLE_HEAP_START        105
 
 /**
  * Virtual memory constants
@@ -19,6 +28,7 @@
 extern uint32_t     CLONE_STACK_SZ;
 extern uint32_t     PAGE_TABLE_SZ;
 
+extern uint32_t     CLONE_ALLOC_HEAP_SZ;
 extern uint32_t     CLONE_HEAP_SZ;
 extern uint32_t     PAGE_TABLE_ALLOC_HEAP_SZ;
 extern uint32_t     PAGE_TABLE_HEAP_SZ;

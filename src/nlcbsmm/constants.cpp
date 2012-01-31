@@ -1,16 +1,28 @@
-#include <unistd.h>
-#include <netinet/in.h> // for types
-
-#define PAGE_SIZE 4096
+#include "constants.h"
 
 /**
  * Virtual memory constants
  */
-uint32_t     CLONE_STACK_SZ            = 4096 * 64;
-uint32_t     PAGE_TABLE_SZ             = 4096 * 16;
-uint32_t     CLONE_HEAP_SZ             = 4096 * 512;
-uint32_t     PAGE_TABLE_ALLOC_HEAP_SZ  = 4096 * 16;
-uint32_t     PAGE_TABLE_HEAP_SZ        = 4096 * 512;
+uint32_t     CLONE_STACK_SZ            = PAGE_SZ * 64;
+uint32_t     PAGE_TABLE_SZ             = PAGE_SZ * 16;
+
+uint32_t     CLONE_ALLOC_HEAP_SZ       = PAGE_SZ * 16;
+uint32_t     CLONE_HEAP_SZ             = PAGE_SZ * 512;
+
+uint32_t     PAGE_TABLE_ALLOC_HEAP_SZ  = PAGE_SZ * 16;
+uint32_t     PAGE_TABLE_HEAP_SZ        = PAGE_SZ * 512;
+
+/**
+ * Offsets
+ */
+uint8_t*  BASE                         = reinterpret_cast<uint8_t*>(sbrk(0));
+
+uint8_t*  CLONE_ALLOC_HEAP_OFFSET      = BASE                         + CLONE_STACK_SZ * 4;
+uint8_t*  CLONE_HEAP_OFFSET            = CLONE_ALLOC_HEAP_OFFSET      + CLONE_ALLOC_HEAP_SZ;
+
+uint8_t*  PAGE_TABLE_OFFSET            = CLONE_HEAP_OFFSET            + CLONE_HEAP_SZ;
+uint8_t*  PAGE_TABLE_ALLOC_HEAP_OFFSET = PAGE_TABLE_OFFSET            + PAGE_TABLE_SZ;
+uint8_t*  PAGE_TABLE_HEAP_OFFSET       = PAGE_TABLE_ALLOC_HEAP_OFFSET + PAGE_TABLE_ALLOC_HEAP_SZ;
 
 /**
  * Networking constants
@@ -24,15 +36,3 @@ uint32_t     PACKET_HEADER_SZ       = 256;
 uint32_t     PACKET_MAX_PAYLOAD_SZ  = 8192;
 
 uint32_t     MAX_PACKET_SZ          = PACKET_HEADER_SZ + PACKET_MAX_PAYLOAD_SZ;
-
-
-/**
- * Offsets
- */
-uint32_t     CLONE_HEAP_OFFSET      = sbrk(0) + (CLONE_STACK_SZ * 4);
-uint32_t     PAGE_TABLE_OFFSET      = CLONE_HEAP_OFFSET + CLONE_HEAP_SZ;
-uint32_t     PAGE_TABLE_ALLOC_OFFSET= PAGE_TABLE_OFFSET + PAGE_TABLE_SZ;
-uint32_t     PAGE_TABLE_HEAP_OFFSET = PAGE_TABLE_ALLOC_OFFSET + PAGE_TABLE_ALLOC_HEAP_SZ; 
-
-
-

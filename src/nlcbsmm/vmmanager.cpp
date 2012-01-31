@@ -9,7 +9,10 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <time.h>
-
+#include <ifaddrs.h>
+#include <cstdlib>
+#include <unistd.h>
+#include <netdb.h>
 #include <vector>
 #include <deque>
 
@@ -22,10 +25,6 @@
 
 #include "mutex.h"
 
-#include <ifaddrs.h>
-#include <cstdlib>
-#include <unistd.h>
-#include <netdb.h>
 
 #define PAGESIZE 4096
 
@@ -40,6 +39,13 @@ extern uint8_t* __data_start;
 namespace NLCBSMM {
    // If we need memory to use for hoard, this is where we get it.
    FreelistHeap<MmapHeap> myheap;
+
+   FirstFitHeap<NlcbsmmMmapHeap<CLONE_ALLOC_HEAP_START> >       clone_alloc_heap;
+   FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> >             clone_heap;
+   FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_ALLOC_HEAP_START> >  pt_alloc_heap;
+   FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> >        pt_heap;
+
+
 
    // This node's ip address
    const char* local_ip = NULL;
@@ -122,8 +128,6 @@ namespace NLCBSMM {
 
    mutex uni_speaker_lock;
    mutex multi_speaker_lock;
-
-   mutex page_table_lock;
 
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
       /**
@@ -396,14 +400,6 @@ namespace NLCBSMM {
 
                //fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                //fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
-               //fprintf(stderr, "page table size: %d\n", page_table->size());
-               //mutex_lock(&page_table_lock);
-               //fprintf(stderr, "Accessing page table element: %d\n", page_table->find("127.0.0.1")->second->at(0)->address);
-               //mutex_unlock(&page_table_lock);
-               //fprintf(stderr, "Adding element in page_table...");
-               //(*page_table)["127.0.0.2"]   = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-               //(*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(111));
-               //fprintf(stderr, "Done\n");
 
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
@@ -738,8 +734,6 @@ namespace NLCBSMM {
       mutex_init(&uni_speaker_cond_lock, NULL);
       mutex_init(&uni_speaker_lock,      NULL);
       mutex_init(&multi_speaker_lock,    NULL);
-
-      mutex_init(&page_table_lock,       NULL);
 
       print_log_sep(40);
       fprintf(stderr, "> nlcbsmm init on local ip: %s <\n", local_ip);
