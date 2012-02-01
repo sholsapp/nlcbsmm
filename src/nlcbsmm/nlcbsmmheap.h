@@ -98,24 +98,24 @@ namespace HL {
                   switch (heap_identifier) {
 
                   case CLONE_ALLOC_HEAP_START:
-                     buffer = mmap((void*) CLONE_ALLOC_HEAP_OFFSET, CLONE_ALLOC_HEAP_SZ,
+                     buffer = mmap((void*) global_clone_alloc_heap(), CLONE_ALLOC_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
                      break;
 
                   case CLONE_HEAP_START:
-                     buffer = mmap((void*) CLONE_HEAP_OFFSET, CLONE_HEAP_SZ,
+                     buffer = mmap((void*) global_clone_heap(), CLONE_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
                      break;
 
                   case PAGE_TABLE_ALLOC_HEAP_START:
-                     buffer = mmap((void*) PAGE_TABLE_ALLOC_HEAP_OFFSET, PAGE_TABLE_ALLOC_HEAP_SZ,
+                     buffer = mmap((void*) global_page_table_alloc_heap(), PAGE_TABLE_ALLOC_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
                      break;
 
                   case PAGE_TABLE_HEAP_START:
-                     buffer = mmap((void*) PAGE_TABLE_HEAP_OFFSET, PAGE_TABLE_HEAP_SZ,
+                     buffer = mmap((void*) global_page_table_heap(), PAGE_TABLE_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
                      break;

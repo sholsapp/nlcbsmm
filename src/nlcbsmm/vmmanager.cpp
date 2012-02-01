@@ -242,12 +242,14 @@ namespace NLCBSMM {
             void* uni_speaker_fixed_addr    = NULL;
             void* uni_listener_fixed_addr   = NULL;
 
-            uni_listener_fixed_addr   = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 0);
-            uni_speaker_fixed_addr    = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 1);
-            multi_listener_fixed_addr = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 2);
-            multi_speaker_fixed_addr  = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 3);
+            uni_listener_fixed_addr   = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 0);
+            uni_speaker_fixed_addr    = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 1);
+            multi_listener_fixed_addr = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 2);
+            multi_speaker_fixed_addr  = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 3);
 
             argument       = (void*) 1337; // Not used
+
+            fprintf(stderr, "Stack sizes:\n%p\n%p\n%p\n%p\n", uni_listener_fixed_addr, uni_speaker_fixed_addr, multi_listener_fixed_addr, multi_speaker_fixed_addr);
 
             uni_listener_stack   = (void*) mmap(uni_listener_fixed_addr,
                   CLONE_STACK_SZ,
@@ -600,7 +602,7 @@ namespace NLCBSMM {
 
             addr.sin_family      = AF_INET;
             addr.sin_addr.s_addr = htonl(INADDR_ANY);
-            addr.sin_port        = htons(MULTICAST_PORT);
+            addr.sin_port        = htons(60001);
             addrlen              = sizeof(addr);
 
             if (bind(sk, (struct sockaddr *) &addr, addrlen) < 0) {
@@ -609,11 +611,11 @@ namespace NLCBSMM {
             }
 
             // Use setsockopt() to join multicast group
-            mreq.imr_multiaddr.s_addr = inet_addr(MULTICAST_GRP);
+            mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.6");
             mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
             if (setsockopt(sk, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-               perror("vmmanager.cpp, setsockopt");
+               perror("vmmanager.cpp, setsockopt x2");
                exit(EXIT_FAILURE);
             }
 
@@ -768,11 +770,11 @@ namespace NLCBSMM {
       /**
        *
        */
-      fprintf(stderr, "\n");
+      fprintf(stdout, "\n");
       for (int i = 0; i < len; i++) {
          fprintf(stderr, "%c", (char) 144);
       }
-      fprintf(stderr, "\n\n");
+      fprintf(stdout, "\n\n");
    }
 
    void print_init_message() {
@@ -786,12 +788,12 @@ namespace NLCBSMM {
       fprintf(stdout, "> heap obj (pth) lives in %p <\n",          &pt_heap);
       fprintf(stdout, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
-      fprintf(stdout, "> base %p (thread stacks go here) sbrk(0) = %p\n", (void*) BASE, sbrk(0));
-      fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) CLONE_ALLOC_HEAP_OFFSET);
-      fprintf(stdout, "> clone heap offset %p\n",            (void*) CLONE_HEAP_OFFSET);
-      fprintf(stdout, "> page table offset %p\n",            (void*) PAGE_TABLE_OFFSET);
-      fprintf(stdout, "> page table alloc heap offset %p\n", (void*) PAGE_TABLE_ALLOC_HEAP_OFFSET);
-      fprintf(stdout, "> page table heap offset %p\n",       (void*) PAGE_TABLE_HEAP_OFFSET);
+      fprintf(stdout, "> base %p (thread stacks go here) sbrk(0) = %p\n", (void*) global_base(), sbrk(0));
+      fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
+      fprintf(stdout, "> clone heap offset %p\n",            (void*) global_clone_heap());
+      fprintf(stdout, "> page table offset %p\n",            (void*) global_page_table());
+      fprintf(stdout, "> page table alloc heap offset %p\n", (void*) global_page_table_alloc_heap());
+      fprintf(stdout, "> page table heap offset %p\n",       (void*) global_page_table_heap());
       print_log_sep(40);
       return;
    }
@@ -802,7 +804,7 @@ namespace NLCBSMM {
        */
 
       // Dedicated memory to maintaining the page table
-      void* raw         = (void*) mmap((void*) PAGE_TABLE_OFFSET, PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+      void* raw         = (void*) mmap((void*) global_page_table(), PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
       page_table        = new (raw) PageTableType();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
