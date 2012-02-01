@@ -18,11 +18,8 @@
 
 // Order matters
 #include "vmmanager.h"
-//#include "hoard.h"
 #include "packets.h"
-
 #include "constants.h"
-
 #include "mutex.h"
 
 #define PAGESIZE 4096
@@ -602,7 +599,7 @@ namespace NLCBSMM {
 
             addr.sin_family      = AF_INET;
             addr.sin_addr.s_addr = htonl(INADDR_ANY);
-            addr.sin_port        = htons(60001);
+            addr.sin_port        = htons(MULTICAST_PORT);
             addrlen              = sizeof(addr);
 
             if (bind(sk, (struct sockaddr *) &addr, addrlen) < 0) {
@@ -611,15 +608,15 @@ namespace NLCBSMM {
             }
 
             // Use setsockopt() to join multicast group
-            mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.6");
+            mreq.imr_multiaddr.s_addr = inet_addr(MULTICAST_GRP);
             mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
             if (setsockopt(sk, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-               perror("vmmanager.cpp, setsockopt x2");
+               perror("vmmanager.cpp, setsockopt");
                exit(EXIT_FAILURE);
             }
 
-            // Get a new buffer from our hoard allocator
+            // Get a new buffer from our allocator
             packet_buffer = (uint8_t*) clone_heap.malloc(MAX_PACKET_SZ);
 
             while (1) {
