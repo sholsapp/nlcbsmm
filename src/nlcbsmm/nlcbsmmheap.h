@@ -98,28 +98,24 @@ namespace HL {
                   switch (heap_identifier) {
 
                   case CLONE_ALLOC_HEAP_START:
-                     fprintf(stderr, "CLONE_ALLOC_HEAP_START (%p)\n", CLONE_ALLOC_HEAP_OFFSET);
-                     buffer = mmap(CLONE_ALLOC_HEAP_OFFSET, CLONE_ALLOC_HEAP_SZ,
+                     buffer = mmap((void*) CLONE_ALLOC_HEAP_OFFSET, CLONE_ALLOC_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
                      break;
 
                   case CLONE_HEAP_START:
-                     fprintf(stderr, "CLONE_HEAP_START\n");
-                     buffer = mmap(CLONE_HEAP_OFFSET, CLONE_HEAP_SZ,
+                     buffer = mmap((void*) CLONE_HEAP_OFFSET, CLONE_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
                      break;
 
                   case PAGE_TABLE_ALLOC_HEAP_START:
-                     fprintf(stderr, "PAGE_TABLE_ALLOC_HEAP_START\n");
-                     buffer = mmap(PAGE_TABLE_ALLOC_HEAP_OFFSET, PAGE_TABLE_ALLOC_HEAP_SZ,
+                     buffer = mmap((void*) PAGE_TABLE_ALLOC_HEAP_OFFSET, PAGE_TABLE_ALLOC_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
                      break;
 
                   case PAGE_TABLE_HEAP_START:
-                     fprintf(stderr, "PAGE_TABLE_HEAP_START\n");
-                     buffer = mmap(PAGE_TABLE_HEAP_OFFSET, PAGE_TABLE_HEAP_SZ,
+                     buffer = mmap((void*) PAGE_TABLE_HEAP_OFFSET, PAGE_TABLE_HEAP_SZ,
                            PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
                      break;
@@ -137,8 +133,8 @@ namespace HL {
                   ptr = NULL;
                }
                else {
-                  //RETURN a ptr to a new piece of memory
-                  fprintf(stderr, "> allocating %d\n", sz);
+                  // Return a ptr to a new piece of memory
+                  //fprintf(stderr, "> allocating %d\n", sz);
                   ptr = buffer;
                   buffer = reinterpret_cast<void *>(reinterpret_cast<uint32_t>(buffer) + sz);
                   count++;

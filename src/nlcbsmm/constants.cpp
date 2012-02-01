@@ -15,14 +15,12 @@ uint32_t     PAGE_TABLE_HEAP_SZ        = PAGE_SZ * 512;
 /**
  * Offsets
  */
-uint8_t*  BASE                         = reinterpret_cast<uint8_t*>(sbrk(0));
-
-uint8_t*  CLONE_ALLOC_HEAP_OFFSET      = BASE                         + CLONE_STACK_SZ * 4;
-uint8_t*  CLONE_HEAP_OFFSET            = CLONE_ALLOC_HEAP_OFFSET      + CLONE_ALLOC_HEAP_SZ;
-
-uint8_t*  PAGE_TABLE_OFFSET            = CLONE_HEAP_OFFSET            + CLONE_HEAP_SZ;
-uint8_t*  PAGE_TABLE_ALLOC_HEAP_OFFSET = PAGE_TABLE_OFFSET            + PAGE_TABLE_SZ;
-uint8_t*  PAGE_TABLE_HEAP_OFFSET       = PAGE_TABLE_ALLOC_HEAP_OFFSET + PAGE_TABLE_ALLOC_HEAP_SZ;
+uint32_t  BASE                         = (uint32_t) ((uint8_t*) sbrk(0));
+uint32_t  CLONE_ALLOC_HEAP_OFFSET      = (uint32_t) ((uint8_t*) BASE  + (CLONE_STACK_SZ * 4));
+uint32_t  CLONE_HEAP_OFFSET            = (uint32_t) ((uint8_t*) CLONE_ALLOC_HEAP_OFFSET + (CLONE_ALLOC_HEAP_SZ));
+uint32_t  PAGE_TABLE_OFFSET            = (uint32_t) ((uint8_t*) CLONE_HEAP_OFFSET + (CLONE_HEAP_SZ));
+uint32_t  PAGE_TABLE_ALLOC_HEAP_OFFSET = (uint32_t) ((uint8_t*) PAGE_TABLE_OFFSET + (PAGE_TABLE_SZ));
+uint32_t  PAGE_TABLE_HEAP_OFFSET       = (uint32_t) ((uint8_t*) PAGE_TABLE_ALLOC_HEAP_OFFSET + (PAGE_TABLE_ALLOC_HEAP_SZ));
 
 /**
  * Networking constants

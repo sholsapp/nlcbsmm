@@ -25,8 +25,12 @@
 
 #include "mutex.h"
 
-
 #define PAGESIZE 4096
+
+#define CLONE_ATTRS (CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE)
+#define CLONE_MMAP_PROT_FLAGS (PROT_READ | PROT_WRITE)
+#define CLONE_MMAP_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED)
+
 
 /**
  * Symbols defined by the end application.
@@ -37,13 +41,15 @@ extern uint8_t* __data_start;
 
 
 namespace NLCBSMM {
-   // If we need memory to use for hoard, this is where we get it.
-   FreelistHeap<MmapHeap> myheap;
 
-   //FirstFitHeap<NlcbsmmMmapHeap<CLONE_ALLOC_HEAP_START> >       clone_alloc_heap;
-   FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> >             clone_heap;
-   //FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_ALLOC_HEAP_START> >  pt_alloc_heap;
-   FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> >        pt_heap;
+   // If a network thread needs memory, it must use this private
+   // heap.  This memory is lost from the DSM system.
+   FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> >       clone_heap;
+
+   // If the shared page table needs memory, it must use this
+   // private heap.  This memory is kept in a fixed location in
+   // memory in all instances of the application.
+   FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> >  pt_heap;
 
    // This node's ip address
    const char* local_ip = NULL;
@@ -75,7 +81,7 @@ namespace NLCBSMM {
       struct ifaddrs *ifa    = NULL;
       int            family  = 0;
       int            s       = 0;
-      char*          host    = (char*) myheap.malloc(sizeof(char) * NI_MAXHOST);
+      char*          host    = (char*) clone_heap.malloc(sizeof(char) * NI_MAXHOST);
 
       if (getifaddrs(&ifaddr) == -1) {
          perror("getifaddrs");
@@ -115,7 +121,7 @@ namespace NLCBSMM {
 
    // A queue of work
    typedef std::deque<WorkTupleType*,
-           HoardAllocator<WorkTupleType* > > PacketQueueType;
+           CloneAllocator<WorkTupleType* > > PacketQueueType;
 
    PacketQueueType uni_speaker_work_deque;
 
@@ -165,7 +171,7 @@ namespace NLCBSMM {
 
 namespace NLCBSMM {
 
-   PageTableType2* page_table;
+   PageTableType* page_table;
 
    uint32_t _start_page_table = 0;
    uint32_t _end_page_table   = 0;
@@ -222,44 +228,96 @@ namespace NLCBSMM {
             /**
              * Spawns the speaker and listener threads.
              */
-            void* argument             = NULL;
-            void* multi_speaker_ptr    = NULL;
-            void* multi_listener_ptr   = NULL;
-            void* uni_speaker_ptr      = NULL;
-            void* uni_listener_ptr     = NULL;
-            void* multi_speaker_stack  = NULL;
-            void* multi_listener_stack = NULL;
-            void* uni_speaker_stack    = NULL;
-            void* uni_listener_stack   = NULL;
+            void* argument                  = NULL;
+            void* multi_speaker_ptr         = NULL;
+            void* multi_listener_ptr        = NULL;
+            void* uni_speaker_ptr           = NULL;
+            void* uni_listener_ptr          = NULL;
+            void* multi_speaker_stack       = NULL;
+            void* multi_listener_stack      = NULL;
+            void* uni_speaker_stack         = NULL;
+            void* uni_listener_stack        = NULL;
+            void* multi_speaker_fixed_addr  = NULL;
+            void* multi_listener_fixed_addr = NULL;
+            void* uni_speaker_fixed_addr    = NULL;
+            void* uni_listener_fixed_addr   = NULL;
+
+            uni_listener_fixed_addr   = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 0);
+            uni_speaker_fixed_addr    = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 1);
+            multi_listener_fixed_addr = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 2);
+            multi_speaker_fixed_addr  = ((uint8_t*) BASE) + (CLONE_STACK_SZ * 3);
 
             argument       = (void*) 1337; // Not used
 
-            uni_listener_stack   = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            uni_speaker_stack    = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            multi_listener_stack = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-            multi_speaker_stack  = (void*) mmap(NULL, CLONE_STACK_SZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            uni_listener_stack   = (void*) mmap(uni_listener_fixed_addr,
+                  CLONE_STACK_SZ,
+                  CLONE_MMAP_PROT_FLAGS,
+                  CLONE_MMAP_FLAGS, -1, 0);
+
+            if (uni_listener_stack == MAP_FAILED)
+               perror("!> mmap failed to allocate uni_listener_stack");
+
+            uni_speaker_stack    = (void*) mmap(uni_speaker_fixed_addr,
+                  CLONE_STACK_SZ,
+                  CLONE_MMAP_PROT_FLAGS,
+                  CLONE_MMAP_FLAGS, -1, 0);
+
+            if (uni_speaker_stack == MAP_FAILED)
+               perror("!> mmap failed to allocate uni_speaker_stack");
+
+            multi_listener_stack = (void*) mmap(multi_listener_fixed_addr,
+                  CLONE_STACK_SZ,
+                  CLONE_MMAP_PROT_FLAGS,
+                  CLONE_MMAP_FLAGS, -1, 0);
+
+            if (multi_listener_stack == MAP_FAILED)
+               perror("!> mmap failed to allocate multi_listener_stack");
+
+            multi_speaker_stack  = (void*) mmap(multi_speaker_fixed_addr,
+                  CLONE_STACK_SZ,
+                  CLONE_MMAP_PROT_FLAGS,
+                  CLONE_MMAP_FLAGS, -1, 0);
+
+            if (multi_speaker_stack == MAP_FAILED)
+               perror("!> mmap failed to allocate multi_speaker_stack");
 
             uni_speaker_ptr      = (void*) (((uint8_t*) uni_speaker_stack)    + CLONE_STACK_SZ);
             uni_listener_ptr     = (void*) (((uint8_t*) uni_listener_stack)   + CLONE_STACK_SZ);
             multi_speaker_ptr    = (void*) (((uint8_t*) multi_speaker_stack)  + CLONE_STACK_SZ);
             multi_listener_ptr   = (void*) (((uint8_t*) multi_listener_stack) + CLONE_STACK_SZ);
 
-            if((multi_listener_thread_id = clone(&multi_listener, multi_listener_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
+            if((multi_listener_thread_id =
+                     clone(&multi_listener,
+                        multi_listener_ptr,
+                        CLONE_ATTRS,
+                        argument)) == -1) {
                perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
 
-            if((uni_listener_thread_id = clone(&uni_listener, uni_listener_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
+            if((uni_listener_thread_id =
+                     clone(&uni_listener,
+                        uni_listener_ptr,
+                        CLONE_ATTRS,
+                        argument)) == -1) {
                perror("vmmanager.cpp, clone, listener");
                exit(EXIT_FAILURE);
             }
 
-            if((multi_speaker_thread_id = clone(&multi_speaker, multi_speaker_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
+            if((multi_speaker_thread_id =
+                     clone(&multi_speaker,
+                        multi_speaker_ptr,
+                        CLONE_ATTRS,
+                        argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
 
-            if((uni_speaker_thread_id = clone(&uni_speaker, uni_speaker_ptr, CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE, argument)) == -1) {
+            if((uni_speaker_thread_id =
+                     clone(&uni_speaker,
+                        uni_speaker_ptr,
+                        CLONE_ATTRS,
+                        argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
@@ -309,8 +367,8 @@ namespace NLCBSMM {
                      exit(EXIT_FAILURE);
                   }
 
-                  myheap.free(p);
-                  myheap.free(work);
+                  clone_heap.free(p);
+                  clone_heap.free(work);
                }
 
                // TODO: do we need this?
@@ -349,7 +407,7 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            packet_buffer = (uint8_t*) myheap.malloc(sizeof(char) * MAX_PACKET_SZ);
+            packet_buffer = (uint8_t*) clone_heap.malloc(sizeof(char) * MAX_PACKET_SZ);
 
             while(1) {
                // Clear the memory buffer each time
@@ -366,7 +424,7 @@ namespace NLCBSMM {
             }
 
             // Shit is scarce, son!
-            myheap.free(packet_buffer);
+            clone_heap.free(packet_buffer);
             return 0;
          }
 
@@ -396,8 +454,12 @@ namespace NLCBSMM {
 
                fprintf(stderr, "my uuid: %d\n", _uuid);
 
-               //fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
-               //fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
+               fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
+               fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
+
+               fprintf(stderr, "test 1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
+               fprintf(stderr, "test 2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
+               fprintf(stderr, "test 3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
 
                // munmap our version of the page table
                // mmap the new version of the page table (from packet info)
@@ -444,7 +506,7 @@ namespace NLCBSMM {
 
             // This buffer is big enough to hold the biggest packet
             psz     = MAX_PACKET_SZ;
-            memory  = myheap.malloc(psz);
+            memory  = clone_heap.malloc(psz);
 
             // Initial state
             MS_STATE = JOIN;
@@ -472,7 +534,7 @@ namespace NLCBSMM {
             }
 
             // Shit is scarce, son!
-            myheap.free(memory);
+            clone_heap.free(memory);
             return 0;
          }
 
@@ -556,7 +618,7 @@ namespace NLCBSMM {
             }
 
             // Get a new buffer from our hoard allocator
-            packet_buffer = (uint8_t*) myheap.malloc(MAX_PACKET_SZ);
+            packet_buffer = (uint8_t*) clone_heap.malloc(MAX_PACKET_SZ);
 
             while (1) {
 
@@ -573,7 +635,7 @@ namespace NLCBSMM {
 
             }
             // Shit is scarce, son!
-            myheap.free(packet_buffer);
+            clone_heap.free(packet_buffer);
             return 0;
          }
 
@@ -618,8 +680,8 @@ namespace NLCBSMM {
                         && (uint32_t) &__data_start == ntohl(mjp->data_start_addr)) {
 
                      // Build acceptance packet
-                     packet_memory = myheap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                     work_memory = myheap.malloc(sizeof(WorkTupleType));
+                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                     work_memory = clone_heap.malloc(sizeof(WorkTupleType));
                      // Who to contact
                      retaddr.sin_family      = AF_INET;
                      retaddr.sin_addr.s_addr = inet_addr(payload_buf);
@@ -718,19 +780,18 @@ namespace NLCBSMM {
        *
        */
       print_log_sep(40);
-      fprintf(stderr, "> nlcbsmm init on local ip: %s <\n",           local_ip);
-      fprintf(stderr, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
-      fprintf(stderr, "> heap object (<old>) lives in %p <\n",        &myheap);
-      fprintf(stderr, "> heap object (ch) lives in %p <\n",           &clone_heap);
-      fprintf(stderr, "> heap object (pth) lives in %p <\n",          &pt_heap);
-      //fprintf(stderr, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
+      fprintf(stdout, "> nlcbsmm init on local ip: %s <\n",           local_ip);
+      fprintf(stdout, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
+      fprintf(stdout, "> heap obj (ch) lives in %p <\n",           &clone_heap);
+      fprintf(stdout, "> heap obj (pth) lives in %p <\n",          &pt_heap);
+      fprintf(stdout, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
-      fprintf(stderr, "> base %p (thread stacks go here)\n", BASE);
-      fprintf(stderr, "> clone alloc heap offset %p\n",      CLONE_ALLOC_HEAP_OFFSET);
-      fprintf(stderr, "> clone heap offset %p\n",            CLONE_HEAP_OFFSET);
-      fprintf(stderr, "> page table offset %p\n",            PAGE_TABLE_OFFSET);
-      fprintf(stderr, "> page table alloc heap offset %p\n", PAGE_TABLE_ALLOC_HEAP_OFFSET);
-      fprintf(stderr, "> page table heap offset %p\n",       PAGE_TABLE_HEAP_OFFSET);
+      fprintf(stdout, "> base %p (thread stacks go here) sbrk(0) = %p\n", (void*) BASE, sbrk(0));
+      fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) CLONE_ALLOC_HEAP_OFFSET);
+      fprintf(stdout, "> clone heap offset %p\n",            (void*) CLONE_HEAP_OFFSET);
+      fprintf(stdout, "> page table offset %p\n",            (void*) PAGE_TABLE_OFFSET);
+      fprintf(stdout, "> page table alloc heap offset %p\n", (void*) PAGE_TABLE_ALLOC_HEAP_OFFSET);
+      fprintf(stdout, "> page table heap offset %p\n",       (void*) PAGE_TABLE_HEAP_OFFSET);
       print_log_sep(40);
       return;
    }
@@ -741,8 +802,8 @@ namespace NLCBSMM {
        */
 
       // Dedicated memory to maintaining the page table
-      void* raw         = (void*) mmap(NULL, PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-      page_table        = new (raw) PageTableType2();
+      void* raw         = (void*) mmap((void*) PAGE_TABLE_OFFSET, PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+      page_table        = new (raw) PageTableType();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
@@ -758,39 +819,24 @@ namespace NLCBSMM {
 
       print_init_message();
 
-      //clone_alloc_heap.free(clone_alloc_heap.malloc(14));
-      clone_heap.free(clone_heap.malloc(15));
-      //pt_alloc_heap.free(pt_alloc_heap.malloc(16));
-      pt_heap.free(pt_heap.malloc(256));
-
-      //fprintf(stderr, "Size of PageVectorType2 = %d\n", sizeof(PageVectorType2));
-      //(*page_table)["XXX"] = PageVectorType2();
-      //(*page_table)["XXX"].push_back(Page(666));
-      //(*page_table)["YYY"] = PageVectorType2();
-      //(*page_table)["YYY"].push_back(Page(666));
-
       // Debug
-      //(*page_table)["127.0.0.1"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      //(*page_table)["127.0.0.1"]->push_back(new (myheap.malloc(sizeof(Page))) Page(666));
-      //(*page_table)["127.0.0.2"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      //(*page_table)["127.0.0.2"]->push_back(new (myheap.malloc(sizeof(Page))) Page(777));
-      //(*page_table)["127.0.0.3"] = new (myheap.malloc(sizeof(PageVectorType))) PageVectorType();
-      //(*page_table)["127.0.0.3"]->push_back(new (myheap.malloc(sizeof(Page))) Page(888));
+      (*page_table)["127.0.0.1"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
+      (*page_table)["127.0.0.1"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(666));
+      (*page_table)["127.0.0.2"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
+      (*page_table)["127.0.0.2"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(777));
+      (*page_table)["127.0.0.3"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
+      (*page_table)["127.0.0.3"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(888));
 
-      //fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
-      //fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
-      //fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
-
-      //fprintf(stderr, "&PageVectorType = %p\n", (*page_table)["127.0.0.1"]);
-      //fprintf(stderr, "&PageVectorType = %p\n", (*page_table)["127.0.0.2"]);
-      //fprintf(stderr, "&PageVectorType = %p\n", (*page_table)["127.0.0.3"]);
+      fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
+      fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
+      fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
       // End Debug
 
       // Register SIGSEGV handler
       //register_signal_handlers();
 
       // Spawn the thread that speaks/listens to cluster
-      //networkmanager.start_comms();
+      networkmanager.start_comms();
    }
 
 }
