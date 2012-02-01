@@ -1,11 +1,17 @@
+#include <cstdio>
+
 #include "constants.h"
 
 /**
  * Offsets
  */
 
+extern uint8_t* _end;
+
 uint32_t& global_base() {
-   static uint32_t base = (uint32_t) sbrk(0);
+   uint32_t end = (uint32_t) &_end;
+   uint32_t aligned = end & ~(4096-1);
+   static uint32_t base = (uint32_t) aligned + 4096;
    return base;
 }
 
