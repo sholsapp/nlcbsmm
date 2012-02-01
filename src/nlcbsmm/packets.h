@@ -28,6 +28,11 @@ class Packet {
          return ((uint8_t*) this)[8];
       }
 
+      uint8_t set_flag(uint8_t new_flag) {
+        uint8_t old_flag = get_flag();
+        ((uint8_t*) this)[8] = new_flag;
+      }
+
       uint8_t* get_payload_ptr() {
          return &(((uint8_t*) this)[PACKET_HEADER_SZ]);
       }
@@ -64,9 +69,9 @@ class MulticastJoin : public Packet {
 
       uint32_t main_addr;
       uint32_t end_addr;
-      uint32_t data_start_addr;
+      uint32_t prog_break_addr;
 
-      MulticastJoin(uint32_t user_length, uint8_t** _main_addr, uint8_t** _end_addr, uint8_t** __data_start_addr) {
+      MulticastJoin(uint32_t user_length, uint8_t** _main_addr, uint8_t** _end_addr, uint8_t* _prog_break_addr) {
          /**
           *
           */
@@ -75,7 +80,7 @@ class MulticastJoin : public Packet {
          flag            = MULTICAST_JOIN_F;
          main_addr       = htonl(reinterpret_cast<uint32_t>(_main_addr));
          end_addr        = htonl(reinterpret_cast<uint32_t>(_end_addr));
-         data_start_addr = htonl(reinterpret_cast<uint32_t>(__data_start_addr));
+         prog_break_addr = htonl(reinterpret_cast<uint32_t>(_prog_break_addr));
       }
 }__attribute__((packed));
 

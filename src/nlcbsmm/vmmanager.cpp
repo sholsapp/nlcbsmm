@@ -246,8 +246,6 @@ namespace NLCBSMM {
 
             argument       = (void*) 1337; // Not used
 
-            fprintf(stderr, "Stack sizes:\n%p\n%p\n%p\n%p\n", uni_listener_fixed_addr, uni_speaker_fixed_addr, multi_listener_fixed_addr, multi_speaker_fixed_addr);
-
             uni_listener_stack   = (void*) mmap(uni_listener_fixed_addr,
                   CLONE_STACK_SZ,
                   CLONE_MMAP_PROT_FLAGS,
@@ -460,10 +458,9 @@ namespace NLCBSMM {
                fprintf(stderr, "test 2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
                fprintf(stderr, "test 3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
 
-               // munmap our version of the page table
-               // mmap the new version of the page table (from packet info)
-               // build an ack (echo the same packet back at the other speaker)
-               // go to "SYNC_PAGETABLE_STATE"
+               // Verify page table addresses
+               // Build an ack (echo the same packet back at the other speaker, but change the flag)
+
                // TODO: change state with a lock... this is a race condition
                MS_STATE = HEARTBEAT;
                break;
@@ -548,7 +545,7 @@ namespace NLCBSMM {
 
             case JOIN:
                // Build packet
-               p = new (buffer) MulticastJoin(strlen(local_ip), &main, &_end, &__data_start);
+               p = new (buffer) MulticastJoin(strlen(local_ip), &main, &_end, (uint8_t*) global_base());
                // Add packet payload (the user IP address)
                memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
                break;
@@ -666,8 +663,11 @@ namespace NLCBSMM {
 
             switch (p->get_flag()) {
 
+               // Some sent a request to join the cluster.
             case MULTICAST_JOIN_F:
+
                mjp = reinterpret_cast<MulticastJoin*>(buffer);
+
                // If we're the master
                if (_uuid == 0) {
 
@@ -676,22 +676,28 @@ namespace NLCBSMM {
                   // Verify request's address space requirements
                   if ((uint32_t) &main == ntohl(mjp->main_addr)
                         && (uint32_t) &_end == ntohl(mjp->end_addr)
-                        && (uint32_t) &__data_start == ntohl(mjp->data_start_addr)) {
+                        && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
-                     // Build acceptance packet
+                     // Allocate memory for the new work/packet
                      packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                     work_memory = clone_heap.malloc(sizeof(WorkTupleType));
+                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+
                      // Who to contact
                      retaddr.sin_family      = AF_INET;
                      retaddr.sin_addr.s_addr = inet_addr(payload_buf);
                      retaddr.sin_port        = htons(UNICAST_PORT);
-                     // Contact with this
-                     uja = new (packet_memory) UnicastJoinAcceptance(strlen(local_ip), _start_page_table, _end_page_table, _next_uuid++);
-                     // The work tuple
-                     work = new (work_memory) WorkTupleType(retaddr, uja);
 
-                     // Push acceptance work for unicast speaker
-                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock, work);
+                     // Push work onto the uni_speaker's queue
+                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                           // A new work tuple
+                           new (work_memory) WorkTupleType(retaddr,
+                              // A new packet
+                              new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
+                                 _start_page_table,
+                                 _end_page_table,
+                                 _next_uuid++))
+                           );
+
                      // Signal unicast speaker there is queued work
                      cond_signal(&uni_speaker_cond);
                   }
@@ -731,7 +737,6 @@ namespace NLCBSMM {
       /**
        * The actual signal handler for SIGSEGV
        */
-
       sigset_t oset;
       sigset_t set;
 
@@ -749,6 +754,7 @@ namespace NLCBSMM {
       sigprocmask(SIG_UNBLOCK, &set, &oset);
    }
 
+
    void register_signal_handlers() {
       /**
        * Registers signal handler for SIGSEGV
@@ -763,6 +769,7 @@ namespace NLCBSMM {
       return;
    }
 
+
    void print_log_sep(int len) {
       /**
        *
@@ -774,16 +781,17 @@ namespace NLCBSMM {
       fprintf(stdout, "\n\n");
    }
 
+
    void print_init_message() {
       /**
        *
        */
       print_log_sep(40);
-      fprintf(stdout, "> nlcbsmm init on local ip: %s <\n",           local_ip);
-      fprintf(stdout, "> main (%p) | _end (%p) | __data_start(%p)\n", &main, &_end, &__data_start);
-      fprintf(stdout, "> heap obj (ch) lives in %p <\n",           &clone_heap);
-      fprintf(stdout, "> heap obj (pth) lives in %p <\n",          &pt_heap);
-      fprintf(stdout, "> page table lives in %p - %p <\n", (void*) _start_page_table, (void*) _end_page_table);
+      fprintf(stdout, "> nlcbsmm init on local ip: %s <\n", local_ip);
+      fprintf(stdout, "> main (%p) | _end (%p)\n",          &main, &_end);
+      fprintf(stdout, "> heap obj (ch) lives in %p <\n",    &clone_heap);
+      fprintf(stdout, "> heap obj (pth) lives in %p <\n",   &pt_heap);
+      fprintf(stdout, "> page table lives in %p - %p <\n",  (void*) _start_page_table, (void*) _end_page_table);
       print_log_sep(40);
       fprintf(stdout, "> base %p (thread stacks go here) sbrk(0) = %p\n", (void*) global_base(), sbrk(0));
       fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
@@ -795,13 +803,17 @@ namespace NLCBSMM {
       return;
    }
 
+
    void nlcbsmm_init() {
       /**
        * Hook entry.
        */
 
       // Dedicated memory to maintaining the page table
-      void* raw         = (void*) mmap((void*) global_page_table(), PAGE_TABLE_SZ, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+      void* raw         = (void*) mmap((void*) global_page_table(),
+            PAGE_TABLE_SZ,
+            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            -1, 0);
       page_table        = new (raw) PageTableType();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
