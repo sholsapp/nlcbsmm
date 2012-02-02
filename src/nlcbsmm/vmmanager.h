@@ -30,7 +30,7 @@ namespace NLCBSMM {
    extern const char* local_ip;
 
    // The page table
-   //extern std::vector<SBEntry*, HoardAllocator<SBEntry* > > metadata_vector;
+   extern PageTableType* page_table;
 
    // Helper function to page align a pointer
    unsigned char* pageAlign(unsigned char* p);

@@ -11,7 +11,6 @@
 
 #include "sassert.h"
 #include "myhashmap.h"
-#include "stlallocator.h"
 #include "freelistheap.h"
 #include "zoneheap.h"
 #include "lockedheap.h"

@@ -339,6 +339,40 @@ namespace Hoard {
 
       public:
 
+         NO_INLINE void initNlcbsmmSuperblock (SuperblockType* sb) {
+            /**
+             * After Hoard asks the OS for another Superblock, we need to record
+             * the address and protection information into the distributed page_table.
+             */
+            uint8_t* sblk_addr = NULL;
+            uint8_t* page_addr = NULL;
+
+            // Does this node exist in the page table?
+            if (page_table->count(local_ip) == 0) {
+               fprintf(stderr, "> Adding %s to page_table\n", local_ip);
+               // Init a new vector for this node
+               page_table->insert(
+                     // IP -> std::vector<Page>
+                     std::pair<const char*, PageVectorType*>(
+                        local_ip,
+                        new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+            }
+
+            // This should already be page algined, but w/e
+            sblk_addr = pageAlign((uint8_t*) sb->getHeader()->getPosition());
+            page_addr = NULL;
+
+            for (int page = 0; page < 16; page++) {
+               page_addr = sblk_addr + (page * PAGE_SZ);
+               //fprintf(stderr, "Superblock (%p) - Page (%p)\n", sblk_addr, page_addr);
+               (*page_table)[local_ip]->push_back(
+                     new (pt_heap.malloc(sizeof(Page)))
+                     Page((uint32_t) page_addr,
+                        PROT_READ | PROT_WRITE));
+            }
+         }
+
+
          NO_INLINE void * getAnotherSuperblock (size_t sz) {
 
             // NB: This function should be on the slow path.
@@ -367,41 +401,16 @@ namespace Hoard {
 
                sb = new (ptr) SuperblockType (sz);
 
-               // Recording the *new* superblock information + size
-               //entry = (SBEntry*) myheap.malloc(sizeof(SBEntry));
-               //entry->sb = reinterpret_cast<void*>(sb);
-               //unsigned char* s = pageAlign((unsigned char*)sb->getHeader()->getPosition());
-               //for (int page = 0; page < 16; page++) {
-               //   void* placement = myheap.malloc(sizeof(MemoryLocation));
-               //   entry->page[page].setLocation(new (placement) MemoryLocation((void*) (s + (page * PAGESIZE))));
-               //}
+               // Put this sb into the page_table
+               initNlcbsmmSuperblock(sb);
 
-               fprintf(stderr, "%s is adding superblock entry (%p) to metadata...", local_ip, sb);
-               //metadata.insert(entry);
-               //metadata_vector.push_back(entry);
-               fprintf(stderr, "done.\n");
+               // Put the superblock into its appropriate bin.
+               if (sb) {
+                  unlocked_put (sb, sz);
+               }
 
+               return sb;
             }
-
-            // Put the superblock into its appropriate bin.
-            if (sb) {
-               unlocked_put (sb, sz);
-            }
-
-            // Lock all the pages in the superblock
-            unsigned char* s = pageAlign((unsigned char*)sb->getHeader()->getPosition());
-            //fprintf(stderr, "Superblock (%p - %p)\n", s, s + (PAGESIZE * 16));
-            for (int page = 0; page < 16; page++) {
-               //if (mprotect(s + (PAGESIZE * page), PAGESIZE, PROT_NONE)) {
-               //   perror("hoardmanager.h: mprotect");
-               //   exit(errno);
-               //}
-            }
-            // Who put this here?
-            //mprotect(s, PAGESIZE,PROT_READ|PROT_WRITE);
-
-
-            return sb;
          }
 
       private:

@@ -454,9 +454,9 @@ namespace NLCBSMM {
                fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
-               fprintf(stderr, "test 1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
-               fprintf(stderr, "test 2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
-               fprintf(stderr, "test 3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
+               //fprintf(stderr, "test 1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
+               //fprintf(stderr, "test 2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
+               //fprintf(stderr, "test 3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
 
                // Verify page table addresses
                // Build an ack (echo the same packet back at the other speaker, but change the flag)
@@ -831,16 +831,16 @@ namespace NLCBSMM {
       print_init_message();
 
       // Debug
-      (*page_table)["127.0.0.1"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
-      (*page_table)["127.0.0.1"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(666));
-      (*page_table)["127.0.0.2"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
-      (*page_table)["127.0.0.2"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(777));
-      (*page_table)["127.0.0.3"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
-      (*page_table)["127.0.0.3"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(888));
+      //(*page_table)["127.0.0.1"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
+      //(*page_table)["127.0.0.1"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(666, PROT_NONE));
+      //(*page_table)["127.0.0.2"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
+      //(*page_table)["127.0.0.2"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(777, PROT_NONE));
+      //(*page_table)["127.0.0.3"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
+      //(*page_table)["127.0.0.3"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(888, PROT_NONE));
 
-      fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
-      fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
-      fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
+      //fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
+      //fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
+      //fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
       // End Debug
 
       // Register SIGSEGV handler

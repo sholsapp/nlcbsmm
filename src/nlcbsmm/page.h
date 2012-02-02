@@ -12,13 +12,11 @@ namespace NLCBSMM {
 
       public:
          uint32_t address;
-         //struct sockaddr_in owner;
+         uint32_t protection;
 
-         Page(uint32_t _address) {
-            address = _address;
-            //owner.sin_family = AF_INET;
-            //owner.sin_addr.s_addr = htonl(INADDR_ANY);
-            //owner.sin_port = htons(UNICAST_PORT);
+         Page(uint32_t _address, uint32_t _protection) {
+            address    = _address;
+            protection = _protection;
          }
 
    }__attribute__((packed));

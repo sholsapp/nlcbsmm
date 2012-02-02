@@ -9,9 +9,8 @@
 extern uint8_t* _end;
 
 uint32_t& global_base() {
-   uint32_t end = (uint32_t) &_end;
-   uint32_t aligned = end & ~(4096-1);
-   static uint32_t base = (uint32_t) aligned + 4096;
+   // Page align the _end of the program + a page
+   static uint32_t base = (((uint32_t) &_end) & ~(PAGE_SZ - 1)) + PAGE_SZ;
    return base;
 }
 
