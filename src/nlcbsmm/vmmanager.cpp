@@ -310,10 +310,10 @@ namespace NLCBSMM {
             }
 
             // DEBUG
-            fprintf(stderr, "clone %d <%p - %p>\n", uni_listener_thread_id, uni_listener_ptr, (uint8_t*) uni_listener_ptr + CLONE_STACK_SZ);
-            fprintf(stderr, "clone %d <%p - %p>\n", uni_speaker_thread_id, uni_speaker_ptr, (uint8_t*) uni_speaker_ptr + CLONE_STACK_SZ);
-            fprintf(stderr, "clone %d <%p - %p>\n", multi_listener_thread_id, multi_listener_ptr, (uint8_t*) multi_listener_ptr + CLONE_STACK_SZ);
-            fprintf(stderr, "clone %d <%p - %p>\n", multi_speaker_thread_id, multi_speaker_ptr, (uint8_t*) multi_speaker_ptr + CLONE_STACK_SZ);
+            //fprintf(stderr, "clone %d <%p - %p>\n", uni_listener_thread_id, uni_listener_ptr, (uint8_t*) uni_listener_ptr + CLONE_STACK_SZ);
+            //fprintf(stderr, "clone %d <%p - %p>\n", uni_speaker_thread_id, uni_speaker_ptr, (uint8_t*) uni_speaker_ptr + CLONE_STACK_SZ);
+            //fprintf(stderr, "clone %d <%p - %p>\n", multi_listener_thread_id, multi_listener_ptr, (uint8_t*) multi_listener_ptr + CLONE_STACK_SZ);
+            //fprintf(stderr, "clone %d <%p - %p>\n", multi_speaker_thread_id, multi_speaker_ptr, (uint8_t*) multi_speaker_ptr + CLONE_STACK_SZ);
 
             return;
          }
