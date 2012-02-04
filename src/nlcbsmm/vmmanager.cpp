@@ -13,16 +13,10 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <netdb.h>
-#include <vector>
-#include <deque>
 
-// Order matters
 #include "vmmanager.h"
-#include "packets.h"
 #include "constants.h"
 #include "mutex.h"
-
-#define PAGESIZE 4096
 
 #define CLONE_ATTRS (CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE)
 #define CLONE_MMAP_PROT_FLAGS (PROT_READ | PROT_WRITE)
@@ -55,7 +49,7 @@ namespace NLCBSMM {
       /**
        * Helper function to page align a pointer
        */
-      return (unsigned char *)(((int)p) & ~(PAGESIZE-1));
+      return (unsigned char *)(((int)p) & ~(PAGE_SZ-1));
    }
 
    unsigned int pageIndex(unsigned char* p, unsigned char* base) {
@@ -63,7 +57,7 @@ namespace NLCBSMM {
        * Help function to return page number in superblock
        */
       unsigned char* pageAligned = pageAlign(p);
-      return (pageAlign(p) - base) % PAGESIZE;
+      return (pageAlign(p) - base) % PAGE_SZ;
    }
 
    const char* get_local_interface() {
@@ -113,12 +107,6 @@ namespace NLCBSMM {
 
 namespace NLCBSMM {
 
-   // Who to contact, and with what
-   typedef std::pair<struct sockaddr_in, Packet*> WorkTupleType;
-
-   // A queue of work
-   typedef std::deque<WorkTupleType*,
-           CloneAllocator<WorkTupleType* > > PacketQueueType;
 
    PacketQueueType uni_speaker_work_deque;
 
@@ -149,6 +137,8 @@ namespace NLCBSMM {
       mutex_lock(m);
       queue->push_back(work);
       mutex_unlock(m);
+      // Signal unicast speaker there is queued work
+      cond_signal(&uni_speaker_cond);
       return;
    }
 
@@ -364,6 +354,8 @@ namespace NLCBSMM {
                      exit(EXIT_FAILURE);
                   }
 
+                  // Another thread allocated memory and queued it for work, so
+                  // free memory when we're sending it.
                   clone_heap.free(p);
                   clone_heap.free(work);
                }
@@ -381,7 +373,7 @@ namespace NLCBSMM {
              */
             fprintf(stderr, "> uni-listener\n");
 
-            uint8_t  *packet_buffer   = NULL;
+            uint8_t* packet_buffer    = NULL;
             uint32_t sk               =  0;
             uint32_t nbytes           =  0;
             uint32_t addrlen          =  0;
@@ -404,7 +396,7 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            packet_buffer = (uint8_t*) clone_heap.malloc(sizeof(char) * MAX_PACKET_SZ);
+            packet_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             while(1) {
                // Clear the memory buffer each time
@@ -417,7 +409,7 @@ namespace NLCBSMM {
                }
 
                // Send buffer off for processing
-               uni_listener_event_loop(packet_buffer, nbytes);
+               uni_listener_event_loop(packet_buffer, nbytes, addr);
             }
 
             // Shit is scarce, son!
@@ -426,43 +418,54 @@ namespace NLCBSMM {
          }
 
 
-         static void uni_listener_event_loop(void* buffer, uint32_t nbytes) {
+         static void uni_listener_event_loop(void* buffer, uint32_t nbytes, struct sockaddr_in retaddr) {
             /**
              *
              */
             Packet*                p              = NULL;
             UnicastJoinAcceptance* uja            = NULL;
             WorkTupleType*         work           = NULL;
-            char*                  payload_buf    = NULL;
+            uint8_t*               payload_buf    = NULL;
+            void*                  packet_memory  = NULL;
+            void*                  work_memory    = NULL;
             uint32_t               payload_sz     = 0;
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
             payload_sz  = p->get_payload_sz();
-            payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
+            payload_buf = reinterpret_cast<uint8_t*>(p->get_payload_ptr());
 
             switch (p->get_flag()) {
 
             case UNICAST_JOIN_ACCEPT_F:
-               fprintf(stderr, "> received join acknowledgement\n");
+               fprintf(stderr, "> received join accept\n");
+
                uja = reinterpret_cast<UnicastJoinAcceptance*>(buffer);
+
                // record our uuid from the master
                _uuid = ntohl(uja->uuid);
 
-               fprintf(stderr, "my uuid: %d\n", _uuid);
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
-               fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
+               // Push work onto the uni_speaker's queue
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                     // A new work tuple
+                     new (work_memory) WorkTupleType(retaddr,
+                        // A new packet
+                        new (packet_memory) UnicastJoinAcceptance(uja))
+                     );
 
-               //fprintf(stderr, "test 1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
-               //fprintf(stderr, "test 2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
-               //fprintf(stderr, "test 3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
+               //fprintf(stderr, "my uuid: %d\n", _uuid);
+               //fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
+               //fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
-               // Verify page table addresses
-               // Build an ack (echo the same packet back at the other speaker, but change the flag)
-
-               // TODO: change state with a lock... this is a race condition
                MS_STATE = HEARTBEAT;
+               break;
+
+            case UNICAST_JOIN_ACCEPT_ACK_F:
+               fprintf(stderr, "> received join accept ack\n");
+               // Send the page table
                break;
 
             default:
@@ -679,8 +682,8 @@ namespace NLCBSMM {
                         && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
                      // Allocate memory for the new work/packet
-                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                      // Who to contact
                      retaddr.sin_family      = AF_INET;
@@ -697,9 +700,6 @@ namespace NLCBSMM {
                                  _end_page_table,
                                  _next_uuid++))
                            );
-
-                     // Signal unicast speaker there is queued work
-                     cond_signal(&uni_speaker_cond);
                   }
                   else {
                      fprintf(stderr, "> invalid address space detected\n");

@@ -1,12 +1,15 @@
 #ifndef __PACKETS_H_
 #define __PACKETS_H_
 
+#include <cstring>
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define MULTICAST_JOIN_F 0xFF
-#define UNICAST_JOIN_ACCEPT_F 0xFE
-#define MULTICAST_HEARTBEAT_F 0x00
+#define MULTICAST_JOIN_F          0xFF
+#define UNICAST_JOIN_ACCEPT_F     0xFE
+#define UNICAST_JOIN_ACCEPT_ACK_F 0xFD
+#define MULTICAST_HEARTBEAT_F     0x00
 
 #include "constants.h"
 
@@ -99,6 +102,13 @@ class UnicastJoinAcceptance : public Packet {
       uint32_t start_page_table;
       uint32_t end_page_table;
       uint32_t uuid;
+
+      UnicastJoinAcceptance() {}
+
+      UnicastJoinAcceptance(void* copy) {
+         memcpy(this, copy, MAX_PACKET_SZ);
+         this->set_flag(UNICAST_JOIN_ACCEPT_ACK_F);
+      }
 
       UnicastJoinAcceptance(uint32_t user_length, uint32_t _start_pt, uint32_t _end_pt, uint32_t _uuid) {
 

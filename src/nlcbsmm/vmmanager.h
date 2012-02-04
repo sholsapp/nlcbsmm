@@ -6,9 +6,12 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <signal.h>
+
 #include <vector>
+#include <deque>
 
 #include "page.h"
+#include "packets.h"
 #include "cln_allocator.h"
 #include "pt_allocator.h"
 
@@ -23,6 +26,13 @@ namespace NLCBSMM {
            PageVectorType*,
            std::less<const char*>,
            PageTableAllocator<std::pair<const char*, PageVectorType*> > > PageTableType;
+
+   // Who to contact, and with what
+   typedef std::pair<struct sockaddr_in, Packet*> WorkTupleType;
+
+   // A queue of work
+   typedef std::deque<WorkTupleType*,
+           CloneAllocator<WorkTupleType* > > PacketQueueType;
 }
 
 namespace NLCBSMM {
