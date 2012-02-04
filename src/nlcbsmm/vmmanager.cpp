@@ -137,6 +137,7 @@ namespace NLCBSMM {
       mutex_lock(m);
       queue->push_back(work);
       mutex_unlock(m);
+
       // Signal unicast speaker there is queued work
       cond_signal(&uni_speaker_cond);
       return;
@@ -338,8 +339,10 @@ namespace NLCBSMM {
 
             while(1) {
 
+               fprintf(stderr, "> unicast waiting for work\n");
                // Wait for work (blocks until signal from other thread)
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
+               fprintf(stderr, "> unicast got work\n");
 
                // Pop work from work queue
                work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
@@ -457,6 +460,8 @@ namespace NLCBSMM {
                         // A new packet
                         new (packet_memory) UnicastJoinAcceptance(uja))
                      );
+
+               fprintf(stderr, "done pushing work\n");
 
                //fprintf(stderr, "my uuid: %d\n", _uuid);
                //fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
