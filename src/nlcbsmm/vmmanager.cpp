@@ -137,7 +137,6 @@ namespace NLCBSMM {
       mutex_lock(m);
       queue->push_back(work);
       mutex_unlock(m);
-
       // Signal unicast speaker there is queued work
       cond_signal(&uni_speaker_cond);
       return;
@@ -340,9 +339,11 @@ namespace NLCBSMM {
             while(1) {
 
                fprintf(stderr, "> unicast waiting for work\n");
+
                // Wait for work (blocks until signal from other thread)
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
-               fprintf(stderr, "> unicast got work\n");
+               // The cond_wait specifies that it returns with second param in a locked state
+               mutex_unlock(&uni_speaker_cond_lock);
 
                // Pop work from work queue
                work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
@@ -352,7 +353,7 @@ namespace NLCBSMM {
                   addr = work->first;
                   p    = work->second;
 
-                  fprintf(stderr, "> sending a packet (%x)!\n", p->get_flag());
+                  fprintf(stderr, "> sending a packet (0x%x) to %s!\n", p->get_flag(), inet_ntoa(addr.sin_addr));
 
                   if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
                      perror("vmmanager.cpp, sendto");
@@ -407,7 +408,6 @@ namespace NLCBSMM {
                // Clear the memory buffer each time
                memset(packet_buffer, 0, MAX_PACKET_SZ);
 
-               // Just block for now
                if ((nbytes = recvfrom(sk, packet_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
