@@ -349,6 +349,8 @@ namespace NLCBSMM {
                   addr = work->first;
                   p    = work->second;
 
+                  fprintf(stderr, "> sending a packet (%x)!\n", p->get_flag());
+
                   if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
                      perror("vmmanager.cpp, sendto");
                      exit(EXIT_FAILURE);
