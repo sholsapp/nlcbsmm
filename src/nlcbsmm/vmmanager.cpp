@@ -461,8 +461,6 @@ namespace NLCBSMM {
                         new (packet_memory) UnicastJoinAcceptance(uja))
                      );
 
-               fprintf(stderr, "done pushing work\n");
-
                //fprintf(stderr, "my uuid: %d\n", _uuid);
                //fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
                //fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
@@ -476,6 +474,7 @@ namespace NLCBSMM {
                break;
 
             default:
+               fprintf(stderr, "> unknown packet type\n");
                break;
             }
             return;
