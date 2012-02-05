@@ -483,6 +483,8 @@ namespace NLCBSMM {
                // Queue work to send page table
                for (i = 0; i < PAGE_TABLE_SZ; i += PAGE_SZ) {
 
+                  fprintf(stderr, "> making SyncPage(%p)\n", page_ptr);
+
                   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
