@@ -483,12 +483,10 @@ namespace NLCBSMM {
 
                page_ptr  = reinterpret_cast<uint8_t*>(page_table);
 
-               fprintf(stderr, "> page_ptr = %p\n", page_ptr);
+               //fprintf(stderr, "> page_ptr = %p\n", page_ptr);
 
                // Queue work to send page table
                for (i = 0; i < PAGE_TABLE_SZ; i += PAGE_SZ) {
-
-                  fprintf(stderr, "> making SyncPage(%p)\n", page_ptr);
 
                   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
@@ -496,7 +494,7 @@ namespace NLCBSMM {
                   page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
                   page_data = reinterpret_cast<void*>(page_ptr + i);
 
-                  fprintf(stderr, "> creating sync page for %p\n", (void*) page_addr);
+                  //fprintf(stderr, "> creating sync page for %p\n", (void*) page_addr);
 
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
