@@ -142,7 +142,8 @@ class SyncPage : public Packet {
          payload_sz  = htonl(PAGE_SZ);
          flag        = SYNC_PAGE_F;
          page_offset = htonl(page_addr);
-         memcpy(this, page_data, MAX_PACKET_SZ);
+         // Copy payload into packet
+         memcpy(this->get_payload_ptr(), page_data, MAX_PACKET_SZ);
       }
 
 }__attribute__((packed));
