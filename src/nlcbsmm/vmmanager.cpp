@@ -348,7 +348,7 @@ namespace NLCBSMM {
                // Pop work from work queue
                work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
 
-               if (work != NULL) {
+               while (work != NULL) {
 
                   addr = work->first;
                   p    = work->second;
@@ -364,6 +364,9 @@ namespace NLCBSMM {
                   // free memory when we're sending it.
                   clone_heap.free(p);
                   clone_heap.free(work);
+
+                  // Pop work from work queue
+                  work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
                }
 
                // TODO: do we need this?
