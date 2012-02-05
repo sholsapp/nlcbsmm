@@ -35,19 +35,6 @@
 #define PAGE_TABLE_HEAP_SZ (4096 * 512)
 
 /**
- * Virtual memory constants
- */
-/*
-extern uint32_t     BASE;
-extern uint32_t     CLONE_ALLOC_HEAP_OFFSET;
-extern uint32_t     CLONE_HEAP_OFFSET;
-
-extern uint32_t     PAGE_TABLE_OFFSET;
-extern uint32_t     PAGE_TABLE_ALLOC_HEAP_OFFSET;
-extern uint32_t     PAGE_TABLE_HEAP_OFFSET;
-*/
-
-/**
  * Networking constants
  */
 

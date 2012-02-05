@@ -429,11 +429,16 @@ namespace NLCBSMM {
              */
             Packet*                p              = NULL;
             UnicastJoinAcceptance* uja            = NULL;
+            SyncPage*              syncp          = NULL;
             WorkTupleType*         work           = NULL;
             uint8_t*               payload_buf    = NULL;
+            uint8_t*               page_ptr       = 0;
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
+            void*                  page_data      = 0;
+            uint32_t               i              = 0;
             uint32_t               payload_sz     = 0;
+            uint32_t               page_addr      = 0;
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
@@ -469,7 +474,35 @@ namespace NLCBSMM {
 
             case UNICAST_JOIN_ACCEPT_ACK_F:
                fprintf(stderr, "> received join accept ack\n");
-               // Send the page table
+
+               // Respond to the other server's listener
+               retaddr.sin_port = htons(UNICAST_PORT);
+
+               page_ptr  = reinterpret_cast<uint8_t*>(page_table);
+
+               // Queue work to send page table
+               for (i = 0; i < PAGE_TABLE_SZ; i += PAGE_SZ) {
+
+                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+                  page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+                  page_data = reinterpret_cast<void*>(page_ptr + i);
+
+                  // Push work onto the uni_speaker's queue
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) SyncPage(page_addr, page_data))
+                        );
+               }
+               break;
+
+            case SYNC_PAGE_F:
+               fprintf(stderr, "> received sync page\n");
+               syncp = reinterpret_cast<SyncPage*>(buffer);
+               fprintf(stderr, "> sync page at %p\n", (void*) syncp->page_offset);
                break;
 
             default:

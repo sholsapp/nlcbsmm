@@ -9,6 +9,9 @@
 #define MULTICAST_JOIN_F          0xFF
 #define UNICAST_JOIN_ACCEPT_F     0xFE
 #define UNICAST_JOIN_ACCEPT_ACK_F 0xFD
+
+#define SYNC_PAGE_F               0xA0
+
 #define MULTICAST_HEARTBEAT_F     0x00
 
 #include "constants.h"
@@ -118,6 +121,28 @@ class UnicastJoinAcceptance : public Packet {
          start_page_table  = htonl(_start_pt);
          end_page_table    = htonl(_end_pt);
          uuid              = htonl(_uuid);
+      }
+
+}__attribute__((packed));
+
+
+class SyncPage : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t page_offset;
+
+      SyncPage(uint32_t page_addr, void* page_data) {
+         sequence    = htonl(0);
+         payload_sz  = htonl(PAGE_SZ);
+         flag        = SYNC_PAGE_F;
+         page_offset = htonl(page_addr);
+         memcpy(this, page_data, MAX_PACKET_SZ);
       }
 
 }__attribute__((packed));
