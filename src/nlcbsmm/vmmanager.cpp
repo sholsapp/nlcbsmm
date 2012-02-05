@@ -464,9 +464,6 @@ namespace NLCBSMM {
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               memset(work_memory, 0, sizeof(WorkTupleType));
-               memset(packet_memory, 0, MAX_PACKET_SZ);
-
                // Push work onto the uni_speaker's queue
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                      // A new work tuple
@@ -486,6 +483,8 @@ namespace NLCBSMM {
 
                page_ptr  = reinterpret_cast<uint8_t*>(page_table);
 
+               fprintf(stderr, "> page_ptr = %p\n", page_ptr);
+
                // Queue work to send page table
                for (i = 0; i < PAGE_TABLE_SZ; i += PAGE_SZ) {
 
@@ -496,6 +495,8 @@ namespace NLCBSMM {
 
                   page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
                   page_data = reinterpret_cast<void*>(page_ptr + i);
+
+                  fprintf(stderr, "> creating sync page for %p\n", (void*) page_addr);
 
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -510,7 +511,7 @@ namespace NLCBSMM {
             case SYNC_PAGE_F:
                fprintf(stderr, "> received sync page\n");
                syncp = reinterpret_cast<SyncPage*>(buffer);
-               fprintf(stderr, "> sync page at %p\n", (void*) syncp->page_offset);
+               fprintf(stderr, "> sync page at %p\n", (void*) ntohl((syncp->page_offset));
                break;
 
             default:
