@@ -464,6 +464,9 @@ namespace NLCBSMM {
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
+               memset(work_memory, 0, sizeof(WorkTupleType));
+               memset(packet_memory, 0, MAX_PACKET_SZ);
+
                // Push work onto the uni_speaker's queue
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                      // A new work tuple
@@ -511,7 +514,7 @@ namespace NLCBSMM {
                break;
 
             default:
-               fprintf(stderr, "> unknown packet type\n");
+               fprintf(stderr, "> unknown packet type (%x)\n", p->get_flag());
                break;
             }
             return;
