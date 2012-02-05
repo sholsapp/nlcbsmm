@@ -338,7 +338,7 @@ namespace NLCBSMM {
 
             while(1) {
 
-               fprintf(stderr, "> unicast waiting for work\n");
+               fprintf(stderr, "> unicast waiting for work (queue_sz = %d)\n", safe_size(&uni_speaker_work_deque, &uni_speaker_lock));
 
                // Wait for work (blocks until signal from other thread)
                cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
@@ -348,7 +348,7 @@ namespace NLCBSMM {
                // Pop work from work queue
                work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
 
-               while (work != NULL) {
+               if (work != NULL) {
 
                   addr = work->first;
                   p    = work->second;
@@ -364,9 +364,6 @@ namespace NLCBSMM {
                   // free memory when we're sending it.
                   clone_heap.free(p);
                   clone_heap.free(work);
-
-                  // Pop work from work queue
-                  work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
                }
 
                // TODO: do we need this?
