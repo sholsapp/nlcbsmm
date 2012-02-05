@@ -511,7 +511,7 @@ namespace NLCBSMM {
             case SYNC_PAGE_F:
                fprintf(stderr, "> received sync page\n");
                syncp = reinterpret_cast<SyncPage*>(buffer);
-               fprintf(stderr, "> sync page at %p\n", (void*) ntohl((syncp->page_offset));
+               fprintf(stderr, "> sync page at %p\n", (void*) ntohl((syncp->page_offset)));
                break;
 
             default:
