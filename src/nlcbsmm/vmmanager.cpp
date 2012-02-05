@@ -338,12 +338,15 @@ namespace NLCBSMM {
 
             while(1) {
 
-               fprintf(stderr, "> unicast waiting for work (queue_sz = %d)\n", safe_size(&uni_speaker_work_deque, &uni_speaker_lock));
+               fprintf(stderr, "> unicast waiting for work\n", safe_size(&uni_speaker_work_deque, &uni_speaker_lock));
 
-               // Wait for work (blocks until signal from other thread)
-               cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
-               // The cond_wait specifies that it returns with second param in a locked state
-               mutex_unlock(&uni_speaker_cond_lock);
+               // If there is no work in the queue
+               if (safe_size(&uni_speaker_work_deque, &uni_speaker_lock) == 0) {
+                  // Wait for work (blocks until signal from other thread)
+                  cond_wait(&uni_speaker_cond, &uni_speaker_cond_lock);
+                  // The cond_wait specifies that it returns with second param in a locked state
+                  mutex_unlock(&uni_speaker_cond_lock);
+               }
 
                // Pop work from work queue
                work = safe_pop(&uni_speaker_work_deque, &uni_speaker_lock);
