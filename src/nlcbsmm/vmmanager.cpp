@@ -450,6 +450,9 @@ namespace NLCBSMM {
                // record our uuid from the master
                _uuid = ntohl(uja->uuid);
 
+               // Respond to the other server's listener
+               retaddr.sin_port = htons(UNICAST_PORT);
+
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
@@ -460,10 +463,6 @@ namespace NLCBSMM {
                         // A new packet
                         new (packet_memory) UnicastJoinAcceptance(uja))
                      );
-
-               //fprintf(stderr, "my uuid: %d\n", _uuid);
-               //fprintf(stderr, "master pt_s (%p) | local_s (%p)\n", (void*) ntohl(uja->start_page_table), (void*) _start_page_table);
-               //fprintf(stderr, "master pt_e (%p) | local_e (%p)\n", (void*) ntohl(uja->end_page_table), (void*) _end_page_table);
 
                MS_STATE = HEARTBEAT;
                break;
@@ -669,8 +668,6 @@ namespace NLCBSMM {
             p           = reinterpret_cast<Packet*>(buffer);
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
-
-            fprintf(stderr, "> listening to a packet (%d)\n", p->get_flag());
 
             switch (p->get_flag()) {
 
