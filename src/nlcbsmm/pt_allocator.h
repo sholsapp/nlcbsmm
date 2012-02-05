@@ -92,8 +92,8 @@ namespace NLCBSMM {
              * Deallocate storage p of deleted elements.
              */
             //std::cerr << "deallocate " << num << " element(s)"
-               << " of size " << sizeof(T)
-               << " at: " << (void*)p << std::endl;
+            //   << " of size " << sizeof(T)
+            //   << " at: " << (void*)p << std::endl;
             // The heap is coupled global variabled -- must be defined!
             pt_heap.free((void*)p);
          }

@@ -355,7 +355,7 @@ namespace NLCBSMM {
 
                   fprintf(stderr, "> sending a packet (0x%x) to %s!\n", p->get_flag(), inet_ntoa(addr.sin_addr));
 
-                  if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
+                  if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &(work->first) , sizeof(addr)) < 0) {
                      perror("vmmanager.cpp, sendto");
                      exit(EXIT_FAILURE);
                   }
