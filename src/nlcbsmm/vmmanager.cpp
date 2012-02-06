@@ -60,6 +60,16 @@ namespace NLCBSMM {
       return (pageAlign(p) - base) % PAGE_SZ;
    }
 
+   bool isPageZeros(void* p) {
+
+      char testblock[PAGE_SZ] = {0};
+
+      memset(testblock, 0, PAGE_SZ);
+
+      return memcmp(testblock, p, PAGE_SZ) == 0;
+
+   }
+
    const char* get_local_interface() {
       /**
        * Used to initialize the static variable local_ip with an IP address other nodes can
@@ -442,6 +452,7 @@ namespace NLCBSMM {
             void*                  work_memory    = NULL;
             void*                  page_data      = 0;
             uint32_t               i              = 0;
+            uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
             uint32_t               page_addr      = 0;
 
@@ -483,18 +494,23 @@ namespace NLCBSMM {
                // Respond to the other server's listener
                retaddr.sin_port = htons(UNICAST_PORT);
 
+               // How big is the region we're sync'ing?
+               region_sz = PAGE_TABLE_SZ + PAGE_TABLE_ALLOC_HEAP_SZ + PAGE_TABLE_HEAP_SZ;
+
+               // Where does the region start?
                page_ptr  = reinterpret_cast<uint8_t*>(page_table);
 
-               //fprintf(stderr, "> page_ptr = %p\n", page_ptr);
-
                // Queue work to send page table
-               for (i = 0; i < PAGE_TABLE_SZ; i += PAGE_SZ) {
-
-                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               for (i = 0; i < region_sz; i += PAGE_SZ) {
 
                   page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
                   page_data = reinterpret_cast<void*>(page_ptr + i);
+
+                  // If this page has non-zero contents
+                  if (!isPageZeros(page_data)) {
+
+                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -503,6 +519,10 @@ namespace NLCBSMM {
                            // A new packet
                            new (packet_memory) SyncPage(page_addr, page_data))
                         );
+                  }
+                  else {
+                     fprintf(stderr, "> no sync - %p all zeros\n", page_data);
+                  }
                }
                break;
 
@@ -512,6 +532,15 @@ namespace NLCBSMM {
                fprintf(stderr, "> sync page at %p\n", (void*) ntohl((syncp->page_offset)));
 
                fprintf(stderr, "> my page table <%p-%p>\n", (void*) _start_page_table, (void*) _end_page_table);
+
+               // Make sure no one uses the page table while we're replacing it
+               mutex_lock(&pt_lock);
+
+               // Sync the page
+               memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
+
+               // Done
+               mutex_unlock(&pt_lock);
 
 
 
