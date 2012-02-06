@@ -117,13 +117,15 @@ namespace NLCBSMM {
       /**
        *
        */
-      PageTableItr pt_itr;
-      PageVectorItr vec_itr;
-      PageVectorType* temp = NULL;
+      PageTableItr    pt_itr;
+      PageVectorItr   vec_itr;
+      PageVectorType* temp   = NULL;
+      struct in_addr  addr   = {0};
 
       fprintf(stderr, "**** PAGE_TABLE ****\n");
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
-         fprintf(stderr, "%% %s : <", (*pt_itr).first);
+         addr.s_addr = (*pt_itr).first;
+         fprintf(stderr, "%% %s : <", inet_ntoa(addr));
          // The list of pages
          temp = (*pt_itr).second;
          for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
@@ -131,7 +133,7 @@ namespace NLCBSMM {
          }
          fprintf(stderr, " >\n");
       }
-      fprintf(stderr, "\n\n");
+      fprintf(stderr, "********************\n\n");
    }
 
 }
@@ -796,8 +798,8 @@ namespace NLCBSMM {
                      fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
                      page_table->insert(
                            // IP -> std::vector<Page>
-                           std::pair<const char*, PageVectorType*>(
-                              payload_buf,
+                           std::pair<uint32_t, PageVectorType*>(
+                              inet_addr(payload_buf),
                               new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
 
                      print_page_table();
@@ -955,24 +957,24 @@ namespace NLCBSMM {
       // Debug
       page_table->insert(
             // IP -> std::vector<Page>
-            std::pair<const char*, PageVectorType*>(
-               "127.0.0.1",
+            std::pair<uint32_t, PageVectorType*>(
+               inet_addr("127.0.0.1"),
                new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
-      (*page_table)["127.0.0.1"]->push_back(
+      (*page_table)[inet_addr("127.0.0.1")]->push_back(
             new (pt_heap.malloc(sizeof(Page)))
             Page((uint32_t) 0x835b000,
                PROT_READ | PROT_WRITE));
-      (*page_table)["127.0.0.1"]->push_back(
+      (*page_table)[inet_addr("127.0.0.1")]->push_back(
             new (pt_heap.malloc(sizeof(Page)))
             Page((uint32_t) 0x835c000,
                PROT_READ | PROT_WRITE));
 
       page_table->insert(
             // IP -> std::vector<Page>
-            std::pair<const char*, PageVectorType*>(
-               "127.0.0.2",
+            std::pair<uint32_t, PageVectorType*>(
+               inet_addr("127.0.0.2"),
                new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
-      (*page_table)["127.0.0.2"]->push_back(
+      (*page_table)[inet_addr("127.0.0.2")]->push_back(
             new (pt_heap.malloc(sizeof(Page)))
             Page((uint32_t) 0x835d000,
                PROT_READ | PROT_WRITE));

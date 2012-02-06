@@ -2,10 +2,14 @@
  * NLCBSMM Virtual Memory Manager
  */
 #include <errno.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
-#include <signal.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <vector>
 #include <deque>
@@ -23,11 +27,12 @@ namespace NLCBSMM {
 
    typedef PageVectorType::iterator PageVectorItr;
 
-   // A mapping of 'ip address' to a NLCBSMM::PageVector
-   typedef std::map<const char*,
+   // A mapping of 'ip address' to a NLCBSMM::PageVector, where 'ip address' is the
+   // binary representation of the IPv4 address in dot-notation.
+   typedef std::map<uint32_t,
            PageVectorType*,
-           std::less<const char*>,
-           PageTableAllocator<std::pair<const char*, PageVectorType*> > > PageTableType;
+           std::less<uint32_t>,
+           PageTableAllocator<std::pair<uint32_t, PageVectorType*> > > PageTableType;
 
    typedef PageTableType::iterator PageTableItr;
 

@@ -27,6 +27,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _HOARDMANAGER_H_
 #define _HOARDMANAGER_H_
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <cstdlib>
 #include <new>
 
@@ -348,13 +351,13 @@ namespace Hoard {
             uint8_t* page_addr = NULL;
 
             // Does this node exist in the page table?
-            if (page_table->count(local_ip) == 0) {
+            if (page_table->count(inet_addr(local_ip)) == 0) {
                fprintf(stderr, "> Adding %s to page_table\n", local_ip);
                // Init a new vector for this node
                page_table->insert(
                      // IP -> std::vector<Page>
-                     std::pair<const char*, PageVectorType*>(
-                        local_ip,
+                     std::pair<uint32_t, PageVectorType*>(
+                        inet_addr(local_ip),
                         new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
             }
 
@@ -365,7 +368,7 @@ namespace Hoard {
             for (int page = 0; page < 16; page++) {
                page_addr = sblk_addr + (page * PAGE_SZ);
                //fprintf(stderr, "Superblock (%p) - Page (%p)\n", sblk_addr, page_addr);
-               (*page_table)[local_ip]->push_back(
+               (*page_table)[inet_addr(local_ip)]->push_back(
                      new (pt_heap.malloc(sizeof(Page)))
                      Page((uint32_t) page_addr,
                         PROT_READ | PROT_WRITE));
