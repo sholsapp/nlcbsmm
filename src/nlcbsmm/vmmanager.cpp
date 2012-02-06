@@ -554,9 +554,10 @@ namespace NLCBSMM {
 
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
-               fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(0)->address);
-               fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(1)->address);
-               fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(2)->address);
+               //fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(0)->address);
+               //fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(1)->address);
+               //fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(2)->address);
+               fprintf(stderr, ">.< (map size = %d)\n", page_table->size());
                break;
 
             default:
@@ -773,6 +774,13 @@ namespace NLCBSMM {
                         && (uint32_t) &_end == ntohl(mjp->end_addr)
                         && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
+                     page_table->insert(
+                           // IP -> std::vector<Page>
+                           std::pair<const char*, PageVectorType*>(
+                              payload_buf,
+                              new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+
+
                      // Allocate memory for the new work/packet
                      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                      packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
@@ -935,12 +943,6 @@ namespace NLCBSMM {
       //fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
       //fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
       // End Debug
-
-      if (strcmp("192.168.1.21", local_ip) == 0) {
-         fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(0)->address);
-         fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(1)->address);
-         fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(2)->address);
-      }
 
       // Register SIGSEGV handler
       //register_signal_handlers();
