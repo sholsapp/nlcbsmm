@@ -118,6 +118,8 @@ namespace NLCBSMM {
    mutex uni_speaker_lock;
    mutex multi_speaker_lock;
 
+   mutex pt_lock;
+
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
       /**
        *
@@ -494,8 +496,6 @@ namespace NLCBSMM {
                   page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
                   page_data = reinterpret_cast<void*>(page_ptr + i);
 
-                  //fprintf(stderr, "> creating sync page for %p\n", (void*) page_addr);
-
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                         // A new work tuple
@@ -512,6 +512,8 @@ namespace NLCBSMM {
                fprintf(stderr, "> sync page at %p\n", (void*) ntohl((syncp->page_offset)));
 
                fprintf(stderr, "> my page table <%p-%p>\n", (void*) _start_page_table, (void*) _end_page_table);
+
+
 
 
                break;
@@ -876,6 +878,7 @@ namespace NLCBSMM {
       mutex_init(&uni_speaker_cond_lock, NULL);
       mutex_init(&uni_speaker_lock,      NULL);
       mutex_init(&multi_speaker_lock,    NULL);
+      mutex_init(&pt_lock,               NULL);
 
       print_init_message();
 
