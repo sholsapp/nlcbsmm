@@ -113,6 +113,27 @@ namespace NLCBSMM {
       return "255.255.255.255";
    }
 
+   void print_page_table() {
+      /**
+       *
+       */
+      PageTableItr pt_itr;
+      PageVectorItr vec_itr;
+      PageVectorType* temp = NULL;
+
+      fprintf(stderr, "**** PAGE_TABLE ****\n");
+      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
+         fprintf(stderr, "%% %s : <", (*pt_itr).first);
+         // The list of pages
+         temp = (*pt_itr).second;
+         for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
+            fprintf(stderr, " [%p]", (*vec_itr));
+         }
+         fprintf(stderr, " >\n");
+      }
+      fprintf(stderr, "\n\n");
+   }
+
 }
 
 namespace NLCBSMM {
@@ -554,9 +575,7 @@ namespace NLCBSMM {
 
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
-               //fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(0)->address);
-               //fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(1)->address);
-               //fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(2)->address);
+               print_page_table();
                fprintf(stderr, ">.< (map size = %d)\n", page_table->size());
                break;
 
@@ -774,12 +793,12 @@ namespace NLCBSMM {
                         && (uint32_t) &_end == ntohl(mjp->end_addr)
                         && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
+                     fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
                      page_table->insert(
                            // IP -> std::vector<Page>
                            std::pair<const char*, PageVectorType*>(
                               payload_buf,
                               new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
-
 
                      // Allocate memory for the new work/packet
                      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
@@ -932,16 +951,31 @@ namespace NLCBSMM {
       print_init_message();
 
       // Debug
-      //(*page_table)["127.0.0.1"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
-      //(*page_table)["127.0.0.1"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(666, PROT_NONE));
-      //(*page_table)["127.0.0.2"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
-      //(*page_table)["127.0.0.2"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(777, PROT_NONE));
-      //(*page_table)["127.0.0.3"] = new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType();
-      //(*page_table)["127.0.0.3"]->push_back(new (pt_heap.malloc(sizeof(Page))) Page(888, PROT_NONE));
+      page_table->insert(
+            // IP -> std::vector<Page>
+            std::pair<const char*, PageVectorType*>(
+               "127.0.0.1",
+               new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+      (*page_table)["127.0.0.1"]->push_back(
+            new (pt_heap.malloc(sizeof(Page)))
+            Page((uint32_t) 0x835b000,
+               PROT_READ | PROT_WRITE));
+      (*page_table)["127.0.0.1"]->push_back(
+            new (pt_heap.malloc(sizeof(Page)))
+            Page((uint32_t) 0x835c000,
+               PROT_READ | PROT_WRITE));
 
-      //fprintf(stderr, "1 > %d\n", (*page_table)["127.0.0.1"]->at(0)->address);
-      //fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
-      //fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
+      page_table->insert(
+            // IP -> std::vector<Page>
+            std::pair<const char*, PageVectorType*>(
+               "127.0.0.2",
+               new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+      (*page_table)["127.0.0.2"]->push_back(
+            new (pt_heap.malloc(sizeof(Page)))
+            Page((uint32_t) 0x835d000,
+               PROT_READ | PROT_WRITE));
+
+      print_page_table();
       // End Debug
 
       // Register SIGSEGV handler

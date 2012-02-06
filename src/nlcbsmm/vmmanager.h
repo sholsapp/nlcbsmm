@@ -21,11 +21,15 @@ namespace NLCBSMM {
    typedef std::vector<Page*,
            PageTableAllocator<Page*> > PageVectorType;
 
+   typedef PageVectorType::iterator PageVectorItr;
+
    // A mapping of 'ip address' to a NLCBSMM::PageVector
    typedef std::map<const char*,
            PageVectorType*,
            std::less<const char*>,
            PageTableAllocator<std::pair<const char*, PageVectorType*> > > PageTableType;
+
+   typedef PageTableType::iterator PageTableItr;
 
    // Who to contact, and with what
    typedef std::pair<struct sockaddr_in, Packet*> WorkTupleType;
