@@ -509,29 +509,37 @@ namespace NLCBSMM {
                   // If this page has non-zero contents
                   if (!isPageZeros(page_data)) {
 
-                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-                  // Push work onto the uni_speaker's queue
-                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                        // A new work tuple
-                        new (work_memory) WorkTupleType(retaddr,
-                           // A new packet
-                           new (packet_memory) SyncPage(page_addr, page_data))
-                        );
-                  }
-                  else {
-                     fprintf(stderr, "> no sync - %p all zeros\n", page_data);
+                     // Push work onto the uni_speaker's queue
+                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                           // A new work tuple
+                           new (work_memory) WorkTupleType(retaddr,
+                              // A new packet
+                              new (packet_memory) SyncPage(page_addr, page_data))
+                           );
                   }
                }
+
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               // Push work onto the uni_speaker's queue
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                     // A new work tuple
+                     new (work_memory) WorkTupleType(retaddr,
+                        // A new packet
+                        new (packet_memory) GenericPacket(SYNC_DONE_F))
+                     );
+
+
                break;
 
             case SYNC_PAGE_F:
-               fprintf(stderr, "> received sync page\n");
                syncp = reinterpret_cast<SyncPage*>(buffer);
-               fprintf(stderr, "> sync page at %p\n", (void*) ntohl((syncp->page_offset)));
 
-               fprintf(stderr, "> my page table <%p-%p>\n", (void*) _start_page_table, (void*) _end_page_table);
+               fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
 
                // Make sure no one uses the page table while we're replacing it
                mutex_lock(&pt_lock);
@@ -542,9 +550,13 @@ namespace NLCBSMM {
                // Done
                mutex_unlock(&pt_lock);
 
+               break;
 
-
-
+            case SYNC_DONE_F:
+               fprintf(stderr, "> sync done\n");
+               fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(0)->address);
+               fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(1)->address);
+               fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(2)->address);
                break;
 
             default:
@@ -923,6 +935,12 @@ namespace NLCBSMM {
       //fprintf(stderr, "2 > %d\n", (*page_table)["127.0.0.2"]->at(0)->address);
       //fprintf(stderr, "3 > %d\n", (*page_table)["127.0.0.3"]->at(0)->address);
       // End Debug
+
+      if (strcmp("192.168.1.21", local_ip) == 0) {
+         fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(0)->address);
+         fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(1)->address);
+         fprintf(stderr, "Sync test> %d\n", (*page_table)["192.168.1.21"]->at(2)->address);
+      }
 
       // Register SIGSEGV handler
       //register_signal_handlers();

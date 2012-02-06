@@ -12,6 +12,8 @@
 
 #define SYNC_PAGE_F               0xAA
 
+#define SYNC_DONE_F               0x10
+
 #define MULTICAST_HEARTBEAT_F     0x00
 
 #include "constants.h"
@@ -146,6 +148,24 @@ class SyncPage : public Packet {
          page_offset = htonl(page_addr);
          // Copy payload into packet
          memcpy(this->get_payload_ptr(), page_data, MAX_PACKET_SZ);
+      }
+
+}__attribute__((packed));
+
+
+class GenericPacket : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      GenericPacket(uint8_t type) {
+        sequence   = htonl(0);
+        payload_sz = htonl(0);
+        flag       = type;
       }
 
 }__attribute__((packed));
