@@ -129,7 +129,7 @@ namespace NLCBSMM {
          // The list of pages
          temp = (*pt_itr).second;
          for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
-            fprintf(stderr, " [%p]", (*vec_itr));
+            fprintf(stderr, " [%p]", (void*) (*vec_itr)->address);
          }
          fprintf(stderr, " >\n");
       }
