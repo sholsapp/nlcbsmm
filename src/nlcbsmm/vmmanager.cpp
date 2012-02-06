@@ -955,6 +955,7 @@ namespace NLCBSMM {
       print_init_message();
 
       // Debug
+      /*
       page_table->insert(
             // IP -> std::vector<Page>
             std::pair<uint32_t, PageVectorType*>(
@@ -980,6 +981,7 @@ namespace NLCBSMM {
                PROT_READ | PROT_WRITE));
 
       print_page_table();
+      */
       // End Debug
 
       // Register SIGSEGV handler
