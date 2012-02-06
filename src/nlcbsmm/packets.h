@@ -109,7 +109,9 @@ class UnicastJoinAcceptance : public Packet {
       UnicastJoinAcceptance() {}
 
       UnicastJoinAcceptance(void* copy) {
+         // Copy data from copy into this class
          memcpy(this, copy, MAX_PACKET_SZ);
+         // Set the flag appropriately (this is to be used as an ACK)
          this->set_flag(UNICAST_JOIN_ACCEPT_ACK_F);
       }
 

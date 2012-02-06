@@ -510,6 +510,10 @@ namespace NLCBSMM {
                fprintf(stderr, "> received sync page\n");
                syncp = reinterpret_cast<SyncPage*>(buffer);
                fprintf(stderr, "> sync page at %p\n", (void*) ntohl((syncp->page_offset)));
+
+               fprintf(stderr, "> my page table <%p-%p>\n", (void*) _start_page_table, (void*) _end_page_table);
+
+
                break;
 
             default:
