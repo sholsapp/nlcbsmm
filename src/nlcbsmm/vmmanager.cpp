@@ -470,7 +470,7 @@ namespace NLCBSMM {
             SyncPage*              syncp          = NULL;
             WorkTupleType*         work           = NULL;
             uint8_t*               payload_buf    = NULL;
-            uint8_t*               page_ptr       = 0;
+            uint8_t*               page_ptr       = NULL;
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  page_data      = 0;
@@ -569,6 +569,8 @@ namespace NLCBSMM {
 
                // Sync the page
                memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
+
+               // TODO: set memory permissions on page appropriately (probably, PROT_READ only)
 
                // Done
                mutex_unlock(&pt_lock);
@@ -795,6 +797,9 @@ namespace NLCBSMM {
                         && (uint32_t) &_end == ntohl(mjp->end_addr)
                         && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
+                     // TODO: check if user is already in page_table, and only add
+                     // and resend packet (and incrememnt uuid) if they're actually
+                     // being inserted.
                      fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
                      page_table->insert(
                            // IP -> std::vector<Page>
