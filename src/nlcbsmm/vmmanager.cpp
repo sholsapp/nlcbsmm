@@ -576,7 +576,7 @@ namespace NLCBSMM {
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
                print_page_table();
-               fprintf(stderr, ">.< (map size = %d)\n", page_table->size());
+               fprintf(stderr, "> application ready!\n");
                break;
 
             default:
@@ -799,6 +799,8 @@ namespace NLCBSMM {
                            std::pair<const char*, PageVectorType*>(
                               payload_buf,
                               new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+
+                     print_page_table();
 
                      // Allocate memory for the new work/packet
                      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
