@@ -609,7 +609,7 @@ namespace NLCBSMM {
 
             case THREAD_CREATE_F:
                tc = reinterpret_cast<ThreadCreate*>(buffer);
-               fprintf(stderr, "> thread create (func=%p)\n", (void*) tc->func_ptr);
+               fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
                break;
 
             default:
