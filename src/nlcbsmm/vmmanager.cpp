@@ -16,7 +16,7 @@
 
 #include "vmmanager.h"
 #include "constants.h"
-#include "mutex.h"
+//#include "mutex.h"
 
 #define CLONE_ATTRS (CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE)
 #define CLONE_MMAP_PROT_FLAGS (PROT_READ | PROT_WRITE)
@@ -134,6 +134,24 @@ namespace NLCBSMM {
          fprintf(stderr, " >\n");
       }
       fprintf(stderr, "********************\n\n");
+   }
+
+   uint32_t get_available_worker() {
+      /**
+       * Return the IP address (binary form) of the next worker capable of running a
+       * new thread.
+       *
+       * TODO: implement this correctly (returns first non-master IP address)
+       */
+      PageTableItr pt_itr;
+      uint32_t s_addr;
+      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
+         s_addr = (*pt_itr).first;
+         if (s_addr != inet_addr(local_ip)) {
+            return s_addr;
+         }
+      }
+      return -1;
    }
 
 }
@@ -469,6 +487,7 @@ namespace NLCBSMM {
             Packet*                p              = NULL;
             UnicastJoinAcceptance* uja            = NULL;
             SyncPage*              syncp          = NULL;
+            ThreadCreate*          tc             = NULL;
             WorkTupleType*         work           = NULL;
             uint8_t*               payload_buf    = NULL;
             uint8_t*               page_ptr       = NULL;
@@ -586,6 +605,11 @@ namespace NLCBSMM {
                fprintf(stderr, "> sync done\n");
                print_page_table();
                fprintf(stderr, "> application ready!\n");
+               break;
+
+            case THREAD_CREATE_F:
+               tc = reinterpret_cast<ThreadCreate*>(buffer);
+               fprintf(stderr, "> thread create (func=%p)\n", (void*) tc->func_ptr);
                break;
 
             default:
@@ -966,32 +990,32 @@ namespace NLCBSMM {
 
       // Debug
       /*
-      page_table->insert(
-            // IP -> std::vector<Page>
-            std::pair<uint32_t, PageVectorType*>(
-               inet_addr("127.0.0.1"),
-               new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+         page_table->insert(
+      // IP -> std::vector<Page>
+      std::pair<uint32_t, PageVectorType*>(
+      inet_addr("127.0.0.1"),
+      new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
       (*page_table)[inet_addr("127.0.0.1")]->push_back(
-            new (pt_heap.malloc(sizeof(Page)))
-            Page((uint32_t) 0x835b000,
-               PROT_READ | PROT_WRITE));
+      new (pt_heap.malloc(sizeof(Page)))
+      Page((uint32_t) 0x835b000,
+      PROT_READ | PROT_WRITE));
       (*page_table)[inet_addr("127.0.0.1")]->push_back(
-            new (pt_heap.malloc(sizeof(Page)))
-            Page((uint32_t) 0x835c000,
-               PROT_READ | PROT_WRITE));
+      new (pt_heap.malloc(sizeof(Page)))
+      Page((uint32_t) 0x835c000,
+      PROT_READ | PROT_WRITE));
 
       page_table->insert(
-            // IP -> std::vector<Page>
-            std::pair<uint32_t, PageVectorType*>(
-               inet_addr("127.0.0.2"),
-               new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+      // IP -> std::vector<Page>
+      std::pair<uint32_t, PageVectorType*>(
+      inet_addr("127.0.0.2"),
+      new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
       (*page_table)[inet_addr("127.0.0.2")]->push_back(
-            new (pt_heap.malloc(sizeof(Page)))
-            Page((uint32_t) 0x835d000,
-               PROT_READ | PROT_WRITE));
+      new (pt_heap.malloc(sizeof(Page)))
+      Page((uint32_t) 0x835d000,
+      PROT_READ | PROT_WRITE));
 
       print_page_table();
-      */
+       */
       // End Debug
 
       // Register SIGSEGV handler

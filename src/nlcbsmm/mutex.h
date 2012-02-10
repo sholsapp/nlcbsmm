@@ -1,3 +1,6 @@
+#ifndef __MUTEX_H__
+#define __MUTEX_H__
+
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -13,12 +16,13 @@
 
 typedef int mutex;
 
-   typedef struct cv cv;
-   struct cv {
-      mutex *m;
-      int seq;
-      int pad;
-   };
+typedef struct cv cv;
+
+struct cv {
+   mutex *m;
+   int seq;
+   int pad;
+};
 
 
 #define cpu_relax() asm volatile("pause\n": : :"memory")
@@ -34,8 +38,8 @@ typedef int mutex;
 #define MUTEX_INITIALIZER {0}
 
 /**
- * If this many wake operations can happen between the read of the seq variable and the implementation 
- * of the FUTEX_WAIT system call, then we will have a bug. However, this is extremely unlikely due to 
+ * If this many wake operations can happen between the read of the seq variable and the implementation
+ * of the FUTEX_WAIT system call, then we will have a bug. However, this is extremely unlikely due to
  * amount of time it would take to generate that many calls.
  */
 #define INT_MAX 32768
@@ -67,3 +71,4 @@ extern "C" {
    int cond_wait(cv *c, mutex *m);
 }
 
+#endif

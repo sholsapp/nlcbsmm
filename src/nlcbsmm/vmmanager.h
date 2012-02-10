@@ -18,6 +18,7 @@
 #include "packets.h"
 #include "cln_allocator.h"
 #include "pt_allocator.h"
+#include "mutex.h"
 
 namespace NLCBSMM {
 
@@ -51,6 +52,25 @@ namespace NLCBSMM {
 
    // The page table
    extern PageTableType* page_table;
+
+
+   extern PacketQueueType uni_speaker_work_deque;
+   extern PacketQueueType multi_speaker_work_deque;
+
+   extern cv    uni_speaker_cond;
+   extern mutex uni_speaker_cond_lock;
+   extern mutex uni_speaker_lock;
+   extern mutex multi_speaker_lock;
+   extern mutex pt_lock;
+
+
+   WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m);
+
+   void safe_push(PacketQueueType* queue, mutex* m, WorkTupleType* work);
+
+   int safe_size(PacketQueueType* queue, mutex* m);
+
+   uint32_t get_available_worker();
 
    // Helper function to page align a pointer
    unsigned char* pageAlign(unsigned char* p);
