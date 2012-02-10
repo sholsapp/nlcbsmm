@@ -151,6 +151,7 @@ namespace NLCBSMM {
    mutex uni_speaker_lock;
    mutex multi_speaker_lock;
 
+   // TODO: use this
    mutex pt_lock;
 
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
@@ -523,6 +524,8 @@ namespace NLCBSMM {
                // Where does the region start?
                page_ptr  = reinterpret_cast<uint8_t*>(page_table);
 
+               // TODO: lock page while we're sending it
+
                // Queue work to send page table
                for (i = 0; i < region_sz; i += PAGE_SZ) {
 
@@ -561,6 +564,8 @@ namespace NLCBSMM {
 
             case SYNC_PAGE_F:
                syncp = reinterpret_cast<SyncPage*>(buffer);
+
+               // TODO: client must lock page table while it's being modified (until it is done)
 
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
 

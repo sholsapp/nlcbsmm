@@ -153,6 +153,43 @@ class SyncPage : public Packet {
 }__attribute__((packed));
 
 
+class ThreadCreate : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t func_ptr;
+
+      ThreadCreate(void* _func_ptr) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = THREAD_CREATE_F;
+         func_ptr   = htonl(reinterpret_cast<uint32_t>(_func_ptr));
+      }
+
+}__attribute__((packed));
+
+
+class ThreadCreateAck : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      ThreadCreateAck() {
+
+      }
+
+}__attribute__((packed));
+
+
 class GenericPacket : public Packet {
    /**
     *
