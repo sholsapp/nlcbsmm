@@ -45,6 +45,7 @@ namespace NLCBSMM {
 }
 
 namespace NLCBSMM {
+
    // The node's IP address
    extern const char* local_ip;
 
@@ -62,5 +63,8 @@ namespace NLCBSMM {
 
    // Registers signal handler for SIGSEGV
    void register_signal_handlers();
+
+   // Initialize the NLCBSMM system
    void nlcbsmm_init();
+
 }

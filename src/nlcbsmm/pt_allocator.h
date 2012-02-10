@@ -1,3 +1,6 @@
+#ifndef __PT_ALLOCATOR_H__
+#define __PT_ALLOCATOR_H__
+
 #include <limits>
 #include <iostream>
 
@@ -114,3 +117,5 @@ namespace NLCBSMM {
          return false;
       }
 }
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef __PAGE_H__
+#define __PAGE_H__
+
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -9,7 +12,6 @@
 namespace NLCBSMM {
 
    class Page {
-
       public:
          uint32_t address;
          uint32_t protection;
@@ -21,3 +23,5 @@ namespace NLCBSMM {
 
    }__attribute__((packed));
 }
+
+#endif

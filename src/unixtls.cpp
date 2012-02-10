@@ -30,6 +30,8 @@
 
 #endif
 
+#include "vmmanager.h"
+
 #if 1 // This should always be on -- just here for testing.
 
 //
@@ -221,7 +223,7 @@ extern "C" int pthread_create (pthread_t *thread,
     new
     pair<threadFunctionType, void *> (start_routine, arg);
 
-  fprintf(stderr, ">>>> Creating pthread...\n");
+  fprintf(stderr, ">>>> %s creating pthread...\n", local_ip);
 
   int result = (*real_pthread_create)(thread, attr, startMeUp, args);
 

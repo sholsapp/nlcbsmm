@@ -9,11 +9,9 @@
 #define MULTICAST_JOIN_F          0xFF
 #define UNICAST_JOIN_ACCEPT_F     0xFE
 #define UNICAST_JOIN_ACCEPT_ACK_F 0xFD
-
 #define SYNC_PAGE_F               0xAA
-
+#define THREAD_CREATE_F           0xBB
 #define SYNC_DONE_F               0x10
-
 #define MULTICAST_HEARTBEAT_F     0x00
 
 #include "constants.h"
