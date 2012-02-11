@@ -78,7 +78,7 @@ namespace NLCBSMM {
             /**
              * Initialize elements of allocated storage p with value value.
              */
-            std::cerr << "construct element at " << p;
+            std::cerr << "construct element at " << p << std::endl;
             new((void*)p)T(value);
          }
 
