@@ -643,7 +643,7 @@ namespace NLCBSMM {
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
-               //tmp = malloc(1024);
+               tmp = malloc(1024);
 
                fprintf(stderr, "This should be a hoard heap address: %p\n", tmp);
 
