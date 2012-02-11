@@ -516,6 +516,7 @@ namespace NLCBSMM {
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  page_data      = 0;
+            void*                  tmp            = 0;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
@@ -630,9 +631,10 @@ namespace NLCBSMM {
 
             case THREAD_CREATE_F:
                tc = reinterpret_cast<ThreadCreate*>(buffer);
-               fprintf(stderr, "> real pthread create = %p\n", (void*) global_real_pthread_create);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
+               tmp = malloc(1024);
+               
                // Create the thread
 
                // Send the thread id and our uuid back to master

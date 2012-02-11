@@ -81,8 +81,6 @@ namespace NLCBSMM {
    extern mutex multi_speaker_lock;
    extern mutex pt_lock;
 
-   extern pthread_create_function global_real_pthread_create;
-
 
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m);
 
