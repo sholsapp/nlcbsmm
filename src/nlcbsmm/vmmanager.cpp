@@ -637,14 +637,8 @@ namespace NLCBSMM {
 
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
 
-               // Make sure no one uses the page table while we're replacing it
-               mutex_lock(&pt_lock);
-
                // Sync the page
                memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
-
-               // Done
-               mutex_unlock(&pt_lock);
 
                break;
 
@@ -888,211 +882,212 @@ namespace NLCBSMM {
 
                      ip = inet_addr(payload_buf);
 
-                     // Esnure user is not in page table
-                     //if (page_table->count(ip) == 0) {
-                     // Debug
-                     fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
+                     // Esnure user is not in page table 
+                     if (page_table->count(ip) == 0) {
+                        // Debug
+                        fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
 
-                     page_table->insert(
-                           // IP -> std::vector<Page>
-                           std::pair<uint32_t, PageVectorType*>(
-                              ip,
-                              new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+                        page_table->insert(
+                              // IP -> std::vector<Page>
+                              std::pair<uint32_t, PageVectorType*>(
+                                 ip,
+                                 new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
 
-                     print_page_table();
+                        print_page_table();
 
-                     // Allocate memory for the new work/packet
-                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                        // Allocate memory for the new work/packet
+                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-                     // Who to contact
-                     retaddr.sin_family      = AF_INET;
-                     retaddr.sin_addr.s_addr = inet_addr(payload_buf);
-                     retaddr.sin_port        = htons(UNICAST_PORT);
+                        // Who to contact
+                        retaddr.sin_family      = AF_INET;
+                        retaddr.sin_addr.s_addr = inet_addr(payload_buf);
+                        retaddr.sin_port        = htons(UNICAST_PORT);
 
-                     // Push work onto the uni_speaker's queue
-                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                           // A new work tuple
-                           new (work_memory) WorkTupleType(retaddr,
-                              // A new packet
-                              new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
-                                 _start_page_table,
-                                 _end_page_table,
-                                 _next_uuid++))
-                           );
-                     //else {
-                     //   fprintf(stderr, "> User %s already in page_table\n", payload_buf);
-                     //}
+                        // Push work onto the uni_speaker's queue
+                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                              // A new work tuple
+                              new (work_memory) WorkTupleType(retaddr,
+                                 // A new packet
+                                 new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
+                                    _start_page_table,
+                                    _end_page_table,
+                                    _next_uuid++))
+                              );
+                     }
+                     else {
+                        fprintf(stderr, "> User %s already in page_table\n", payload_buf);
+                     }
                   }
                   else {
                      fprintf(stderr, "> invalid address space detected\n");
                   }
-                  }
-                  break;
-
-               case MULTICAST_HEARTBEAT_F:
-                  mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
-                  fprintf(stderr, "%s: <3\n", payload_buf);
-                  break;
-
-               default:
-                  break;
-
                }
+               break;
+
+            case MULTICAST_HEARTBEAT_F:
+               mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
+               fprintf(stderr, "%s: <3\n", payload_buf);
+               break;
+
+            default:
+               break;
+
             }
-
-            private:
-
-            uint32_t multi_speaker_thread_id;
-            uint32_t multi_listener_thread_id;
-            uint32_t uni_speaker_thread_id;
-            uint32_t uni_listener_thread_id;
-         };
-
-
-         /**
-          * This is the distributed system server
-          */
-         NetworkManager networkmanager;
-
-
-         void signal_handler(int signo, siginfo_t* info, void* contex) {
-            /**
-             * The actual signal handler for SIGSEGV
-             */
-            sigset_t oset;
-            sigset_t set;
-
-            //block SIGSEGV
-            sigemptyset(&set);
-            sigaddset(&set, SIGSEGV);
-            sigprocmask(SIG_BLOCK, &set, &oset);
-
-            //fprintf(stderr, "SIGSEGV Caught\n");
-
-            unsigned char* p = pageAlign((unsigned char*) info->si_addr);
-            fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
-
-            // Unblock sigsegv
-            sigprocmask(SIG_UNBLOCK, &set, &oset);
          }
 
+      private:
 
-         void register_signal_handlers() {
-            /**
-             * Registers signal handler for SIGSEGV
-             */
-            //fprintf(stderr, "Registering SIGSEGV handler...");
-            struct sigaction act;
-            act.sa_sigaction = signal_handler;
-            act.sa_flags     = SA_SIGINFO;
-            sigemptyset(&act.sa_mask);
-            sigaction(SIGSEGV, &act, 0);
-            //fprintf(stderr, "done\n");
-            return;
-         }
+         uint32_t multi_speaker_thread_id;
+         uint32_t multi_listener_thread_id;
+         uint32_t uni_speaker_thread_id;
+         uint32_t uni_listener_thread_id;
+   };
 
 
-         void print_log_sep(int len) {
-            /**
-             *
-             */
-            fprintf(stdout, "\n");
-            for (int i = 0; i < len; i++) {
-               fprintf(stderr, "%c", (char) 144);
-            }
-            fprintf(stdout, "\n\n");
-         }
+   /**
+    * This is the distributed system server
+    */
+   NetworkManager networkmanager;
 
 
-         void print_init_message() {
-            /**
-             *
-             */
-            print_log_sep(40);
-            fprintf(stdout, "> nlcbsmm init on local ip: %s <\n", local_ip);
-            fprintf(stdout, "> main (%p) | _end (%p)\n",          &main, &_end);
-            fprintf(stdout, "> heap obj (ch) lives in %p <\n",    &clone_heap);
-            fprintf(stdout, "> heap obj (pth) lives in %p <\n",   &pt_heap);
-            fprintf(stdout, "> page table lives in %p - %p <\n",  (void*) _start_page_table, (void*) _end_page_table);
-            print_log_sep(40);
-            fprintf(stdout, "> base %p (thread stacks go here) sbrk(0) = %p\n", (void*) global_base(), sbrk(0));
-            fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
-            fprintf(stdout, "> clone heap offset %p\n",            (void*) global_clone_heap());
-            fprintf(stdout, "> page table offset %p\n",            (void*) global_page_table());
-            fprintf(stdout, "> page table alloc heap offset %p\n", (void*) global_page_table_alloc_heap());
-            fprintf(stdout, "> page table heap offset %p\n",       (void*) global_page_table_heap());
-            print_log_sep(40);
-            return;
-         }
+   void signal_handler(int signo, siginfo_t* info, void* contex) {
+      /**
+       * The actual signal handler for SIGSEGV
+       */
+      sigset_t oset;
+      sigset_t set;
 
+      //block SIGSEGV
+      sigemptyset(&set);
+      sigaddset(&set, SIGSEGV);
+      sigprocmask(SIG_BLOCK, &set, &oset);
 
-         void nlcbsmm_init() {
-            /**
-             * Hook entry.
-             */
+      //fprintf(stderr, "SIGSEGV Caught\n");
 
-            // Dedicated memory to maintaining the page table
-            void* raw         = (void*) mmap((void*) global_page_table(),
-                  PAGE_TABLE_SZ,
-                  PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-                  -1, 0);
-            page_table        = new (raw) PageTableType();
-            _start_page_table = (uint32_t) raw;
-            _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
-            _uuid             = (uint32_t) -1;
+      unsigned char* p = pageAlign((unsigned char*) info->si_addr);
+      fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
 
-            // A pointer to the library version of pthread_create.
-            //    real_pthread_create =
-            //         reinterpret_cast<pthread_create_function>
-            //       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
-            // Obtain the IP address of the local ethernet interface
-            local_ip = get_local_interface();
-
-            // Setup condition and mutex variables
-            cond_init(&uni_speaker_cond,       NULL);
-            mutex_init(&uni_speaker_cond_lock, NULL);
-            mutex_init(&uni_speaker_lock,      NULL);
-            mutex_init(&multi_speaker_lock,    NULL);
-            mutex_init(&pt_lock,               NULL);
-
-            print_init_message();
-
-            // Debug
-            /*
-               page_table->insert(
-            // IP -> std::vector<Page>
-            std::pair<uint32_t, PageVectorType*>(
-            inet_addr("127.0.0.1"),
-            new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
-            (*page_table)[inet_addr("127.0.0.1")]->push_back(
-            new (pt_heap.malloc(sizeof(Page)))
-            Page((uint32_t) 0xFFFF,
-            PROT_READ | PROT_WRITE));
-            (*page_table)[inet_addr("127.0.0.1")]->push_back(
-            new (pt_heap.malloc(sizeof(Page)))
-            Page((uint32_t) 0xEEEE,
-            PROT_READ | PROT_WRITE));
-
-            page_table->insert(
-            // IP -> std::vector<Page>
-            std::pair<uint32_t, PageVectorType*>(
-            inet_addr("127.0.0.2"),
-            new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
-            (*page_table)[inet_addr("127.0.0.2")]->push_back(
-            new (pt_heap.malloc(sizeof(Page)))
-            Page((uint32_t) 0xDDDD,
-            PROT_READ | PROT_WRITE));
-
-             */
-            //print_page_table();
-            // End Debug
-
-            // Register SIGSEGV handler
-            //register_signal_handlers();
-
-            // Spawn the thread that speaks/listens to cluster
-            networkmanager.start_comms();
-         }
-
+      // Unblock sigsegv
+      sigprocmask(SIG_UNBLOCK, &set, &oset);
    }
+
+
+   void register_signal_handlers() {
+      /**
+       * Registers signal handler for SIGSEGV
+       */
+      //fprintf(stderr, "Registering SIGSEGV handler...");
+      struct sigaction act;
+      act.sa_sigaction = signal_handler;
+      act.sa_flags     = SA_SIGINFO;
+      sigemptyset(&act.sa_mask);
+      sigaction(SIGSEGV, &act, 0);
+      //fprintf(stderr, "done\n");
+      return;
+   }
+
+
+   void print_log_sep(int len) {
+      /**
+       *
+       */
+      fprintf(stdout, "\n");
+      for (int i = 0; i < len; i++) {
+         fprintf(stderr, "%c", (char) 144);
+      }
+      fprintf(stdout, "\n\n");
+   }
+
+
+   void print_init_message() {
+      /**
+       *
+       */
+      print_log_sep(40);
+      fprintf(stdout, "> nlcbsmm init on local ip: %s <\n", local_ip);
+      fprintf(stdout, "> main (%p) | _end (%p)\n",          &main, &_end);
+      fprintf(stdout, "> heap obj (ch) lives in %p <\n",    &clone_heap);
+      fprintf(stdout, "> heap obj (pth) lives in %p <\n",   &pt_heap);
+      fprintf(stdout, "> page table lives in %p - %p <\n",  (void*) _start_page_table, (void*) _end_page_table);
+      print_log_sep(40);
+      fprintf(stdout, "> base %p (thread stacks go here) sbrk(0) = %p\n", (void*) global_base(), sbrk(0));
+      fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
+      fprintf(stdout, "> clone heap offset %p\n",            (void*) global_clone_heap());
+      fprintf(stdout, "> page table offset %p\n",            (void*) global_page_table());
+      fprintf(stdout, "> page table alloc heap offset %p\n", (void*) global_page_table_alloc_heap());
+      fprintf(stdout, "> page table heap offset %p\n",       (void*) global_page_table_heap());
+      print_log_sep(40);
+      return;
+   }
+
+
+   void nlcbsmm_init() {
+      /**
+       * Hook entry.
+       */
+
+      // Dedicated memory to maintaining the page table
+      void* raw         = (void*) mmap((void*) global_page_table(),
+            PAGE_TABLE_SZ,
+            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            -1, 0);
+      page_table        = new (raw) PageTableType();
+      _start_page_table = (uint32_t) raw;
+      _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
+      _uuid             = (uint32_t) -1;
+
+      // A pointer to the library version of pthread_create.
+      //    real_pthread_create =
+      //         reinterpret_cast<pthread_create_function>
+      //       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
+      // Obtain the IP address of the local ethernet interface
+      local_ip = get_local_interface();
+
+      // Setup condition and mutex variables
+      cond_init(&uni_speaker_cond,       NULL);
+      mutex_init(&uni_speaker_cond_lock, NULL);
+      mutex_init(&uni_speaker_lock,      NULL);
+      mutex_init(&multi_speaker_lock,    NULL);
+      mutex_init(&pt_lock,               NULL);
+
+      print_init_message();
+
+      // Debug
+      /*
+         page_table->insert(
+      // IP -> std::vector<Page>
+      std::pair<uint32_t, PageVectorType*>(
+      inet_addr("127.0.0.1"),
+      new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+      (*page_table)[inet_addr("127.0.0.1")]->push_back(
+      new (pt_heap.malloc(sizeof(Page)))
+      Page((uint32_t) 0xFFFF,
+      PROT_READ | PROT_WRITE));
+      (*page_table)[inet_addr("127.0.0.1")]->push_back(
+      new (pt_heap.malloc(sizeof(Page)))
+      Page((uint32_t) 0xEEEE,
+      PROT_READ | PROT_WRITE));
+
+      page_table->insert(
+      // IP -> std::vector<Page>
+      std::pair<uint32_t, PageVectorType*>(
+      inet_addr("127.0.0.2"),
+      new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+      (*page_table)[inet_addr("127.0.0.2")]->push_back(
+      new (pt_heap.malloc(sizeof(Page)))
+      Page((uint32_t) 0xDDDD,
+      PROT_READ | PROT_WRITE));
+
+       */
+      //print_page_table();
+      // End Debug
+
+      // Register SIGSEGV handler
+      //register_signal_handlers();
+
+      // Spawn the thread that speaks/listens to cluster
+      networkmanager.start_comms();
+   }
+
+}
