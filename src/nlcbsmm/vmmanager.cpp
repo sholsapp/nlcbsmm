@@ -1015,6 +1015,9 @@ namespace NLCBSMM {
             PAGE_TABLE_OBJ_SZ,
             PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
             -1, 0);
+      if (raw_obj == MAP_FAILED) {
+         fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
+      }
       pt_heap = new (raw_obj) PageTableHeapType();
 
       // Dedicated memory to maintaining the page table
@@ -1022,6 +1025,9 @@ namespace NLCBSMM {
             PAGE_TABLE_SZ,
             PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
             -1, 0);
+      if (raw_obj == MAP_FAILED) {
+         fprintf(stderr, "Cannot map gpt: %p\n", (void*) global_page_table());
+      }
       page_table        = new (raw) PageTableType();
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
