@@ -882,42 +882,37 @@ namespace NLCBSMM {
 
                      ip = inet_addr(payload_buf);
 
-                     // Esnure user is not in page table 
-                     if (page_table->count(ip) == 0) {
-                        // Debug
-                        fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
+                     // Esnure user is not in page table
+                     // Debug
+                     fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
 
-                        page_table->insert(
-                              // IP -> std::vector<Page>
-                              std::pair<uint32_t, PageVectorType*>(
-                                 ip,
-                                 new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+                     page_table->insert(
+                           // IP -> std::vector<Page>
+                           std::pair<uint32_t, PageVectorType*>(
+                              ip,
+                              new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
 
-                        print_page_table();
+                     print_page_table();
 
-                        // Allocate memory for the new work/packet
-                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                     // Allocate memory for the new work/packet
+                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-                        // Who to contact
-                        retaddr.sin_family      = AF_INET;
-                        retaddr.sin_addr.s_addr = inet_addr(payload_buf);
-                        retaddr.sin_port        = htons(UNICAST_PORT);
+                     // Who to contact
+                     retaddr.sin_family      = AF_INET;
+                     retaddr.sin_addr.s_addr = inet_addr(payload_buf);
+                     retaddr.sin_port        = htons(UNICAST_PORT);
 
-                        // Push work onto the uni_speaker's queue
-                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                              // A new work tuple
-                              new (work_memory) WorkTupleType(retaddr,
-                                 // A new packet
-                                 new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
-                                    _start_page_table,
-                                    _end_page_table,
-                                    _next_uuid++))
-                              );
-                     }
-                     else {
-                        fprintf(stderr, "> User %s already in page_table\n", payload_buf);
-                     }
+                     // Push work onto the uni_speaker's queue
+                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                           // A new work tuple
+                           new (work_memory) WorkTupleType(retaddr,
+                              // A new packet
+                              new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
+                                 _start_page_table,
+                                 _end_page_table,
+                                 _next_uuid++))
+                           );
                   }
                   else {
                      fprintf(stderr, "> invalid address space detected\n");
