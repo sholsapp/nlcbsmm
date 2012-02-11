@@ -984,10 +984,12 @@ namespace NLCBSMM {
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
 
+      char fname[] = "pthread_create";
+
       // A pointer to the library version of pthread_create.
       real_pthread_create =
          reinterpret_cast<pthread_create_function>
-         (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
+         (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
