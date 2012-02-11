@@ -496,6 +496,7 @@ namespace NLCBSMM {
             void*                  work_memory    = NULL;
             void*                  page_data      = 0;
             void*                  tmp            = 0;
+            void*                  mmap_test      = 0;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
@@ -596,7 +597,13 @@ namespace NLCBSMM {
                // Sync the page
                memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
 
-               // TODO: set memory permissions on page appropriately (probably, PROT_READ only)
+               // Make sure this page is inside the virtual address space
+               mmap_test = mmap((void*)ntohl(syncp->page_offset),PAGE_SZ,PROT_NONE, MAP_FIXED| MAP_ANON | MAP_ANON, -1, 0);
+
+               // IF the mapping failed 
+               if(mmap_test == MAP_FAILED) {
+                   fprintf(stderr, "> sync page: MAP_FAILED (%p)\n", (void*) ntohl(syncp->page_offset));
+               }
 
                // Done
                mutex_unlock(&pt_lock);
@@ -984,6 +991,10 @@ namespace NLCBSMM {
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
 
+      // A pointer to the library version of pthread_create.
+  //    real_pthread_create =
+//         reinterpret_cast<pthread_create_function>
+  //       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
