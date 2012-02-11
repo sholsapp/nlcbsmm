@@ -126,13 +126,13 @@ namespace NLCBSMM {
       fprintf(stderr, "**** PAGE_TABLE ****\n");
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
          addr.s_addr = (*pt_itr).first;
-         fprintf(stderr, "%% %s : <", inet_ntoa(addr));
+         fprintf(stderr, "%% %s : <\n", inet_ntoa(addr));
          // The list of pages
          temp = (*pt_itr).second;
          for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
-            fprintf(stderr, " [%p]", (void*) (*vec_itr)->address);
+            fprintf(stderr, "\t[&: %p, *:%p]\n", (void*) (*vec_itr), (void*) (*vec_itr)->address);
          }
-         fprintf(stderr, " >\n");
+         fprintf(stderr, ">\n");
       }
       fprintf(stderr, "********************\n\n");
    }
@@ -151,7 +151,7 @@ namespace NLCBSMM {
          for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
             // Reserve the memory in the virtual address space
             void* mmap_test = mmap((void*)(*vec_itr)->address, PAGE_SZ, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_ANON, -1, 0);
-            fprintf(stderr, " [%p, test:%p]", (void*) (*vec_itr)->address,mmap_test);
+            fprintf(stderr, " [%p, map ret:%p]", (void*) (*vec_itr)->address,mmap_test);
          }
          fprintf(stderr, " >\n");
       }
@@ -906,6 +906,7 @@ namespace NLCBSMM {
 
             case MULTICAST_HEARTBEAT_F:
                mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
+               print_page_table();
                fprintf(stderr, "%s: <3\n", payload_buf);
                break;
 
