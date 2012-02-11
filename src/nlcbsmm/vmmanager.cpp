@@ -137,6 +137,27 @@ namespace NLCBSMM {
       fprintf(stderr, "********************\n\n");
    }
 
+   void reserve_pages() {
+      PageTableItr    pt_itr;
+      PageVectorItr   vec_itr;
+      PageVectorType* temp   = NULL;
+      struct in_addr  addr   = {0};
+
+      fprintf(stderr, "**** Reserving pages ****\n");
+      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
+         addr.s_addr = (*pt_itr).first;
+         fprintf(stderr, "%% %s : <", inet_ntoa(addr));
+         temp = (*pt_itr).second;
+         for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
+            // Reserve the memory in the virtual address space
+            void* mmap_test = mmap((void*)(*vec_itr)->address, PAGE_SZ, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_ANON, -1, 0);
+            fprintf(stderr, " [%p, test:%p]", (void*) (*vec_itr)->address,mmap_test);
+         }
+         fprintf(stderr, " >\n");
+      }
+      fprintf(stderr, "********************\n\n");
+   }
+
    uint32_t get_available_worker() {
       /**
        * Return the IP address (binary form) of the next worker capable of running a
@@ -495,7 +516,6 @@ namespace NLCBSMM {
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  page_data      = 0;
-            void*                  mmap_test      = 0;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
@@ -596,14 +616,6 @@ namespace NLCBSMM {
                // Sync the page
                memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
 
-               // Make sure this page is inside the virtual address space
-               mmap_test = mmap((void*)ntohl(syncp->page_offset),PAGE_SZ,PROT_NONE, MAP_FIXED| MAP_ANON | MAP_ANON, -1, 0);
-
-               // IF the mapping failed 
-               if(mmap_test == MAP_FAILED) {
-                   fprintf(stderr, "> sync page: MAP_FAILED (%p)\n", (void*) ntohl(syncp->page_offset));
-               }
-
                // Done
                mutex_unlock(&pt_lock);
 
@@ -612,6 +624,7 @@ namespace NLCBSMM {
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
                print_page_table();
+               reserve_pages();
                fprintf(stderr, "> application ready!\n");
                break;
 
