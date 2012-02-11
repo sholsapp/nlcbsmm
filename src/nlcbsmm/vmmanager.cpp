@@ -517,6 +517,13 @@ namespace NLCBSMM {
                // record our uuid from the master
                _uuid = ntohl(uja->uuid);
 
+               // How big is the region we're sync'ing?
+               region_sz = PAGE_TABLE_SZ + PAGE_TABLE_ALLOC_HEAP_SZ + PAGE_TABLE_HEAP_SZ;
+               // Where does the region start?
+               page_ptr  = reinterpret_cast<uint8_t*>(page_table);
+               // Zero out local page table
+               memset(page_ptr, 0, region_sz);
+
                // Respond to the other server's listener
                retaddr.sin_port = htons(UNICAST_PORT);
 

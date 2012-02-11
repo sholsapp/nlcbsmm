@@ -78,7 +78,6 @@ namespace NLCBSMM {
             /**
              * Initialize elements of allocated storage p with value value.
              */
-            fprintf(stderr, "construct @ %p\n", (void*) p);
             new((void*)p)T(value);
          }
 
