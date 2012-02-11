@@ -43,7 +43,6 @@ class FirstFitHeap : public Super {
             freeObject * p = myFreeList;
             freeObject * prev = NULL;
             while ((p != NULL) && (Super::getSize((void *) p) < sz)) {
-               fprintf(stderr, "p = %p sz = %d\n", p, Super::getSize((void*) p));
                prev = p;
                p = p->next;
             }

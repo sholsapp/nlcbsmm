@@ -1052,7 +1052,7 @@ namespace NLCBSMM {
       Page((uint32_t) 0x835d000,
       PROT_READ | PROT_WRITE));
 
-      print_page_table();
+      //print_page_table();
       // End Debug
 
       // Register SIGSEGV handler
