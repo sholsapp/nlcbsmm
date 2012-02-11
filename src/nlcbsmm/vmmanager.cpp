@@ -34,8 +34,6 @@ extern uint8_t* __data_start;
 
 namespace NLCBSMM {
 
-   static pthread_create_function real_pthread_create;
-
    // If a network thread needs memory, it must use this private
    // heap.  This memory is lost from the DSM system.
    FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> >       clone_heap;
@@ -619,7 +617,7 @@ namespace NLCBSMM {
 
             case THREAD_CREATE_F:
                tc = reinterpret_cast<ThreadCreate*>(buffer);
-               fprintf(stderr, "> real pthread create = %p\n", (void*) real_pthread_create);
+               fprintf(stderr, "> real pthread create = %p\n", (void*) global_real_pthread_create);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
                // Create the thread
@@ -995,7 +993,6 @@ namespace NLCBSMM {
   //    real_pthread_create =
 //         reinterpret_cast<pthread_create_function>
   //       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
-//
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
