@@ -43,6 +43,7 @@
 //
 
 
+/*
 extern "C" {
 
    typedef void * (*threadFunctionType) (void *);
@@ -57,6 +58,7 @@ extern "C" {
       void (*pthread_exit_function) (void *arg);
 
 }
+*/
 
 // A special routine we call on thread exits to free up some resources.
 static void exitRoutine (void) {
