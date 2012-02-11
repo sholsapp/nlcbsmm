@@ -34,7 +34,7 @@ extern uint8_t* __data_start;
 
 namespace NLCBSMM {
 
-   static pthread_create_function real_pthread_create;
+   pthread_create_function real_pthread_create;
 
    // If a network thread needs memory, it must use this private
    // heap.  This memory is lost from the DSM system.
