@@ -906,7 +906,6 @@ namespace NLCBSMM {
 
             case MULTICAST_HEARTBEAT_F:
                mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
-               print_page_table();
                fprintf(stderr, "%s: <3\n", payload_buf);
                break;
 
