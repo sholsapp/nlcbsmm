@@ -374,7 +374,7 @@ namespace Hoard {
                page_table->find(inet_addr(local_ip))->second->push_back(
                      new (pt_heap.malloc(sizeof(Page)))
                      Page((uint32_t) page_addr,
-                        PROT_READ | PROT_WRITE));
+                        0xD010101D));
             }
          }
 
