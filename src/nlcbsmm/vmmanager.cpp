@@ -645,6 +645,8 @@ namespace NLCBSMM {
 
                tmp = malloc(1024);
 
+               fprintf(stderr, "This should be a hoard heap address: %p\n", tmp);
+
                // Create the thread
 
                // Send the thread id and our uuid back to master
