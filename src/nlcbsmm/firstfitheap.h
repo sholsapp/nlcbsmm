@@ -34,11 +34,14 @@ class FirstFitHeap : public Super {
       inline void * malloc (size_t sz) {
          // Check the free list first.
          assert (classInvariant());
+	 if(sz < 16)
+	 {
+		sz = 16;//Need to make sure the size doesn't get too small, otherwise the free list gets messed up
+	 }
          void * ptr = myFreeList;
          if (ptr == NULL) {
             assert (nObjects == 0);
             ptr = Super::malloc (sz);
-	    fprintf(stderr, "FFH: calling super malloc of ptr(%p) sz(%d)\n",ptr, sz);
          } else {
             assert (nObjects > 0);
             freeObject * p = myFreeList;
@@ -49,7 +52,6 @@ class FirstFitHeap : public Super {
             }
             if (p == NULL) {
                ptr = Super::malloc (sz);
-		fprintf(stderr, "FFH: nothing on the free list bit enough, calling super malloc of ptr(%p) sz(%d)\n",ptr, sz);
             } else {
                assert (Super::getSize((void *) p) >= sz);
                if (prev == NULL) {
@@ -60,7 +62,6 @@ class FirstFitHeap : public Super {
                }
                nObjects--;
                ptr = p;
-		fprintf(stderr, "FFH: found something on the free list! ptr(%p) sz(%d)\n", ptr, sz);
             }
          }
          assert (classInvariant());
@@ -75,7 +76,6 @@ class FirstFitHeap : public Super {
          freeObject * p = myFreeList;
          freeObject * prev = NULL;
          // Insert the object "in order".
-	fprintf(stderr, "FFH: freeing %p\n", ptr);
 #if 1
          while ((p != NULL) & (p <= ptr)) {
             prev = p;
