@@ -230,6 +230,7 @@ throw ()
       new
       pair<threadFunctionType, void *> (start_routine, arg);
 
+   fprintf(stderr, ">>>> real pthread create = %p\n", (void*) real_pthread_create);
    fprintf(stderr, ">>>> pthread_create (%s)...\n", local_ip);
 
    master_addr.sin_family      = AF_INET;

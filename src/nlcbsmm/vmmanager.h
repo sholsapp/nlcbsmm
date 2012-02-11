@@ -23,26 +23,44 @@
 namespace NLCBSMM {
 
    // A vector of NLCBSMM::Page objects
-   typedef std::vector<Page*,
+   typedef
+      std::vector<Page*,
            PageTableAllocator<Page*> > PageVectorType;
 
-   typedef PageVectorType::iterator PageVectorItr;
+   typedef
+      PageVectorType::iterator PageVectorItr;
 
    // A mapping of 'ip address' to a NLCBSMM::PageVector, where 'ip address' is the
    // binary representation of the IPv4 address in dot-notation.
-   typedef std::map<uint32_t,
+   typedef
+      std::map<uint32_t,
            PageVectorType*,
            std::less<uint32_t>,
            PageTableAllocator<std::pair<uint32_t, PageVectorType*> > > PageTableType;
 
-   typedef PageTableType::iterator PageTableItr;
+   typedef
+      PageTableType::iterator PageTableItr;
 
    // Who to contact, and with what
-   typedef std::pair<struct sockaddr_in, Packet*> WorkTupleType;
+   typedef
+      std::pair<struct sockaddr_in, Packet*> WorkTupleType;
 
    // A queue of work
-   typedef std::deque<WorkTupleType*,
+   typedef
+      std::deque<WorkTupleType*,
            CloneAllocator<WorkTupleType* > > PacketQueueType;
+
+   typedef
+      void* (*threadFunctionType) (void *);
+
+   typedef
+      int (*pthread_create_function) (pthread_t *thread,
+            const pthread_attr_t *attr,
+            threadFunctionType start_routine,
+            void *arg);
+
+   typedef
+      void (*pthread_exit_function) (void *arg);
 }
 
 namespace NLCBSMM {
