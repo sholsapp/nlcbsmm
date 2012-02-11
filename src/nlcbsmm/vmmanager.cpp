@@ -495,6 +495,7 @@ namespace NLCBSMM {
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  page_data      = 0;
+            void*                  mmap_test      = 0;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
@@ -596,11 +597,10 @@ namespace NLCBSMM {
                memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
 
                // Make sure this page is inside the virtual address space
-               int ret = mmap(syncp->page_offset,PAGE_SZ,PROT_NONE, MAP_FIXED| MAP_ANON | MAP_ANON, -1, 0);
+               mmap_test = mmap((void*)ntohl(syncp->page_offset),PAGE_SZ,PROT_NONE, MAP_FIXED| MAP_ANON | MAP_ANON, -1, 0);
 
                // IF the mapping failed 
-               if(ret == MAP_FAILED)
-               {
+               if(mmap_test == MAP_FAILED) {
                    fprintf(stderr, "> sync page: MAP_FAILED (%p)\n", (void*) ntohl(syncp->page_offset));
                }
 
