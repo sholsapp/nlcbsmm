@@ -34,10 +34,6 @@ class FirstFitHeap : public Super {
       inline void * malloc (size_t sz) {
          // Check the free list first.
          assert (classInvariant());
-	 if(sz < 16)
-	 {
-		sz = 16;//Need to make sure the size doesn't get too small, otherwise the free list gets messed up
-	 }
          void * ptr = myFreeList;
          if (ptr == NULL) {
             assert (nObjects == 0);
@@ -69,6 +65,7 @@ class FirstFitHeap : public Super {
       }
 
       inline void free (void * ptr) {
+         return;
          // Add this object to the free list.
          assert (ptr != NULL);
          assert (classInvariant());
