@@ -953,6 +953,35 @@ namespace NLCBSMM {
       unsigned char* p = pageAlign((unsigned char*) info->si_addr);
       fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
 
+      PageTableItr    pt_itr;
+      PageVectorItr   vec_itr;
+      PageVectorType* temp   = NULL;
+      struct in_addr  addr   = {0};
+      int found = 0;
+
+      fprintf(stderr, "**** Searching through page table ****\n");
+      for (pt_itr = page_table->begin(); !found && pt_itr != page_table->end(); pt_itr++) {
+         int found = 0;
+         addr.s_addr = (*pt_itr).first;
+         fprintf(stderr, "%% %s : <\n", inet_ntoa(addr));
+         temp = (*pt_itr).second;
+         for (vec_itr = temp->begin(); !found && vec_itr != temp->end(); vec_itr++) {
+            // IF the faulting address is on this machine
+            if(p == (void*) (*vec_itr)->address) {
+                fprintf(stderr,"Found!");
+                found = 1;
+            }
+         }
+         // If the packet wasn't found
+         if(!found) {
+             fprintf(stderr,"Not found:[");
+         }
+         fprintf(stderr, ">\n");
+      }
+      fprintf(stderr, "********************\n\n");
+
+      // TODO: Add in logic to pull the page table from the network and set permissions
+
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
    }
