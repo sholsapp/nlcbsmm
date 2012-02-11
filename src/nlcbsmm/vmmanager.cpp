@@ -641,7 +641,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
                tmp = malloc(1024);
-               
+
                // Create the thread
 
                // Send the thread id and our uuid back to master
@@ -1012,9 +1012,9 @@ namespace NLCBSMM {
       _uuid             = (uint32_t) -1;
 
       // A pointer to the library version of pthread_create.
-  //    real_pthread_create =
-//         reinterpret_cast<pthread_create_function>
-  //       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
+      //    real_pthread_create =
+      //         reinterpret_cast<pthread_create_function>
+      //       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
@@ -1028,6 +1028,7 @@ namespace NLCBSMM {
       print_init_message();
 
       // Debug
+      /*
          page_table->insert(
       // IP -> std::vector<Page>
       std::pair<uint32_t, PageVectorType*>(
@@ -1035,11 +1036,11 @@ namespace NLCBSMM {
       new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
       (*page_table)[inet_addr("127.0.0.1")]->push_back(
       new (pt_heap.malloc(sizeof(Page)))
-      Page((uint32_t) 0x835b000,
+      Page((uint32_t) 0xFFFF,
       PROT_READ | PROT_WRITE));
       (*page_table)[inet_addr("127.0.0.1")]->push_back(
       new (pt_heap.malloc(sizeof(Page)))
-      Page((uint32_t) 0x835c000,
+      Page((uint32_t) 0xEEEE,
       PROT_READ | PROT_WRITE));
 
       page_table->insert(
@@ -1049,9 +1050,10 @@ namespace NLCBSMM {
       new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
       (*page_table)[inet_addr("127.0.0.2")]->push_back(
       new (pt_heap.malloc(sizeof(Page)))
-      Page((uint32_t) 0x835d000,
+      Page((uint32_t) 0xDDDD,
       PROT_READ | PROT_WRITE));
 
+       */
       //print_page_table();
       // End Debug
 
