@@ -553,12 +553,16 @@ namespace NLCBSMM {
                // Where does the region start?
                page_ptr  = reinterpret_cast<uint8_t*>(global_page_table_obj());
 
-               fprintf(stderr, "> zero-ing %d many pages\n", region_sz / 4096);
+               fprintf(stderr, "> zero-ing %d many pages starting at %p\n", region_sz / 4096, page_ptr);
 
                mutex_lock(&pt_lock);
 
                // Zero out local page table
-               memset(page_ptr, 0, region_sz);
+               for (i = 0; i < region_sz; i += 4096) {
+                  fprintf(stderr, ">> memset %p\n", (page_ptr + i));
+                  memset(page_ptr + i, 0, 4096);
+               }
+
 
                // Respond to the other server's listener
                retaddr.sin_port = htons(UNICAST_PORT);
