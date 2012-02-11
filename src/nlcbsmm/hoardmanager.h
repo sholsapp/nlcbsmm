@@ -369,14 +369,10 @@ namespace Hoard {
                page_addr = sblk_addr + (page * PAGE_SZ);
                fprintf(stderr, "Superblock (%p) - Page (%p)\n", sblk_addr, page_addr);
 
-               new (pt_heap.malloc(sizeof(Page)))
-                  Page((uint32_t) page_addr,
-                        PROT_READ | PROT_WRITE);
-
-               //(*page_table)[inet_addr(local_ip)]->push_back(
-               //      new (pt_heap.malloc(sizeof(Page)))
-               //      Page((uint32_t) page_addr,
-               //         PROT_READ | PROT_WRITE));
+               page_table->find(inet_addr(local_ip))->push_back(
+                     new (pt_heap.malloc(sizeof(Page)))
+                     Page((uint32_t) page_addr,
+                        PROT_READ | PROT_WRITE));
             }
          }
 
