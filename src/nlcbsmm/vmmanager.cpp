@@ -123,6 +123,8 @@ namespace NLCBSMM {
       PageVectorType* temp   = NULL;
       struct in_addr  addr   = {0};
 
+      mutex_lock(&pt_lock);
+
       fprintf(stderr, "**** PAGE_TABLE ****\n");
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
          addr.s_addr = (*pt_itr).first;
@@ -135,6 +137,8 @@ namespace NLCBSMM {
          fprintf(stderr, ">\n");
       }
       fprintf(stderr, "********************\n\n");
+
+      mutex_unlock(&pt_lock);
    }
 
    void reserve_pages() {
@@ -142,6 +146,8 @@ namespace NLCBSMM {
       PageVectorItr   vec_itr;
       PageVectorType* temp   = NULL;
       struct in_addr  addr   = {0};
+
+      mutex_lock(&pt_lock);
 
       fprintf(stderr, "**** Reserving pages ****\n");
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
@@ -156,6 +162,8 @@ namespace NLCBSMM {
          fprintf(stderr, " >\n");
       }
       fprintf(stderr, "********************\n\n");
+
+      mutex_unlock(&pt_lock);
    }
 
    uint32_t get_available_worker() {
@@ -167,12 +175,18 @@ namespace NLCBSMM {
        */
       PageTableItr pt_itr;
       uint32_t s_addr;
+
+      mutex_lock(&pt_lock);
+
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
          s_addr = (*pt_itr).first;
          if (s_addr != inet_addr(local_ip)) {
+
+            mutex_unlock(&pt_lock);
             return s_addr;
          }
       }
+      mutex_unlock(&pt_lock);
       return -1;
    }
 
@@ -544,6 +558,8 @@ namespace NLCBSMM {
 
                fprintf(stderr, "> zero-ing %d many pages\n", region_sz / 4096);
 
+               mutex_lock(&pt_lock);
+
                // Zero out local page table
                memset(page_ptr, 0, region_sz);
 
@@ -636,6 +652,9 @@ namespace NLCBSMM {
                fprintf(stderr, "> sync done\n");
                print_page_table();
                reserve_pages();
+
+               mutex_unlock(&pt_lock);
+
                fprintf(stderr, "> application ready!\n");
                break;
 
