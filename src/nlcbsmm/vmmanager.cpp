@@ -541,6 +541,9 @@ namespace NLCBSMM {
                region_sz = PAGE_TABLE_SZ + PAGE_TABLE_ALLOC_HEAP_SZ + PAGE_TABLE_HEAP_SZ;
                // Where does the region start?
                page_ptr  = reinterpret_cast<uint8_t*>(page_table);
+
+               fprintf(stderr, "> zero-ing %d many pages\n", region_sz / 4096);
+
                // Zero out local page table
                memset(page_ptr, 0, region_sz);
 
