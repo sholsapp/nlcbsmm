@@ -93,6 +93,8 @@ namespace NLCBSMM {
 
    uint32_t get_available_worker();
 
+   PageTableHeapType* get_pt_heap(mutex* m);
+
    // Helper function to page align a pointer
    unsigned char* pageAlign(unsigned char* p);
 

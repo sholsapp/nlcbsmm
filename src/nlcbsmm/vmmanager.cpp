@@ -42,7 +42,6 @@ namespace NLCBSMM {
    // private heap.  This memory is kept in a fixed location in
    // memory in all instances of the application.
    PageTableHeapType*  pt_heap;
-   //PageTableHeapType*  pt_heap_ptr;
 
    // This node's ip address
    const char* local_ip = NULL;
@@ -231,6 +230,14 @@ namespace NLCBSMM {
       s = queue->size();
       mutex_unlock(m);
       return s;
+   }
+
+   PageTableHeapType* get_pt_heap(mutex* m) {
+      PageTableHeapType* alloc;
+      mutex_lock(m);
+      alloc = pt_heap;
+      mutex_unlock(m);
+      return alloc;
    }
 
 }
@@ -880,7 +887,7 @@ namespace NLCBSMM {
                            // IP -> std::vector<Page>
                            std::pair<uint32_t, PageVectorType*>(
                               ip,
-                              new (pt_heap->malloc(sizeof(PageVectorType))) PageVectorType()));
+                              new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
 
                      print_page_table();
 
