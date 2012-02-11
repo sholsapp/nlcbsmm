@@ -32,6 +32,8 @@ class FirstFitHeap : public Super {
       }
 
       inline void * malloc (size_t sz) {
+         if (sz < 16)
+            sz = 16;
          // Check the free list first.
          assert (classInvariant());
          void * ptr = myFreeList;
