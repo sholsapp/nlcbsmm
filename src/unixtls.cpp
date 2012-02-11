@@ -250,9 +250,10 @@ throw ()
             new (packet_memory) ThreadCreate((void*) start_routine))
          );
 
-   int result = (*real_pthread_create)(thread, attr, startMeUp, args);
-
-   return result;
+   // TODO: don't forget to start thread eventually
+   //int result = (*real_pthread_create)(thread, attr, startMeUp, args);
+   //return result;
+   return -1;
 }
 
 #endif
