@@ -192,7 +192,6 @@ namespace HL {
                 */
                MyMapLock.lock();
                size_t sz = MyMap.get (ptr);
-               fprintf(stderr, "nlcbsmm-heap >> getSize(%p) = %d\n", ptr, sz);
                MyMapLock.unlock();
                return sz;
             }
