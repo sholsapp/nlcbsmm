@@ -68,7 +68,7 @@ namespace NLCBSMM {
             std::cerr << "allocate " << num << " element(s)"
                << " of size " << sizeof(T) << std::endl;
             // The heap is coupled global variabled -- must be defined!
-            pointer ret = (pointer)(pt_heap.malloc(num*sizeof(T)));
+            pointer ret = (pointer)(pt_heap->malloc(num*sizeof(T)));
             std::cerr << " allocated at: " << (void*)ret << std::endl;
             return ret;
          }
@@ -99,7 +99,7 @@ namespace NLCBSMM {
                << " of size " << sizeof(T)
                << " at: " << (void*)p << std::endl;
             // The heap is coupled global variabled -- must be defined!
-            pt_heap.free((void*)p);
+            pt_heap->free((void*)p);
          }
    };
 

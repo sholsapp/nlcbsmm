@@ -9,5 +9,5 @@ using namespace HL;
 
 namespace NLCBSMM {
    extern FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> >             clone_heap;
-   extern FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> >        pt_heap;
+   extern FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> >*        pt_heap;
 }

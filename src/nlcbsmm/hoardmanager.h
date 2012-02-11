@@ -360,7 +360,7 @@ namespace Hoard {
                      // IP -> std::vector<Page>
                      std::pair<uint32_t, PageVectorType*>(
                         inet_addr(local_ip),
-                        new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+                        new (pt_heap->malloc(sizeof(PageVectorType))) PageVectorType()));
             }
 
             // This should already be page algined, but w/e
@@ -371,7 +371,7 @@ namespace Hoard {
                page_addr = sblk_addr + (page * PAGE_SZ);
                //fprintf(stderr, "Superblock (%p) - Page (%p)\n", sblk_addr, page_addr);
                page_table->find(inet_addr(local_ip))->second->push_back(
-                     new (pt_heap.malloc(sizeof(Page)))
+                     new (pt_heap->malloc(sizeof(Page)))
                      Page((uint32_t) page_addr,
                         0xD010101D));
             }

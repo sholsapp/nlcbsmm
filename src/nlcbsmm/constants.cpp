@@ -24,8 +24,12 @@ uint32_t& global_clone_heap() {
    return off;
 }
 
+uint32_t& global_page_table_obj() {
+  static uint32_t off = (uint32_t) ((uint8_t*) global_clone_heap() + (CLONE_HEAP_SZ));
+}
+
 uint32_t& global_page_table() {
-   static uint32_t off = (uint32_t) ((uint8_t*) global_clone_heap() + (CLONE_HEAP_SZ));
+   static uint32_t off = (uint32_t) ((uint8_t*) global_page_table_obj() + (PAGE_TABLE_OBJ_SZ));
    return off;
 }
 

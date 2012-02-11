@@ -26,11 +26,11 @@
 #define PAGE_TABLE_ALLOC_HEAP_START  105
 
 #define CLONE_STACK_SZ (4096 * 64)
-#define PAGE_TABLE_SZ (4096 * 16)
-
 #define CLONE_ALLOC_HEAP_SZ (4096 * 16)
 #define CLONE_HEAP_SZ (4096 * 512)
 
+#define PAGE_TABLE_OBJ_SZ (4096 * 8)
+#define PAGE_TABLE_SZ (4096 * 8)
 #define PAGE_TABLE_ALLOC_HEAP_SZ (4096 * 16)
 #define PAGE_TABLE_HEAP_SZ (4096 * 512)
 
@@ -53,6 +53,7 @@
 extern uint32_t& global_base();
 extern uint32_t& global_clone_alloc_heap();
 extern uint32_t& global_clone_heap();
+extern uint32_t& global_page_table_obj();
 extern uint32_t& global_page_table();
 extern uint32_t& global_page_table_alloc_heap();
 extern uint32_t& global_page_table_heap();

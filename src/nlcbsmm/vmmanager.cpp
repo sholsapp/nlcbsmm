@@ -41,7 +41,8 @@ namespace NLCBSMM {
    // If the shared page table needs memory, it must use this
    // private heap.  This memory is kept in a fixed location in
    // memory in all instances of the application.
-   FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> >  pt_heap;
+   PageTableHeapType*  pt_heap;
+   //PageTableHeapType*  pt_heap_ptr;
 
    // This node's ip address
    const char* local_ip = NULL;
@@ -543,7 +544,7 @@ namespace NLCBSMM {
                // How big is the region we're sync'ing?
                region_sz = PAGE_TABLE_SZ + PAGE_TABLE_ALLOC_HEAP_SZ + PAGE_TABLE_HEAP_SZ;
                // Where does the region start?
-               page_ptr  = reinterpret_cast<uint8_t*>(page_table);
+               page_ptr  = reinterpret_cast<uint8_t*>(global_page_table_obj());
 
                fprintf(stderr, "> zero-ing %d many pages\n", region_sz / 4096);
 
@@ -879,7 +880,7 @@ namespace NLCBSMM {
                            // IP -> std::vector<Page>
                            std::pair<uint32_t, PageVectorType*>(
                               ip,
-                              new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+                              new (pt_heap->malloc(sizeof(PageVectorType))) PageVectorType()));
 
                      print_page_table();
 
@@ -1010,6 +1011,11 @@ namespace NLCBSMM {
       /**
        * Hook entry.
        */
+      void* raw_obj    = (void*) mmap((void*) global_page_table_obj(),
+            PAGE_TABLE_OBJ_SZ,
+            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            -1, 0);
+      pt_heap = new (raw_obj) PageTableHeapType();
 
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap((void*) global_page_table(),

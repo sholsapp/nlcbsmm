@@ -22,6 +22,9 @@
 
 namespace NLCBSMM {
 
+   typedef
+      FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> > PageTableHeapType;
+
    // A vector of NLCBSMM::Page objects
    typedef
       std::vector<Page*,
