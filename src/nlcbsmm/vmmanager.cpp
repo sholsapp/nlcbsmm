@@ -842,6 +842,7 @@ namespace NLCBSMM {
             void*                  work_memory    = NULL;
             char*                  payload_buf    = NULL;
             uint32_t               payload_sz     = 0;
+            uint32_t               ip             = 0;
             struct sockaddr_in     retaddr        = {0};
 
             // Generic packet data (type/payload size/payload)
@@ -866,37 +867,44 @@ namespace NLCBSMM {
                         && (uint32_t) &_end == ntohl(mjp->end_addr)
                         && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
-                     // TODO: check if user is already in page_table, and only add
-                     // and resend packet (and incrememnt uuid) if they're actually
-                     // being inserted.
-                     fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
-                     page_table->insert(
-                           // IP -> std::vector<Page>
-                           std::pair<uint32_t, PageVectorType*>(
-                              inet_addr(payload_buf),
-                              new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
+                     ip = inet_addr(payload_buf);
 
-                     print_page_table();
+                     // Esnure user is not in page table 
+                     if (page_table->count(ip) == 0) {
+                        // Debug
+                        fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
 
-                     // Allocate memory for the new work/packet
-                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                        page_table->insert(
+                              // IP -> std::vector<Page>
+                              std::pair<uint32_t, PageVectorType*>(
+                                 ip,
+                                 new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
 
-                     // Who to contact
-                     retaddr.sin_family      = AF_INET;
-                     retaddr.sin_addr.s_addr = inet_addr(payload_buf);
-                     retaddr.sin_port        = htons(UNICAST_PORT);
+                        print_page_table();
 
-                     // Push work onto the uni_speaker's queue
-                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                           // A new work tuple
-                           new (work_memory) WorkTupleType(retaddr,
-                              // A new packet
-                              new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
-                                 _start_page_table,
-                                 _end_page_table,
-                                 _next_uuid++))
-                           );
+                        // Allocate memory for the new work/packet
+                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+                        // Who to contact
+                        retaddr.sin_family      = AF_INET;
+                        retaddr.sin_addr.s_addr = inet_addr(payload_buf);
+                        retaddr.sin_port        = htons(UNICAST_PORT);
+
+                        // Push work onto the uni_speaker's queue
+                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                              // A new work tuple
+                              new (work_memory) WorkTupleType(retaddr,
+                                 // A new packet
+                                 new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
+                                    _start_page_table,
+                                    _end_page_table,
+                                    _next_uuid++))
+                              );
+                     }
+                     else {
+                        fprintf(stderr, "> User %s already in page_table\n", payload_buf);
+                     }
                   }
                   else {
                      fprintf(stderr, "> invalid address space detected\n");
