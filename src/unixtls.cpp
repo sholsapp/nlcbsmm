@@ -44,24 +44,21 @@
 
 
 /*
-   extern "C" {
+extern "C" {
 
    typedef void * (*threadFunctionType) (void *);
 
    typedef
-   int (*pthread_create_function) (pthread_t *thread,
-   const pthread_attr_t *attr,
-   threadFunctionType start_routine,
-   void *arg);
+      int (*pthread_create_function) (pthread_t *thread,
+            const pthread_attr_t *attr,
+            threadFunctionType start_routine,
+            void *arg);
 
    typedef
-   void (*pthread_exit_function) (void *arg);
+      void (*pthread_exit_function) (void *arg);
 
-   }
- */
-namespace NLCBSMM {
-   pthread_create_function global_real_pthread_create = NULL;
 }
+*/
 
 // A special routine we call on thread exits to free up some resources.
 static void exitRoutine (void) {
@@ -226,8 +223,6 @@ throw ()
    static pthread_create_function real_pthread_create =
       reinterpret_cast<pthread_create_function>
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
-
-   global_real_pthread_create = real_pthread_create;
 
    if (!anyThreadCreated)
       anyThreadCreated = 1;
