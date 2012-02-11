@@ -61,11 +61,11 @@ class FirstFitHeap : public Super {
             }
          }
          assert (classInvariant());
+         fprintf(stderr, ">> malloc(%d) = %p\n", sz, ptr);
          return ptr;
       }
 
       inline void free (void * ptr) {
-         return;
          // Add this object to the free list.
          assert (ptr != NULL);
          assert (classInvariant());
@@ -87,6 +87,7 @@ class FirstFitHeap : public Super {
             prev->next = (freeObject *) ptr;
          }
          assert (classInvariant());
+         fprintf(stderr, ">> free(%d) = %p\n", Super::getSize((void*) p), ptr);
       }
 
    private:
