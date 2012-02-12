@@ -670,7 +670,7 @@ namespace NLCBSMM {
 
                // Allocate a stack for the thread in the application heap
                thr_stack     = malloc(4096);
-               thr_stack_ptr = (void*) ((uint8_t*) thr_stack + CLONE_STACK_SZ);
+               thr_stack_ptr = (void*) ((uint8_t*) thr_stack + 4096);
 
                // Create the thread
                if((thr_id =
