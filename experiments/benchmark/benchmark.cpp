@@ -11,10 +11,12 @@ typedef struct {
 } subarray;
 
 void* incer(void *arg) {
+   fprintf(stderr, "<target-app> thread worker fired!\n");
    long i = 0;
    for (i = 0; i < ((subarray *)arg)->n; i++) {
       ((subarray *)arg)->ar[i]++;
    }
+   fprintf(stderr, "<target-app> thread worker done!\n");
 }
 
 #include <sys/types.h>
@@ -42,7 +44,7 @@ int main(void) {
    /**
     *
     */
-   fprintf(stdout, "> Initializing data...");
+   fprintf(stdout, "<target-app> initializing data...");
    ar = (int*) malloc (sizeof(int) * ARR_SZ);
    for (i = 0; i < ARR_SZ; i++) {
       ar[i] = 666;
@@ -52,7 +54,7 @@ int main(void) {
    /**
     *
     */
-   fprintf(stdout, "> Spawning pthread...");
+   fprintf(stdout, "<target-app> spawning thread...");
    sb1.ar = &ar[0];
    sb1.n  = ARR_SZ;
    (void) pthread_create(&th1, NULL, incer, &sb1);
@@ -61,11 +63,11 @@ int main(void) {
    /**
     *
     */
-   fprintf(stdout, "> Waiting for pthread...");
+   fprintf(stdout, "<target-app> waiting for pthread...");
    (void) pthread_join(th1, NULL);
    fprintf(stdout, "done.\n");
 
-   fprintf(stderr, "Result: ar[ARR_SZ / 2] = %d.\n", ar[ARR_SZ / 2]);
+   fprintf(stderr, "<target-app> result: %d.\n", ar[ARR_SZ / 2]);
 
    return 0;
 }
