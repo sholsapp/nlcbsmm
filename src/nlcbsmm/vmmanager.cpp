@@ -669,8 +669,8 @@ namespace NLCBSMM {
                arg  = (void*) ntohl(tc->arg);
 
                // Allocate a stack for the thread in the application heap
-               thr_stack     = malloc(4096);
-               thr_stack_ptr = (void*) ((uint8_t*) thr_stack + 4096);
+               thr_stack     = malloc(4096 * 8);
+               thr_stack_ptr = (void*) ((uint8_t*) thr_stack + 4096 * 8);
 
                // Create the thread
                if((thr_id =
