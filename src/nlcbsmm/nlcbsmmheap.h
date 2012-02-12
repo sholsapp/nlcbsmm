@@ -114,7 +114,7 @@ namespace HL {
                /**
                 *
                 */
-               fprintf(stderr, "nlcbsmm-heap >> unmapping %p\n", ptr);
+               //fprintf(stderr, "nlcbsmm-heap >> unmapping %p\n", ptr);
                munmap (reinterpret_cast<char *>(ptr), getSize(ptr));
             }
 
@@ -124,8 +124,8 @@ namespace HL {
                 *
                 */
                ptr = ptr;
-               //abort();
-               fprintf(stderr, "nlcbsmm-heap >> BROKEN getSize!\n");
+               abort();
+               //fprintf(stderr, "nlcbsmm-heap >> BROKEN getSize!\n");
                return Alignment; // Obviously broken. Such is life.
             }
 
@@ -134,7 +134,7 @@ namespace HL {
                /**
                 *
                 */
-               fprintf(stderr, "nlcbsmm-heap >> free 3: %p(%d)\n", ptr, sz);
+               //fprintf(stderr, "nlcbsmm-heap >> free 3: %p(%d)\n", ptr, sz);
                if ((long) sz < 0) {
                   abort();
                }
@@ -178,7 +178,7 @@ namespace HL {
                 */
                void * ptr = NlcbsmmChunkHeap<heap_identifier>::malloc (sz);
                MyMapLock.lock();
-               fprintf(stderr, "nlcbsmm-heap >> inserting %p(%d)\n", ptr, sz);
+               //fprintf(stderr, "nlcbsmm-heap >> inserting %p(%d)\n", ptr, sz);
                MyMap.set (ptr, sz);
                MyMapLock.unlock();
                assert (reinterpret_cast<size_t>(ptr) % Alignment == 0);
@@ -201,7 +201,7 @@ namespace HL {
                /**
                 * WORKAROUND: apparent gcc bug.
                 */
-               fprintf(stderr, "nlcbsmm-heap (free 1): %p(%d)\n", ptr, sz);
+               //fprintf(stderr, "nlcbsmm-heap (free 1): %p(%d)\n", ptr, sz);
                NlcbsmmChunkHeap<heap_identifier>::free (ptr, sz);
             }
 
@@ -213,7 +213,7 @@ namespace HL {
                assert (reinterpret_cast<size_t>(ptr) % Alignment == 0);
                MyMapLock.lock();
                size_t sz = MyMap.get (ptr);
-               fprintf(stderr, "nlcbsmm-heap (free 2): %p(%d)\n", ptr, sz);
+               //fprintf(stderr, "nlcbsmm-heap (free 2): %p(%d)\n", ptr, sz);
                NlcbsmmChunkHeap<heap_identifier>::free (ptr, sz);
                MyMap.erase (ptr);
                MyMapLock.unlock();

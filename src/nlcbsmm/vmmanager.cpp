@@ -549,20 +549,19 @@ namespace NLCBSMM {
                _uuid = ntohl(uja->uuid);
 
                // How big is the region we're sync'ing?
-               region_sz = PAGE_TABLE_OBJ_SZ + PAGE_TABLE_SZ + PAGE_TABLE_ALLOC_HEAP_SZ + PAGE_TABLE_HEAP_SZ;
+               region_sz = PAGE_TABLE_OBJ_SZ 
+                  + PAGE_TABLE_SZ 
+                  + PAGE_TABLE_ALLOC_HEAP_SZ 
+                  + PAGE_TABLE_HEAP_SZ;
+
                // Where does the region start?
                page_ptr  = reinterpret_cast<uint8_t*>(global_page_table_obj());
 
-               fprintf(stderr, "> zero-ing %d many pages starting at %p\n", region_sz / 4096, page_ptr);
-
+               // Lock until sync process is done
                mutex_lock(&pt_lock);
 
                // Zero out local page table
-               for (i = 0; i < region_sz; i += 4096) {
-                  fprintf(stderr, ">> memset %p\n", (page_ptr + i));
-                  memset(page_ptr + i, 0, 4096);
-               }
-
+               memset(page_ptr, 0, region_sz);
 
                // Respond to the other server's listener
                retaddr.sin_port = htons(UNICAST_PORT);
@@ -588,7 +587,10 @@ namespace NLCBSMM {
                retaddr.sin_port = htons(UNICAST_PORT);
 
                // How big is the region we're sync'ing?
-               region_sz = PAGE_TABLE_OBJ_SZ + PAGE_TABLE_SZ + PAGE_TABLE_ALLOC_HEAP_SZ + PAGE_TABLE_HEAP_SZ;
+               region_sz = PAGE_TABLE_OBJ_SZ
+                  + PAGE_TABLE_SZ 
+                  + PAGE_TABLE_ALLOC_HEAP_SZ 
+                  + PAGE_TABLE_HEAP_SZ;
 
                // Where does the region start?
                page_ptr  = reinterpret_cast<uint8_t*>(global_page_table_obj());
@@ -634,20 +636,20 @@ namespace NLCBSMM {
             case SYNC_PAGE_F:
                syncp = reinterpret_cast<SyncPage*>(buffer);
 
-               // TODO: client must lock page table while it's being modified (until it is done)
-
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
 
-               // Sync the page
+               // Sync the page (assume page table is already locked)
                memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
 
                break;
 
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
+
                print_page_table();
                reserve_pages();
 
+               // Page table can now be modified
                mutex_unlock(&pt_lock);
 
                fprintf(stderr, "> application ready!\n");
@@ -660,6 +662,8 @@ namespace NLCBSMM {
                tmp = malloc(1024);
 
                fprintf(stderr, "This should be a hoard heap address: %p\n", tmp);
+
+               // Allocate a stack for the thread in the application heap
 
                // Create the thread
 
@@ -1032,13 +1036,10 @@ namespace NLCBSMM {
       print_log_sep(40);
       fprintf(stdout, "> nlcbsmm init on local ip: %s <\n", local_ip);
       fprintf(stdout, "> main (%p) | _end (%p)\n",          &main, &_end);
-      fprintf(stdout, "> heap obj (ch) lives in %p <\n",    &clone_heap);
-      fprintf(stdout, "> heap obj (pth) lives in %p <\n",   &pt_heap);
-      fprintf(stdout, "> page table lives in %p - %p <\n",  (void*) _start_page_table, (void*) _end_page_table);
-      print_log_sep(40);
-      fprintf(stdout, "> base %p (thread stacks go here) sbrk(0) = %p\n", (void*) global_base(), sbrk(0));
+      fprintf(stdout, "> base %p (thread stacks go here)\n", (void*) global_base());
       fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
       fprintf(stdout, "> clone heap offset %p\n",            (void*) global_clone_heap());
+      fprintf(stdout, "> page table obj offset %p\n",        (void*) global_page_table_obj());
       fprintf(stdout, "> page table offset %p\n",            (void*) global_page_table());
       fprintf(stdout, "> page table alloc heap offset %p\n", (void*) global_page_table_alloc_heap());
       fprintf(stdout, "> page table heap offset %p\n",       (void*) global_page_table_heap());
@@ -1073,10 +1074,6 @@ namespace NLCBSMM {
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
 
-      // A pointer to the library version of pthread_create.
-      //    real_pthread_create =
-      //         reinterpret_cast<pthread_create_function>
-      //       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, "pthread_create")));
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
 
@@ -1088,36 +1085,6 @@ namespace NLCBSMM {
       mutex_init(&pt_lock,               NULL);
 
       print_init_message();
-
-      // Debug
-      /*
-         page_table->insert(
-      // IP -> std::vector<Page>
-      std::pair<uint32_t, PageVectorType*>(
-      inet_addr("127.0.0.1"),
-      new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
-      (*page_table)[inet_addr("127.0.0.1")]->push_back(
-      new (pt_heap.malloc(sizeof(Page)))
-      Page((uint32_t) 0xFFFF,
-      PROT_READ | PROT_WRITE));
-      (*page_table)[inet_addr("127.0.0.1")]->push_back(
-      new (pt_heap.malloc(sizeof(Page)))
-      Page((uint32_t) 0xEEEE,
-      PROT_READ | PROT_WRITE));
-
-      page_table->insert(
-      // IP -> std::vector<Page>
-      std::pair<uint32_t, PageVectorType*>(
-      inet_addr("127.0.0.2"),
-      new (pt_heap.malloc(sizeof(PageVectorType))) PageVectorType()));
-      (*page_table)[inet_addr("127.0.0.2")]->push_back(
-      new (pt_heap.malloc(sizeof(Page)))
-      Page((uint32_t) 0xDDDD,
-      PROT_READ | PROT_WRITE));
-
-       */
-      //print_page_table();
-      // End Debug
 
       // Register SIGSEGV handler
       //register_signal_handlers();
