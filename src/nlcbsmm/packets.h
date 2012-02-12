@@ -161,12 +161,14 @@ class ThreadCreate : public Packet {
       uint8_t  flag;
 
       uint32_t func_ptr;
+      uint32_t arg;
 
-      ThreadCreate(void* _func_ptr) {
+      ThreadCreate(void* _func_ptr, void* _arg) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = THREAD_CREATE_F;
          func_ptr   = htonl(reinterpret_cast<uint32_t>(_func_ptr));
+         arg        = htonl(reinterpret_cast<uint32_t>(_arg));
       }
 
 }__attribute__((packed));

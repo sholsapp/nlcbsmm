@@ -530,6 +530,7 @@ namespace NLCBSMM {
             void*                  thr_stack      = NULL;
             void*                  thr_stack_ptr  = NULL;
             void*                  func           = NULL;
+            void*                  arg            = NULL;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
@@ -665,6 +666,7 @@ namespace NLCBSMM {
 
                // Get address of function
                func = (void*) ntohl(tc->func_ptr);
+               arg  = (void*) ntohl(tc->arg);
 
                // Allocate a stack for the thread in the application heap
                thr_stack = malloc(CLONE_STACK_SZ);
@@ -675,7 +677,7 @@ namespace NLCBSMM {
                         clone((int (*)(void*)) func,
                            thr_stack_ptr,
                            CLONE_ATTRS,
-                           0)) == -1) {
+                           arg)) == -1) {
                   perror("app-thread creation failed");
                   exit(EXIT_FAILURE);
                }

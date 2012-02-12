@@ -247,13 +247,14 @@ throw ()
          // A new work tuple
          new (work_memory) WorkTupleType(master_addr,
             // A new packet
-            new (packet_memory) ThreadCreate((void*) start_routine))
+            new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg))
          );
+
+   return -1;
 
    // TODO: don't forget to start thread eventually
    //int result = (*real_pthread_create)(thread, attr, startMeUp, args);
    //return result;
-   return -1;
 }
 
 #endif
