@@ -526,12 +526,15 @@ namespace NLCBSMM {
             uint8_t*               page_ptr       = NULL;
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
-            void*                  page_data      = 0;
-            void*                  tmp            = 0;
+            void*                  page_data      = NULL;
+            void*                  thr_stack      = NULL;
+            void*                  thr_stack_ptr  = NULL;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
             uint32_t               page_addr      = 0;
+            uint32_t               thr_id      = 0;
+
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
@@ -549,9 +552,9 @@ namespace NLCBSMM {
                _uuid = ntohl(uja->uuid);
 
                // How big is the region we're sync'ing?
-               region_sz = PAGE_TABLE_OBJ_SZ 
-                  + PAGE_TABLE_SZ 
-                  + PAGE_TABLE_ALLOC_HEAP_SZ 
+               region_sz = PAGE_TABLE_OBJ_SZ
+                  + PAGE_TABLE_SZ
+                  + PAGE_TABLE_ALLOC_HEAP_SZ
                   + PAGE_TABLE_HEAP_SZ;
 
                // Where does the region start?
@@ -588,8 +591,8 @@ namespace NLCBSMM {
 
                // How big is the region we're sync'ing?
                region_sz = PAGE_TABLE_OBJ_SZ
-                  + PAGE_TABLE_SZ 
-                  + PAGE_TABLE_ALLOC_HEAP_SZ 
+                  + PAGE_TABLE_SZ
+                  + PAGE_TABLE_ALLOC_HEAP_SZ
                   + PAGE_TABLE_HEAP_SZ;
 
                // Where does the region start?
@@ -659,15 +662,22 @@ namespace NLCBSMM {
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
-               tmp = malloc(1024);
-
-               fprintf(stderr, "This should be a hoard heap address: %p\n", tmp);
-
                // Allocate a stack for the thread in the application heap
+               thr_stack = malloc(CLONE_STACK_SZ);
+               thr_stack_ptr = (void*) ((uint8_t*) thr_stack + CLONE_STACK_SZ);
 
                // Create the thread
+               if((thr_id =
+                        clone((int (*)(void*)) tc->func_ptr,
+                           thr_stack_ptr,
+                           CLONE_ATTRS,
+                           0)) == -1) {
+                  perror("app-thread creation failed");
+                  exit(EXIT_FAILURE);
+               }
 
                // Send the thread id and our uuid back to master
+               fprintf(stderr, "> app-thread id: %d\n", thr_id);
                break;
 
             default:
@@ -983,13 +993,13 @@ namespace NLCBSMM {
          for (vec_itr = temp->begin(); !found && vec_itr != temp->end(); vec_itr++) {
             // IF the faulting address is on this machine
             if(p == (void*) (*vec_itr)->address) {
-                fprintf(stderr,"Found!");
-                found = 1;
+               fprintf(stderr,"Found!");
+               found = 1;
             }
          }
          // If the packet wasn't found
          if(!found) {
-             fprintf(stderr,"Not found:[");
+            fprintf(stderr,"Not found:[");
          }
          fprintf(stderr, ">\n");
       }
@@ -1060,10 +1070,10 @@ namespace NLCBSMM {
          fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
       }
       pt_heap = new (raw_obj) PageTableHeapType();
-      
+
       //Ensure that the pt_heap region is being mmaped
       void * p = pt_heap->malloc(8);
-      pt_heap->free(p);	 
+      pt_heap->free(p);
 
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap((void*) global_page_table(),
