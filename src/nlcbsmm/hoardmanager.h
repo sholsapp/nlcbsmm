@@ -347,6 +347,9 @@ namespace Hoard {
              * After Hoard asks the OS for another Superblock, we need to record
              * the address and protection information into the distributed page_table.
              */
+
+            fprintf(stderr, "> Superblock init (%p)\n", (void*) sb);
+
             uint8_t* sblk_addr = NULL;
             uint8_t* page_addr = NULL;
 

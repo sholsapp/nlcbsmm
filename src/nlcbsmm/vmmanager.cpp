@@ -529,11 +529,12 @@ namespace NLCBSMM {
             void*                  page_data      = NULL;
             void*                  thr_stack      = NULL;
             void*                  thr_stack_ptr  = NULL;
+            void*                  func           = NULL;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
             uint32_t               page_addr      = 0;
-            uint32_t               thr_id      = 0;
+            uint32_t               thr_id         = 0;
 
 
             // Generic packet data (type/payload size/payload)
@@ -662,13 +663,16 @@ namespace NLCBSMM {
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
+               // Get address of function
+               func = (void*) ntohl(tc->func_ptr);
+
                // Allocate a stack for the thread in the application heap
                thr_stack = malloc(CLONE_STACK_SZ);
                thr_stack_ptr = (void*) ((uint8_t*) thr_stack + CLONE_STACK_SZ);
 
                // Create the thread
                if((thr_id =
-                        clone((int (*)(void*)) tc->func_ptr,
+                        clone((int (*)(void*)) func,
                            thr_stack_ptr,
                            CLONE_ATTRS,
                            0)) == -1) {
@@ -677,7 +681,7 @@ namespace NLCBSMM {
                }
 
                // Send the thread id and our uuid back to master
-               fprintf(stderr, "> app-thread id: %d\n", thr_id);
+               fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
                break;
 
             default:

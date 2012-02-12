@@ -61,12 +61,12 @@ class FirstFitHeap : public Super {
             }
          }
          assert (classInvariant());
-         fprintf(stderr, ">> malloc(%d) = %p\n", sz, ptr);
+         //fprintf(stderr, ">> malloc(%d) = %p\n", sz, ptr);
          return ptr;
       }
 
       inline void free (void * ptr) {
-         fprintf(stderr, ">> free(%d) = %p\n", Super::getSize((void*) ptr), ptr);
+         //fprintf(stderr, ">> free(%d) = %p\n", Super::getSize((void*) ptr), ptr);
          for (int i = 0; i < Super::getSize((void*) ptr); i++) {
             ((uint8_t*) ptr)[i] = 0xAB;
          }
