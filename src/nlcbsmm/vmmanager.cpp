@@ -1060,6 +1060,10 @@ namespace NLCBSMM {
          fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
       }
       pt_heap = new (raw_obj) PageTableHeapType();
+      
+      //Ensure that the pt_heap region is being mmaped
+      void * p = pt_heap->malloc(8);
+      pt_heap->free(p);	 
 
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap((void*) global_page_table(),
