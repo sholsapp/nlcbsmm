@@ -681,9 +681,12 @@ namespace NLCBSMM {
                   perror("app-thread creation failed");
                   exit(EXIT_FAILURE);
                }
-
                // Send the thread id and our uuid back to master
                fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
+               
+               // TODO: remove this
+               print_page_table();
+
                break;
 
             default:
