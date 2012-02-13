@@ -2,27 +2,27 @@
 
 /*
 
-  Heap Layers: An Extensible Memory Allocation Infrastructure
-  
-  Copyright (C) 2000-2005 by Emery Berger
-  http://www.cs.umass.edu/~emery
-  emery@cs.umass.edu
-  
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-  
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+   Heap Layers: An Extensible Memory Allocation Infrastructure
 
-*/
+   Copyright (C) 2000-2005 by Emery Berger
+http://www.cs.umass.edu/~emery
+emery@cs.umass.edu
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+ */
 
 #ifndef _MMAPWRAPPER_H_
 #define _MMAPWRAPPER_H_
@@ -51,75 +51,125 @@
 
 namespace HL {
 
-class MmapWrapper {
-public:
+   class MmapWrapper {
+      public:
 
-#if defined(_WIN32) 
-  
-  // Microsoft Windows has 4K pages aligned to a 64K boundary.
-  enum { Size = 4 * 1024 };
-  enum { Alignment = 64 * 1024 };
+#if defined(_WIN32)
 
-  static void * map (size_t sz) {
-    void * ptr;
+         // Microsoft Windows has 4K pages aligned to a 64K boundary.
+         enum { Size = 4 * 1024 };
+         enum { Alignment = 64 * 1024 };
+
+         static void * map (size_t sz) {
+            void * ptr;
 #if HL_EXECUTABLE_HEAP
-    const int permflags = PAGE_EXECUTE_READWRITE;
+            const int permflags = PAGE_EXECUTE_READWRITE;
 #else
-    const int permflags = PAGE_READWRITE;
+            const int permflags = PAGE_READWRITE;
 #endif
-    ptr = VirtualAlloc (NULL, sz, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN, permflags);
-    return  ptr;
-  }
-  
-  static void unmap (void * ptr, size_t) {
-    VirtualFree (ptr, 0, MEM_RELEASE);
-  }
+            ptr = VirtualAlloc (NULL, sz, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN, permflags);
+            return  ptr;
+         }
+
+         static void unmap (void * ptr, size_t) {
+            VirtualFree (ptr, 0, MEM_RELEASE);
+         }
 
 #else
 
 #if defined(__SVR4)
-  // Solaris aligns 8K pages to a 64K boundary.
-  enum { Size = 8 * 1024 };
-  enum { Alignment = 64 * 1024 };
+         // Solaris aligns 8K pages to a 64K boundary.
+         enum { Size = 8 * 1024 };
+         enum { Alignment = 64 * 1024 };
 #else
-  // Linux and most other operating systems align memory to a 4K boundary.
-  enum { Size = 4 * 1024 };
-  enum { Alignment = 4 * 1024 };
+         // Linux and most other operating systems align memory to a 4K boundary.
+         enum { Size = 4 * 1024 };
+         enum { Alignment = 4 * 1024 };
 #endif
 
-  static void * map (size_t sz) {
+         static void * map (size_t sz) {
 
-    if (sz == 0) {
-      return NULL;
-    }
+            if (sz == 0) {
+               return NULL;
+            }
 
-    void * ptr;
+            void * ptr;
 
 #if defined(MAP_ALIGN) && defined(MAP_ANON)
-    // Request memory aligned to the Alignment value above.
-    ptr = mmap ((char *) Alignment, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ALIGN | MAP_ANON, -1, 0);
+            // Request memory aligned to the Alignment value above.
+            ptr = mmap ((char *) Alignment, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ALIGN | MAP_ANON, -1, 0);
 #elif !defined(MAP_ANONYMOUS)
-    static int fd = ::open ("/dev/zero", O_RDWR);
-    ptr = mmap (NULL, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE, fd, 0);
+            static int fd = ::open ("/dev/zero", O_RDWR);
+            ptr = mmap (NULL, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE, fd, 0);
 #else
-    ptr = mmap (0, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            ptr = mmap (0, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
 
-    if (ptr == MAP_FAILED) {
-      fprintf (stderr, "Virtual memory exhausted.\n");
-      return NULL;
-    } else {
-      return ptr;
-    }
-  }
+            if (ptr == MAP_FAILED) {
+               fprintf (stderr, "Virtual memory exhausted.\n");
+               return NULL;
+            } else {
+               // Alert NLCBSMM of new memory
+               init_nlcbsmm_memory(ptr, sz);
+               return ptr;
+            }
+         }
 
-  static void unmap (void * ptr, size_t sz) {
-    munmap (reinterpret_cast<char *>(ptr), sz);
-  }
-   
+         static void unmap (void * ptr, size_t sz) {
+            munmap (reinterpret_cast<char *>(ptr), sz);
+         }
+
+         static void init_nlcbsmm_memory (void* ptr, size_t sz) {
+            /**
+             * After Hoard asks the OS for another Superblock, we need to record
+             * the address and protection information into the distributed page_table.
+             */
+
+            fprintf(stderr, "> NLCBSMM memory init %p(%d)\n", (void*) ptr, sz);
+
+            uint8_t* block_addr  = NULL;
+            uint8_t* page_addr   = NULL;
+            uint32_t page_count  = 0;
+
+            if ((sz % Size) == 0) {
+               // The number of pages being allocated
+               page_count = sz / Size;
+            }
+            else {
+               fprintf(stderr, "> FAIL: Hoard asked for non-page memory amount?!\n");
+               return;
+            }
+
+            PageVectorType* temp = NULL;
+
+            // Does this node exist in the page table?
+            if (page_table->count(inet_addr(local_ip)) == 0) {
+               fprintf(stderr, "> Adding %s to page_table\n", local_ip);
+               // Init a new vector for this node
+               page_table->insert(
+                     // IP -> std::vector<Page>
+                     std::pair<uint32_t, PageVectorType*>(
+                        inet_addr(local_ip),
+                        new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
+            }
+
+            // This should already be page algined, but w/e
+            block_addr = pageAlign((uint8_t*) ptr);
+            page_addr = NULL;
+
+            for (int page = 0; page < page_count; page++) {
+               page_addr = block_addr + (page * PAGE_SZ);
+               //fprintf(stderr, "Superblock (%p) - Page (%p)\n", block_addr, page_addr);
+               page_table->find(inet_addr(local_ip))->second->push_back(
+                     new (get_pt_heap(&pt_lock)->malloc(sizeof(Page)))
+                     Page((uint32_t) page_addr,
+                        0xD010101D));
+            }
+         }
+
 #endif
 
-};
+   };
 
 }
 

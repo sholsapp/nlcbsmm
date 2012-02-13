@@ -342,45 +342,6 @@ namespace Hoard {
 
       public:
 
-         NO_INLINE void initNlcbsmmSuperblock (SuperblockType* sb) {
-            /**
-             * After Hoard asks the OS for another Superblock, we need to record
-             * the address and protection information into the distributed page_table.
-             */
-
-            fprintf(stderr, "> Superblock init (%p)\n", (void*) sb);
-
-            uint8_t* sblk_addr = NULL;
-            uint8_t* page_addr = NULL;
-
-            PageVectorType* temp = NULL;
-
-            // Does this node exist in the page table?
-            if (page_table->count(inet_addr(local_ip)) == 0) {
-               fprintf(stderr, "> Adding %s to page_table\n", local_ip);
-               // Init a new vector for this node
-               page_table->insert(
-                     // IP -> std::vector<Page>
-                     std::pair<uint32_t, PageVectorType*>(
-                        inet_addr(local_ip),
-                        new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
-            }
-
-            // This should already be page algined, but w/e
-            sblk_addr = pageAlign((uint8_t*) sb->getHeader()->getPosition());
-            page_addr = NULL;
-
-            for (int page = 0; page < 16; page++) {
-               page_addr = sblk_addr + (page * PAGE_SZ);
-               //fprintf(stderr, "Superblock (%p) - Page (%p)\n", sblk_addr, page_addr);
-               page_table->find(inet_addr(local_ip))->second->push_back(
-                     new (get_pt_heap(&pt_lock)->malloc(sizeof(Page)))
-                     Page((uint32_t) page_addr,
-                        0xD010101D));
-            }
-         }
-
-
          NO_INLINE void * getAnotherSuperblock (size_t sz) {
 
             // NB: This function should be on the slow path.
@@ -399,18 +360,12 @@ namespace Hoard {
                }
             } else {
                // Nothing - get memory from the source.
-
-               //fprintf(stderr, "hoardmanager.h: Getting memory from the source! ");
-
                void * ptr = _sourceHeap.malloc (SuperblockSize);
                if (!ptr) {
                   return 0;
                }
 
                sb = new (ptr) SuperblockType (sz);
-
-               // Put this sb into the page_table
-               initNlcbsmmSuperblock(sb);
 
                // Put the superblock into its appropriate bin.
                if (sb) {
