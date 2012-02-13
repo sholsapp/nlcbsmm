@@ -11,8 +11,8 @@ typedef struct {
 } subarray;
 
 void* incer(void *arg) {
-   fprintf(stderr, "<target-app> thread worker fired!\n");
-   fprintf(stderr, "<target-app> arg = %p (n = %d)\n", (subarray*) arg, ((subarray*) arg)->n);
+   //fprintf(stderr, "<target-app> thread worker fired!\n");
+   //fprintf(stderr, "<target-app> arg = %p (n = %d)\n", (subarray*) arg, ((subarray*) arg)->n);
 
    int i = 0;
    for (i = 0; i < ((subarray *)arg)->n; i++) {
