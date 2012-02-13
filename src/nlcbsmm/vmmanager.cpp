@@ -683,7 +683,7 @@ namespace NLCBSMM {
                }
                // Send the thread id and our uuid back to master
                fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
-               
+
                // TODO: remove this
                print_page_table();
 
@@ -764,7 +764,8 @@ namespace NLCBSMM {
             /**
              *
              */
-            Packet* p    = NULL;
+            Packet*        p    = NULL;
+            WorkTupleType* work = NULL;
 
             switch (MS_STATE) {
 
@@ -782,6 +783,17 @@ namespace NLCBSMM {
                memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
                break;
 
+            }
+
+            // Check if there is work on the deque
+            if (safe_size(&multi_speaker_work_deque, &multi_speaker_lock) == 0) {
+               // Pop work from work queue
+               work = safe_pop(&multi_speaker_work_deque, &multi_speaker_lock);
+            }
+
+            // If there is work, override default action
+            if (work != NULL) {
+               p = work->second;
             }
 
             // Send whatever we just built
@@ -1081,7 +1093,7 @@ namespace NLCBSMM {
       int base;
 
       asm("\t movl %%esp,%0" : "=r"(base));
-      
+
       fprintf(stderr, ">> stack base = %p\n", (void*) base);
 
       /**
