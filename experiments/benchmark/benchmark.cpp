@@ -48,7 +48,7 @@ int main(void) {
    /**
     *
     */
-   fprintf(stdout, "<target-app> initializing data...");
+   fprintf(stdout, "<target-app> initializing data into %p...", (void*) sb1);
    ar = (int*) malloc (sizeof(int) * ARR_SZ);
    for (i = 0; i < ARR_SZ; i++) {
       ar[i] = 666;
