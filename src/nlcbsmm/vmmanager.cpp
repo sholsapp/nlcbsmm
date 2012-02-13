@@ -1071,7 +1071,7 @@ namespace NLCBSMM {
 
       int base;
 
-      asm("\t movl %%ss,%0" : "=r"(base));
+      asm("\t movl %%esp,%0" : "=r"(base));
       
       fprintf(stderr, ">> stack base = %p\n", (void*) base);
 

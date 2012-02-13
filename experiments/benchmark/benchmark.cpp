@@ -39,10 +39,12 @@ int main(void) {
    blocking_entry();
 
    int*        ar;
-   int         i;
+   int          i;
    pthread_t  th1;
-   subarray   sb1;
+   subarray*  sb1;
 
+
+   sb1 = (subarray*) malloc (sizeof(sb1));
    /**
     *
     */
@@ -57,8 +59,8 @@ int main(void) {
     *
     */
    fprintf(stdout, "<target-app> spawning thread...");
-   sb1.ar = &ar[0];
-   sb1.n  = ARR_SZ;
+   sb1->ar = &ar[0];
+   sb1->n  = ARR_SZ;
    (void) pthread_create(&th1, NULL, incer, &sb1);
    fprintf(stdout, "done.\n");
 
