@@ -799,7 +799,7 @@ namespace NLCBSMM {
             fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
 
             // Send whatever we just built
-            if (sendto(sk, buffer, buffer_sz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+            if (sendto(sk, p, buffer_sz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                perror("vmmanager.cpp, sendto");
                exit(EXIT_FAILURE);
             }
