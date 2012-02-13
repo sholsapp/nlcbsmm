@@ -233,7 +233,7 @@ throw ()
       pair<threadFunctionType, void *> (start_routine, arg);
 
    fprintf(stderr, ">>>> real pthread create = %p\n", (void*) real_pthread_create);
-   fprintf(stderr, ">>>> pthread_create (%s)...\n", local_ip);
+   fprintf(stderr, ">>>> pthread_create(%s) func(%p) arg(%p)\n", local_ip, start_routine, arg);
 
    master_addr.sin_family      = AF_INET;
    master_addr.sin_addr.s_addr = get_available_worker();
