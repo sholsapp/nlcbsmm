@@ -1068,6 +1068,13 @@ namespace NLCBSMM {
 
 
    void nlcbsmm_init() {
+
+      int base;
+
+      asm("\t movl %%ss,%0" : "=r"(base));
+      
+      fprintf(stderr, ">> stack base = %p\n", (void*) base);
+
       /**
        * Hook entry.
        */
