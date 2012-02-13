@@ -903,6 +903,8 @@ namespace NLCBSMM {
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
 
+            fprintf(stderr, "> heard packet (%x)\n", p->get_flag());
+
             switch (p->get_flag()) {
 
                // Some sent a request to join the cluster.
