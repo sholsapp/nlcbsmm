@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-#define ARR_SZ 1000000
+#define ARR_SZ 10000
 
 typedef struct {
    int *ar;
