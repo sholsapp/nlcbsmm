@@ -786,7 +786,7 @@ namespace NLCBSMM {
             }
 
             // Check if there is work on the deque
-            if (safe_size(&multi_speaker_work_deque, &multi_speaker_lock) == 0) {
+            if (safe_size(&multi_speaker_work_deque, &multi_speaker_lock) > 0) {
                // Pop work from work queue
                work = safe_pop(&multi_speaker_work_deque, &multi_speaker_lock);
             }
