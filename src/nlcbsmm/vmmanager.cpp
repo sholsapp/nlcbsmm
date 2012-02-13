@@ -874,6 +874,7 @@ namespace NLCBSMM {
             MulticastJoin*         mjp            = NULL;
             MulticastHeartbeat*    mjh            = NULL;
             UnicastJoinAcceptance* uja            = NULL;
+            SyncReserve*           sr             = NULL;
             WorkTupleType*         work           = NULL;
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
@@ -881,6 +882,7 @@ namespace NLCBSMM {
             uint32_t               payload_sz     = 0;
             uint32_t               ip             = 0;
             struct sockaddr_in     retaddr        = {0};
+            struct in_addr         addr           = {0};
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
@@ -942,6 +944,13 @@ namespace NLCBSMM {
                      fprintf(stderr, "> invalid address space detected\n");
                   }
                }
+               break;
+
+            case SYNC_RESERVE_F:
+               sr = reinterpret_cast<SyncReserve*>(buffer);
+               // Convert binary ip to correct structure
+               addr.s_addr = ntohl(sr->ip);
+               fprintf(stderr, "> %s reserving %p(%d)\n", inet_ntoa(addr), (void*) ntohl(sr->start_addr), ntohl(sr->sz));
                break;
 
             case MULTICAST_HEARTBEAT_F:

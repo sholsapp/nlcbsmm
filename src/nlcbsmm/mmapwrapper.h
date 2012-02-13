@@ -130,6 +130,10 @@ namespace HL {
             uint8_t* block_addr  = NULL;
             uint8_t* page_addr   = NULL;
             uint32_t page_count  = 0;
+            void* work_memory    = NULL;
+            void* packet_memory  = NULL;
+
+            struct sockaddr_in fake = {0};
 
             if ((sz % Size) == 0) {
                // The number of pages being allocated
@@ -140,7 +144,16 @@ namespace HL {
                return;
             }
 
-            PageVectorType* temp = NULL;
+            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+            // Push work onto broadcast speaker's queue
+            safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
+                  // A new work tuple
+                  new (work_memory) WorkTupleType(fake,
+                     // A new packet
+                     new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
+                  );
 
             // Does this node exist in the page table?
             if (page_table->count(inet_addr(local_ip)) == 0) {
@@ -165,6 +178,7 @@ namespace HL {
                      Page((uint32_t) page_addr,
                         0xD010101D));
             }
+
          }
 
 #endif

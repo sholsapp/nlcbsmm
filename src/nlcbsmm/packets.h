@@ -6,13 +6,17 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define MULTICAST_JOIN_F          0xFF
-#define UNICAST_JOIN_ACCEPT_F     0xFE
-#define UNICAST_JOIN_ACCEPT_ACK_F 0xFD
-#define SYNC_PAGE_F               0xAA
-#define THREAD_CREATE_F           0xBB
-#define SYNC_DONE_F               0x10
-#define MULTICAST_HEARTBEAT_F     0x00
+#define MULTICAST_JOIN_F          0x0A
+#define MULTICAST_HEARTBEAT_F     0x0B
+
+#define UNICAST_JOIN_ACCEPT_F     0x1A
+#define UNICAST_JOIN_ACCEPT_ACK_F 0x1B
+
+#define SYNC_PAGE_F               0x2A
+#define SYNC_DONE_F               0x2B
+#define SYNC_RESERVE_F            0x2C
+
+#define THREAD_CREATE_F           0x3A
 
 #include "constants.h"
 
@@ -146,6 +150,32 @@ class SyncPage : public Packet {
          page_offset = htonl(page_addr);
          // Copy payload into packet
          memcpy(this->get_payload_ptr(), page_data, MAX_PACKET_SZ);
+      }
+
+}__attribute__((packed));
+
+
+class SyncReserve : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t ip;
+      uint32_t start_addr;
+      uint32_t sz;
+
+      SyncReserve(uint32_t _owner, void* _start_addr, uint32_t _sz) {
+         sequence    = htonl(0);
+         payload_sz  = htonl(0);
+         flag        = SYNC_RESERVE_F;
+
+         ip          = htonl(_owner);
+         start_addr  = htonl(reinterpret_cast<uint32_t>(_start_addr));
+         sz          = htonl(_sz);
       }
 
 }__attribute__((packed));
