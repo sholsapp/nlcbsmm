@@ -99,7 +99,12 @@ namespace HL {
 
                if (p->get_flag() == RELEASE_WRITE_LOCK_F) {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec_buffer);
-                  fprintf(stderr, "> Received write lock from...?\n");
+                  fprintf(stderr, "> Received write lock\n");
+                  // Take ownership of write lock
+                  pt_owner = ntohl(local_addr.s_addr);
+               }
+               else {
+                  fprintf(stderr, "> Unknown packet response\n");
                }
 
                // TODO: need to re-route packets to new owner sometiems
