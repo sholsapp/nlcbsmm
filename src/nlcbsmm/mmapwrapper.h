@@ -54,7 +54,7 @@ namespace HL {
 
             mutex_lock(&pt_owner_lock);
 
-            fprintf(stderr, "> pt_owner = %d\n", pt_owner);
+            fprintf(stderr, "> pt_owner = %s\n", inet_ntoa((struct in_addr&) pt_owner));
 
             // If write lock is not in init state
             if (pt_owner != -1
