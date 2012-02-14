@@ -82,7 +82,18 @@ namespace NLCBSMM {
    extern mutex uni_speaker_cond_lock;
    extern mutex uni_speaker_lock;
    extern mutex multi_speaker_lock;
+
+   // This forces threads to wait on each other in case someone is reading/writing the
+   // page table.
+   extern mutex pt_owner_lock;
+
+   // This (binary form IP address) identifies who currently has the page table lock.
+   extern uint32_t pt_owner;
+
+   // This is a per-process lock, so the various threads don't simutaneously use the
+   // page table.
    extern mutex pt_lock;
+
 
 
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m);

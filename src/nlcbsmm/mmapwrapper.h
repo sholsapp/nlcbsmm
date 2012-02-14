@@ -102,6 +102,8 @@ namespace HL {
             static int fd = ::open ("/dev/zero", O_RDWR);
             ptr = mmap (NULL, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE, fd, 0);
 #else
+            // TODO: acquire the network page table lock
+            // TODO: setup client/server to block until lock is acquired
             ptr = mmap (0, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
 
@@ -127,9 +129,9 @@ namespace HL {
 
             fprintf(stderr, "> NLCBSMM memory init %p(%d)\n", (void*) ptr, sz);
 
+            uint32_t page_count  = 0;
             uint8_t* block_addr  = NULL;
             uint8_t* page_addr   = NULL;
-            uint32_t page_count  = 0;
             void* work_memory    = NULL;
             void* packet_memory  = NULL;
 

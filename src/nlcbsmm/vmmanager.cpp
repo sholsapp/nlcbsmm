@@ -194,7 +194,15 @@ namespace NLCBSMM {
    mutex uni_speaker_lock;
    mutex multi_speaker_lock;
 
-   // TODO: use this
+   // This forces threads to wait on each other in case someone is reading/writing the
+   // page table.
+   mutex pt_owner_lock;
+
+   // This (binary form IP address) identifies who currently has the page table lock.
+   uint32_t pt_owner;
+
+   // This is a per-process lock, so the various threads don't simutaneously use the
+   // page table.
    mutex pt_lock;
 
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
@@ -796,7 +804,7 @@ namespace NLCBSMM {
                p = work->second;
             }
 
-            fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
+            //fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
 
             // Send whatever we just built
             if (sendto(sk, p, buffer_sz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
@@ -1137,7 +1145,10 @@ namespace NLCBSMM {
       mutex_init(&uni_speaker_cond_lock, NULL);
       mutex_init(&uni_speaker_lock,      NULL);
       mutex_init(&multi_speaker_lock,    NULL);
+      mutex_init(&pt_owner_lock,         NULL);
       mutex_init(&pt_lock,               NULL);
+
+      pt_owner = -1;
 
       print_init_message();
 
