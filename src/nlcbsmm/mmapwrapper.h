@@ -59,7 +59,7 @@ namespace HL {
             // If write lock is not in init state
             if (pt_owner != -1
                   // AND we do not own write lock on page table
-                  && ntohl(local_addr.s_addr) != pt_owner) {
+                  && local_addr.s_addr != pt_owner) {
                fprintf(stderr, "> Not owner, asking %s for lock.\n", inet_ntoa((struct in_addr&) pt_owner));
 
                // Setup client/server to block until lock is acquired
