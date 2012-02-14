@@ -96,7 +96,7 @@ namespace HL {
 
                // TODO: select for lock, handle errors or timeout
 
-               // Wait for owner to release write lock
+               // Wait (block) for owner to release write lock
                if ((nbytes = recvfrom(sk, rec_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
