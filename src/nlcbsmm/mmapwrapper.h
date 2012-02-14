@@ -110,6 +110,9 @@ namespace HL {
                }
 
                // TODO: need to re-route packets to new owner sometiems
+
+               // Close socket
+               close(sk);
             }
             else {
                fprintf(stderr, "> Already own lock\n");
