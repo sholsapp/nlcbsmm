@@ -71,6 +71,9 @@ namespace NLCBSMM {
    // The node's IP address
    extern const char* local_ip;
 
+   // The node's IP address (binary form)
+   extern struct in_addr local_addr;    
+
    // The page table
    extern PageTableType* page_table;
 

@@ -44,7 +44,8 @@ namespace NLCBSMM {
    PageTableHeapType*  pt_heap;
 
    // This node's ip address
-   const char* local_ip = NULL;
+   const char*    local_ip   = NULL;
+   struct in_addr local_addr = {0};    
 
    unsigned char* pageAlign(unsigned char* p) {
       /**
@@ -749,6 +750,8 @@ namespace NLCBSMM {
                   if (_uuid == (uint32_t) -1) {
                      // I am master
                      _uuid = 0;
+                     // Give ourselves write lock on page table
+                     pt_owner = ntohl(local_addr.s_addr);
                   }
                   // Go to HEARTBEAT state
                   // TODO: maybe enter a TIMEOUT state?
@@ -1139,6 +1142,8 @@ namespace NLCBSMM {
 
       // Obtain the IP address of the local ethernet interface
       local_ip = get_local_interface();
+      // Binary form of IP address
+      local_addr.s_addr = inet_addr(local_ip);
 
       // Setup condition and mutex variables
       cond_init(&uni_speaker_cond,       NULL);

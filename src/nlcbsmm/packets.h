@@ -18,7 +18,7 @@
 
 #define THREAD_CREATE_F           0x3A
 
-#define AQUIRE_WRITE_LOCK_F       0x4A
+#define ACQUIRE_WRITE_LOCK_F      0x4A
 #define RELEASE_WRITE_LOCK_F      0x4B
 
 #include "constants.h"
@@ -34,7 +34,7 @@ class Packet {
       }
 
       uint32_t get_payload_sz() {
-        return ntohl(((uint32_t*) this)[1]);
+         return ntohl(((uint32_t*) this)[1]);
       }
 
       uint8_t get_flag() {
@@ -42,8 +42,8 @@ class Packet {
       }
 
       uint8_t set_flag(uint8_t new_flag) {
-        uint8_t old_flag = get_flag();
-        ((uint8_t*) this)[8] = new_flag;
+         uint8_t old_flag = get_flag();
+         ((uint8_t*) this)[8] = new_flag;
       }
 
       uint8_t* get_payload_ptr() {
@@ -222,26 +222,28 @@ class ThreadCreateAck : public Packet {
 
 }__attribute__((packed));
 
-class AquireWriteLock : public Packet {
+
+class AcquireWriteLock : public Packet {
    /**
-    *
+    * This is used to request write access to the page table.
     */
    public:
       uint32_t sequence;
       uint32_t payload_sz;
       uint8_t  flag;
 
-      AquireWriteLock() {
+      AcquireWriteLock() {
          sequence   = htonl(0);
          payload_sz = htonl(0);
-         flag       = AQUIRE_WRITE_LOCK_F;
+         flag       = ACQUIRE_WRITE_LOCK_F;
       }
 
 }__attribute__((packed));
 
+
 class ReleaseWriteLock : public Packet {
    /**
-    *
+    * This is used to release write access to the page table.
     */
    public:
       uint32_t sequence;
@@ -257,7 +259,6 @@ class ReleaseWriteLock : public Packet {
 }__attribute__((packed));
 
 
-
 class GenericPacket : public Packet {
    /**
     *
@@ -268,9 +269,9 @@ class GenericPacket : public Packet {
       uint8_t  flag;
 
       GenericPacket(uint8_t type) {
-        sequence   = htonl(0);
-        payload_sz = htonl(0);
-        flag       = type;
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = type;
       }
 
 }__attribute__((packed));

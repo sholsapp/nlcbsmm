@@ -1,35 +1,6 @@
-// -*- C++ -*-
-
-/*
-
-   Heap Layers: An Extensible Memory Allocation Infrastructure
-
-   Copyright (C) 2000-2005 by Emery Berger
-http://www.cs.umass.edu/~emery
-emery@cs.umass.edu
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
- */
-
 #ifndef _MMAPWRAPPER_H_
 #define _MMAPWRAPPER_H_
 
-#if defined(_WIN32)
-#include <windows.h>
-#else
 // UNIX
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -37,7 +8,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 #include <sys/mman.h>
 #include <map>
-#endif
 
 #if HL_EXECUTABLE_HEAP
 #define HL_MMAP_PROTECTION_MASK (PROT_READ | PROT_WRITE | PROT_EXEC)
@@ -54,58 +24,91 @@ namespace HL {
    class MmapWrapper {
       public:
 
-#if defined(_WIN32)
-
-         // Microsoft Windows has 4K pages aligned to a 64K boundary.
-         enum { Size = 4 * 1024 };
-         enum { Alignment = 64 * 1024 };
-
-         static void * map (size_t sz) {
-            void * ptr;
-#if HL_EXECUTABLE_HEAP
-            const int permflags = PAGE_EXECUTE_READWRITE;
-#else
-            const int permflags = PAGE_READWRITE;
-#endif
-            ptr = VirtualAlloc (NULL, sz, MEM_RESERVE | MEM_COMMIT | MEM_TOP_DOWN, permflags);
-            return  ptr;
-         }
-
-         static void unmap (void * ptr, size_t) {
-            VirtualFree (ptr, 0, MEM_RELEASE);
-         }
-
-#else
-
-#if defined(__SVR4)
-         // Solaris aligns 8K pages to a 64K boundary.
-         enum { Size = 8 * 1024 };
-         enum { Alignment = 64 * 1024 };
-#else
          // Linux and most other operating systems align memory to a 4K boundary.
          enum { Size = 4 * 1024 };
          enum { Alignment = 4 * 1024 };
-#endif
 
          static void * map (size_t sz) {
+            /**
+             *
+             */
+            void*    ptr;
+            uint8_t* send_buffer      = NULL;
+            uint8_t* rec_buffer       = NULL;
+            uint32_t sk               =  0;
+            uint32_t nbytes           =  0;
+            uint32_t addrlen          =  0;
+            uint32_t yes              =  1;
+            struct   ip_mreq mreq     = {0};
+            struct   sockaddr_in addr = {0};
+
+            Packet*            p      = NULL;
+            AcquireWriteLock*  acq    = NULL;
+            ReleaseWriteLock*  rel    = NULL;
 
             if (sz == 0) {
                return NULL;
             }
 
-            void * ptr;
+            mutex_lock(&pt_owner_lock);
 
-#if defined(MAP_ALIGN) && defined(MAP_ANON)
-            // Request memory aligned to the Alignment value above.
-            ptr = mmap ((char *) Alignment, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ALIGN | MAP_ANON, -1, 0);
-#elif !defined(MAP_ANONYMOUS)
-            static int fd = ::open ("/dev/zero", O_RDWR);
-            ptr = mmap (NULL, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE, fd, 0);
-#else
-            // TODO: acquire the network page table lock
-            // TODO: setup client/server to block until lock is acquired
+            // If write lock is in init state
+            if (ntohl(local_addr.s_addr) == -1
+                  // Or we do not own write lock on page table
+                  || ntohl(local_addr.s_addr) != pt_owner) {
+
+               fprintf(stderr, "> Not owner, asking %s for lock.\n", inet_ntoa(local_addr));
+
+               // Setup client/server to block until lock is acquired
+               if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+                  perror("vmmanager.cpp, socket");
+                  exit(EXIT_FAILURE);
+               }
+
+               addr.sin_family      = AF_INET;
+               addr.sin_addr        = local_addr;
+               addr.sin_port        = htons(UNICAST_PORT);
+               addrlen              = sizeof(addr);
+
+               if (bind(sk, (struct sockaddr *) &addr, addrlen) < 0) {
+                  perror("vmmanager.cpp, bind");
+                  exit(EXIT_FAILURE);
+               }
+
+               send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               acq = new (send_buffer) AcquireWriteLock();
+
+               // Send request to acquire write lock
+               if (sendto(sk, send_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
+                  perror("vmmanager.cpp, sendto");
+                  exit(EXIT_FAILURE);
+               }
+
+               rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               // TODO: select for lock, handle errors or timeout
+
+               // Wait for owner to release write lock
+               if ((nbytes = recvfrom(sk, rec_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
+                  perror("recvfrom");
+                  exit(EXIT_FAILURE);
+               }
+
+               p = reinterpret_cast<Packet*>(rec_buffer);
+
+               if (p->get_flag() == RELEASE_WRITE_LOCK_F) {
+                  rel = reinterpret_cast<ReleaseWriteLock*>(rec_buffer);
+                  fprintf(stderr, "> Received write lock from...?\n");
+               }
+
+               // TODO: need to re-route packets to new owner sometiems
+            }
+
+            mutex_unlock(&pt_owner_lock);
+
+            // Allocate memory
             ptr = mmap (0, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#endif
 
             if (ptr == MAP_FAILED) {
                fprintf (stderr, "Virtual memory exhausted.\n");
@@ -115,6 +118,7 @@ namespace HL {
                init_nlcbsmm_memory(ptr, sz);
                return ptr;
             }
+
          }
 
          static void unmap (void * ptr, size_t sz) {
@@ -180,13 +184,8 @@ namespace HL {
                      Page((uint32_t) page_addr,
                         0xD010101D));
             }
-
          }
-
-#endif
-
    };
-
 }
 
 #endif
