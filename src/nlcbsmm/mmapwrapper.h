@@ -64,7 +64,7 @@ namespace HL {
 
                // Setup client/server to block until lock is acquired
                if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-                  perror("vmmanager.cpp, socket");
+                  perror("mmapwrapper.h, socket");
                   exit(EXIT_FAILURE);
                }
 
@@ -78,7 +78,7 @@ namespace HL {
                addrlen              = sizeof(addr);
 
                if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
-                  perror("vmmanager.cpp, bind");
+                  perror("mmapwrapper.h, bind");
                   exit(EXIT_FAILURE);
                }
 
@@ -88,7 +88,7 @@ namespace HL {
 
                // Send request to acquire write lock
                if (sendto(sk, send_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
-                  perror("vmmanager.cpp, sendto");
+                  perror("mmapwrapper.h, sendto");
                   exit(EXIT_FAILURE);
                }
 
@@ -108,7 +108,7 @@ namespace HL {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec_buffer);
                   fprintf(stderr, "> Received write lock\n");
                   // Take ownership of write lock
-                  pt_owner = ntohl(local_addr.s_addr);
+                  pt_owner = local_addr.s_addr;
                }
                else {
                   fprintf(stderr, "> Unknown packet response\n");
