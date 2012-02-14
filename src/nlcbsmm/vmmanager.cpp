@@ -561,6 +561,8 @@ namespace NLCBSMM {
 
                // record our uuid from the master
                _uuid = ntohl(uja->uuid);
+               // record the current pt_owner
+               pt_owner = uja->pt_owner;
 
                // How big is the region we're sync'ing?
                region_sz = PAGE_TABLE_OBJ_SZ
@@ -996,7 +998,8 @@ namespace NLCBSMM {
                               new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
                                  _start_page_table,
                                  _end_page_table,
-                                 _next_uuid++))
+                                 _next_uuid++,
+                                 pt_owner))
                            );
                   }
                   else {

@@ -112,6 +112,7 @@ class UnicastJoinAcceptance : public Packet {
       uint32_t start_page_table;
       uint32_t end_page_table;
       uint32_t uuid;
+      uint32_t pt_owner;
 
       UnicastJoinAcceptance() {}
 
@@ -122,14 +123,15 @@ class UnicastJoinAcceptance : public Packet {
          this->set_flag(UNICAST_JOIN_ACCEPT_ACK_F);
       }
 
-      UnicastJoinAcceptance(uint32_t user_length, uint32_t _start_pt, uint32_t _end_pt, uint32_t _uuid) {
+      UnicastJoinAcceptance(uint32_t _user_length, uint32_t _start_pt, uint32_t _end_pt, uint32_t _uuid, uint32_t _pt_owner) {
 
          sequence          = htonl(0);
-         payload_sz        = htonl(user_length);
+         payload_sz        = htonl(_user_length);
          flag              = UNICAST_JOIN_ACCEPT_F;
          start_page_table  = htonl(_start_pt);
          end_page_table    = htonl(_end_pt);
          uuid              = htonl(_uuid);
+         pt_owner          = htonl(_pt_owner);
       }
 
 }__attribute__((packed));
