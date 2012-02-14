@@ -52,10 +52,12 @@ namespace HL {
 
             mutex_lock(&pt_owner_lock);
 
-            // If write lock is in init state
+            fprintf(stderr, "> pt_owner = %d\n", pt_owner);
+
+            // If write lock is not in init state
             if (pt_owner != -1
                   // Or we do not own write lock on page table
-                  || ntohl(local_addr.s_addr) != pt_owner) {
+                  && ntohl(local_addr.s_addr) != pt_owner) {
 
                fprintf(stderr, "> Not owner, asking %s for lock.\n", inet_ntoa(local_addr));
 
@@ -66,7 +68,7 @@ namespace HL {
                }
 
                addr.sin_family      = AF_INET;
-               addr.sin_addr        = local_addr;
+               addr.sin_addr.s_addr = pt_owner;
                addr.sin_port        = htons(UNICAST_PORT);
                addrlen              = sizeof(addr);
 
