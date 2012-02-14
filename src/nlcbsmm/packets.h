@@ -18,6 +18,9 @@
 
 #define THREAD_CREATE_F           0x3A
 
+#define AQUIRE_WRITE_LOCK_F       0x4A
+#define RELEASE_WRITE_LOCK_F      0x4B
+
 #include "constants.h"
 
 
@@ -218,6 +221,41 @@ class ThreadCreateAck : public Packet {
       }
 
 }__attribute__((packed));
+
+class AquireWriteLock : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      AquireWRITELock() {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = AQUIRE_WRITE_LOCK_F;
+      }
+
+}__attribute__((packed));
+
+class ReleaseWriteLock : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      ReleaseWriteLock() {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = RELEASE_WRITE_LOCK_F;
+      }
+
+}__attribute__((packed));
+
 
 
 class GenericPacket : public Packet {
