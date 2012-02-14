@@ -707,7 +707,7 @@ namespace NLCBSMM {
                mutex_lock(&pt_owner_lock);
                // IF we are the pt_owner
                if(pt_owner == local_addr.s_addr) {
-                  fprintf(stderr," > Updated the current pt_owner(old:%s,new:%s) to be the sender of the Acquire packet\n", inet_ntoa((struct in_addr&)pt_owner), inet_ntoa((struct in_addr&) retaddr.sin_addr.s_addr));
+                  fprintf(stderr," > Updated the current pt_owner(old:%s,new:%s) to be the sender of the Acquire packet\n", inet_ntoa((struct in_addr&)pt_owner), inet_ntoa(retaddr.sin_addr));
                   // OK to give ownership of the pt away
                   pt_owner =  retaddr.sin_addr.s_addr;
 
