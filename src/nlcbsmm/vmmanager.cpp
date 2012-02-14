@@ -147,16 +147,16 @@ namespace NLCBSMM {
       fprintf(stderr, "**** Reserving pages ****\n");
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
          addr.s_addr = (*pt_itr).first;
-         fprintf(stderr, "%% %s : <", inet_ntoa(addr));
+         //fprintf(stderr, "%% %s : <", inet_ntoa(addr));
          temp = (*pt_itr).second;
          for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
             // Reserve the memory in the virtual address space
             void* mmap_test = mmap((void*)(*vec_itr)->address, PAGE_SZ, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_ANON, -1, 0);
-            fprintf(stderr, " [%p, map ret:%p]", (void*) (*vec_itr)->address,mmap_test);
+            //fprintf(stderr, " [%p, map ret:%p]", (void*) (*vec_itr)->address,mmap_test);
          }
-         fprintf(stderr, " >\n");
+         //fprintf(stderr, " >\n");
       }
-      fprintf(stderr, "********************\n\n");
+      //fprintf(stderr, "********************\n\n");
    }
 
    uint32_t get_available_worker() {
@@ -571,6 +571,9 @@ namespace NLCBSMM {
                // Where does the region start?
                page_ptr  = reinterpret_cast<uint8_t*>(global_page_table_obj());
 
+               // TODO: get our current entry in the page table, and set all pages
+               // allocated to PROT_NONE
+
                // Lock until sync process is done
                mutex_lock(&pt_lock);
 
@@ -692,9 +695,6 @@ namespace NLCBSMM {
                }
                // Send the thread id and our uuid back to master
                fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
-
-               // TODO: remove this
-               print_page_table();
 
                break;
 
@@ -948,7 +948,7 @@ namespace NLCBSMM {
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<char*>(p->get_payload_ptr());
 
-            fprintf(stderr, "> heard packet (%x)\n", p->get_flag());
+            //fprintf(stderr, "> heard packet (%x)\n", p->get_flag());
 
             switch (p->get_flag()) {
 
@@ -978,8 +978,6 @@ namespace NLCBSMM {
                            std::pair<uint32_t, PageVectorType*>(
                               ip,
                               new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
-
-                     print_page_table();
 
                      // Allocate memory for the new work/packet
                      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
