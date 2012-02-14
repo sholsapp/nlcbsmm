@@ -789,7 +789,7 @@ namespace NLCBSMM {
                      // I am master
                      _uuid = 0;
                      // Give ourselves write lock on page table
-                     pt_owner = ntohl(local_addr.s_addr);
+                     pt_owner = local_addr.s_addr;
                      fprintf(stderr, " > Giving ourselves ownership, pt_owner = %s\n", inet_ntoa((struct in_addr&)pt_owner));
                   }
                   // Go to HEARTBEAT state
