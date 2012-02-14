@@ -698,6 +698,40 @@ namespace NLCBSMM {
 
                break;
 
+            case ACQUIRE_WRITE_LOCK_F:
+               // Lock the pt_owner_lock, this ensures that we are not currently inserting into the pt
+               // when someone else wants to aquire the lock
+               fprintf(stderr, " > Recieved a request o acquire ownership of the pt\n");
+               mutex_lock(&pt_owner_lock);
+               // IF we are the pt_owner
+               if(pt_owner == local_addr.s_addr) {
+                  fprintf(stderr," > Updated the current pt_owner to be the sender of the Acquire packet\n");
+                  // OK to give ownership of the pt away
+                  pt_owner =  retaddr.sin_addr.s_addr;
+               }
+               else {
+                  fprintf(stderr," > Cannot fulfill AcquireWriteLock packet, because I am not the owner! Need to reroute\n");
+                  //TODO: send the reroute packet, we are not the pt_owner
+                  // Therefore we cannot give away the ownership
+               }
+           
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               fprintf(stderr, " > Release ownership of the page table\n");
+               // Inform the sender that it now has ownership of the pt
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                     // A new work tuple
+                     new (work_memory) WorkTupleType(retaddr,
+                        // A new packet
+                        new (packet_memory) ReleaseWriteLock())
+                     );
+
+               // TODO: BROADCAST NEW PT OWNER
+
+               mutex_unlock(&pt_owner_lock);
+               break;
+
             default:
                fprintf(stderr, "> unknown packet type (%x)\n", p->get_flag());
                break;
