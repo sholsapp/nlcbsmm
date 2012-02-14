@@ -53,7 +53,7 @@ namespace HL {
             mutex_lock(&pt_owner_lock);
 
             // If write lock is in init state
-            if (ntohl(local_addr.s_addr) == -1
+            if (pt_owner != -1
                   // Or we do not own write lock on page table
                   || ntohl(local_addr.s_addr) != pt_owner) {
 
@@ -108,6 +108,9 @@ namespace HL {
                }
 
                // TODO: need to re-route packets to new owner sometiems
+            }
+            else {
+               fprintf(stderr, "> Already own lock\n");
             }
 
             mutex_unlock(&pt_owner_lock);
