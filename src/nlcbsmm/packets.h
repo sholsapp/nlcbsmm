@@ -231,7 +231,7 @@ class AquireWriteLock : public Packet {
       uint32_t payload_sz;
       uint8_t  flag;
 
-      AquireWRITELock() {
+      AquireWriteLock() {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = AQUIRE_WRITE_LOCK_F;
