@@ -914,10 +914,11 @@ namespace NLCBSMM {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
                }
-
-               // Send the buffer off for processing
-               multi_listener_event_loop(packet_buffer, nbytes);
-
+               // Ignore multicast messages from ourself
+               if(local_addr.s_addr != addr.sin_addr.s_addr) {
+                  // Send the buffer off for processing
+                  multi_listener_event_loop(packet_buffer, nbytes);
+               }
             }
             // Shit is scarce, son!
             clone_heap.free(packet_buffer);
