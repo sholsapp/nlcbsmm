@@ -38,9 +38,11 @@ namespace HL {
             uint32_t sk               =  0;
             uint32_t nbytes           =  0;
             uint32_t addrlen          =  0;
+            uint32_t selflen          =  0;
             uint32_t yes              =  1;
             struct   ip_mreq mreq     = {0};
             struct   sockaddr_in addr = {0};
+            struct   sockaddr_in self = {0};
 
             Packet*            p      = NULL;
             AcquireWriteLock*  acq    = NULL;
@@ -56,10 +58,9 @@ namespace HL {
 
             // If write lock is not in init state
             if (pt_owner != -1
-                  // Or we do not own write lock on page table
+                  // AND we do not own write lock on page table
                   && ntohl(local_addr.s_addr) != pt_owner) {
-
-               fprintf(stderr, "> Not owner, asking %s for lock.\n", inet_ntoa(local_addr));
+               fprintf(stderr, "> Not owner, asking %s for lock.\n", inet_ntoa((struct in_addr&) pt_owner));
 
                // Setup client/server to block until lock is acquired
                if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -67,12 +68,16 @@ namespace HL {
                   exit(EXIT_FAILURE);
                }
 
+               self.sin_family      = AF_INET;
+               self.sin_port        = 0;
+               selflen              = sizeof(self);
+             
                addr.sin_family      = AF_INET;
                addr.sin_addr.s_addr = pt_owner;
                addr.sin_port        = htons(UNICAST_PORT);
                addrlen              = sizeof(addr);
 
-               if (bind(sk, (struct sockaddr *) &addr, addrlen) < 0) {
+               if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
                   perror("vmmanager.cpp, bind");
                   exit(EXIT_FAILURE);
                }
