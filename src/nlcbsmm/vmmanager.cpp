@@ -1161,6 +1161,9 @@ namespace NLCBSMM {
       //Ensure that the pt_heap region is being mmaped
       void * p = pt_heap->malloc(8);
       pt_heap->free(p);
+      //Ensure that the clone_heap region is being mmaped
+      void * p2 = clone_heap.malloc(8);
+      clone_heap.free(p2);
 
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap((void*) global_page_table(),
