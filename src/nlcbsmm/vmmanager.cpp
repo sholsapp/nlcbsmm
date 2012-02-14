@@ -562,7 +562,7 @@ namespace NLCBSMM {
                // record our uuid from the master
                _uuid = ntohl(uja->uuid);
                // record the current pt_owner
-               pt_owner = uja->pt_owner;
+               pt_owner = ntohl(uja->pt_owner);
 
                // How big is the region we're sync'ing?
                region_sz = PAGE_TABLE_OBJ_SZ
