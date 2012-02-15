@@ -31,228 +31,43 @@ extern uint8_t* main;
 extern uint8_t* _end;
 extern uint8_t* __data_start;
 
-
 namespace NLCBSMM {
 
    // If a network thread needs memory, it must use this private
    // heap.  This memory is lost from the DSM system.
-   FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> >       clone_heap;
+   FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> > clone_heap;
 
    // If the shared page table needs memory, it must use this
    // private heap.  This memory is kept in a fixed location in
    // memory in all instances of the application.
-   PageTableHeapType*  pt_heap;
+   PageTableHeapType* pt_heap;
 
    // This node's ip address
-   const char*    local_ip   = NULL;
-   struct in_addr local_addr = {0};    
+   const char* local_ip = NULL;
+   // TODO: replace all instances of local_ip with local_addr (binary form ip)
+   struct in_addr local_addr = {0};
 
-   unsigned char* pageAlign(unsigned char* p) {
-      /**
-       * Helper function to page align a pointer
-       */
-      return (unsigned char *)(((int)p) & ~(PAGE_SZ-1));
-   }
-
-   unsigned int pageIndex(unsigned char* p, unsigned char* base) {
-      /**
-       * Help function to return page number in superblock
-       */
-      unsigned char* pageAligned = pageAlign(p);
-      return (pageAlign(p) - base) % PAGE_SZ;
-   }
-
-   bool isPageZeros(void* p) {
-
-      char testblock[PAGE_SZ] = {0};
-
-      memset(testblock, 0, PAGE_SZ);
-
-      return memcmp(testblock, p, PAGE_SZ) == 0;
-
-   }
-
-   const char* get_local_interface() {
-      /**
-       * Used to initialize the static variable local_ip with an IP address other nodes can
-       *  use to contact the unicast listener.
-       *
-       * I'm not happy with this function still... =/ There has to be a better way to get a
-       *  local interface without using string comparison and shit.
-       */
-      struct ifaddrs *ifaddr = NULL;
-      struct ifaddrs *ifa    = NULL;
-      int            family  = 0;
-      int            s       = 0;
-      char*          host    = (char*) clone_heap.malloc(sizeof(char) * NI_MAXHOST);
-
-      if (getifaddrs(&ifaddr) == -1) {
-         perror("getifaddrs");
-         exit(EXIT_FAILURE);
-      }
-
-      // For each interface
-      for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-         if (ifa->ifa_addr == NULL) {
-            continue;
-         }
-         family = ifa->ifa_addr->sa_family;
-         if (family == AF_INET) {
-            if ((s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST)) != 0) {
-               printf("getnameinfo() failed: %s\n", gai_strerror(s));
-               exit(EXIT_FAILURE);
-            }
-
-            // Don't return the loopback interface
-            if (strcmp (host, "127.0.0.1") != 0) {
-               freeifaddrs(ifaddr);
-               return host;
-            }
-         }
-      }
-      freeifaddrs(ifaddr);
-      // This is an error case
-      return "255.255.255.255";
-   }
-
-   void print_page_table() {
-      /**
-       *
-       */
-      PageTableItr    pt_itr;
-      PageVectorItr   vec_itr;
-      PageVectorType* temp   = NULL;
-      struct in_addr  addr   = {0};
-
-      fprintf(stderr, "**** PAGE_TABLE ****\n");
-      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
-         addr.s_addr = (*pt_itr).first;
-         fprintf(stderr, "%% %s : <\n", inet_ntoa(addr));
-         // The list of pages
-         temp = (*pt_itr).second;
-         for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
-            fprintf(stderr, "\t[&: %p, *:%p]\n", (void*) (*vec_itr), (void*) (*vec_itr)->address);
-         }
-         fprintf(stderr, ">\n");
-      }
-      fprintf(stderr, "********************\n\n");
-   }
-
-   void reserve_pages() {
-      PageTableItr    pt_itr;
-      PageVectorItr   vec_itr;
-      PageVectorType* temp   = NULL;
-      struct in_addr  addr   = {0};
-
-      fprintf(stderr, "**** Reserving pages ****\n");
-      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
-         addr.s_addr = (*pt_itr).first;
-         //fprintf(stderr, "%% %s : <", inet_ntoa(addr));
-         temp = (*pt_itr).second;
-         for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
-            // Reserve the memory in the virtual address space
-            void* mmap_test = mmap((void*)(*vec_itr)->address, PAGE_SZ, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_ANON, -1, 0);
-            //fprintf(stderr, " [%p, map ret:%p]", (void*) (*vec_itr)->address,mmap_test);
-         }
-         //fprintf(stderr, " >\n");
-      }
-      //fprintf(stderr, "********************\n\n");
-   }
-
-   uint32_t get_available_worker() {
-      /**
-       * Return the IP address (binary form) of the next worker capable of running a
-       * new thread.
-       *
-       * TODO: implement this correctly (returns first non-master IP address)
-       */
-      PageTableItr pt_itr;
-      uint32_t s_addr;
-
-      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
-         s_addr = (*pt_itr).first;
-         if (s_addr != inet_addr(local_ip)) {
-
-            mutex_unlock(&pt_lock);
-            return s_addr;
-         }
-      }
-      return -1;
-   }
-
-}
-
-namespace NLCBSMM {
-
-
+   // This set of condition variables and mutex allows us to shut down the unicasts speaker
+   // while there is no work for it to perform in its work queue.
    PacketQueueType uni_speaker_work_deque;
+   cv              uni_speaker_cond;
+   mutex           uni_speaker_cond_lock;
+   mutex           uni_speaker_lock; // This locks the queue during push/pop/size ops
 
+   // This set of condition variables adn mutex allows us to shut down the multicast speaker
+   // while there is no work for it to perform in its work queue.
+   //TODO: make this look like unicast speaker (above)
    PacketQueueType multi_speaker_work_deque;
-
-   cv    uni_speaker_cond;
-   mutex uni_speaker_cond_lock;
-
-   mutex uni_speaker_lock;
-   mutex multi_speaker_lock;
-
-   // This forces threads to wait on each other in case someone is reading/writing the
-   // page table.
-   mutex pt_owner_lock;
+   mutex           multi_speaker_lock; // This locks the queue during push/pop/size ops
 
    // This (binary form IP address) identifies who currently has the page table lock.
    uint32_t pt_owner;
-
+   // This forces threads to wait on each other in case someone is reading/writing the
+   // page table.
+   mutex pt_owner_lock;
    // This is a per-process lock, so the various threads don't simutaneously use the
    // page table.
    mutex pt_lock;
-
-   WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
-      /**
-       *
-       */
-      WorkTupleType* work = NULL;
-      mutex_lock(m);
-      work = queue->front();
-      queue->pop_front();
-      mutex_unlock(m);
-      return work;
-   }
-
-   void safe_push(PacketQueueType* queue, mutex* m, WorkTupleType* work) {
-      /**
-       *
-       */
-      mutex_lock(m);
-      queue->push_back(work);
-      mutex_unlock(m);
-      // Signal unicast speaker there is queued work
-      cond_signal(&uni_speaker_cond);
-      return;
-   }
-
-   int safe_size(PacketQueueType* queue, mutex* m) {
-      /**
-       *
-       */
-      int s = 0;
-      mutex_lock(m);
-      s = queue->size();
-      mutex_unlock(m);
-      return s;
-   }
-
-   PageTableHeapType* get_pt_heap(mutex* m) {
-      PageTableHeapType* alloc;
-      mutex_lock(m);
-      alloc = pt_heap;
-      mutex_unlock(m);
-      return alloc;
-   }
-
-}
-
-
-namespace NLCBSMM {
 
    PageTableType* page_table;
 
@@ -262,6 +77,9 @@ namespace NLCBSMM {
    uint32_t _next_uuid        = 1;
 
 }
+
+// The implementation of utility functions defined in this file
+#include "vmmanager_utils.hpp"
 
 namespace NLCBSMM {
 
@@ -404,12 +222,6 @@ namespace NLCBSMM {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
-
-            // DEBUG
-            //fprintf(stderr, "clone %d <%p - %p>\n", uni_listener_thread_id, uni_listener_ptr, (uint8_t*) uni_listener_ptr + CLONE_STACK_SZ);
-            //fprintf(stderr, "clone %d <%p - %p>\n", uni_speaker_thread_id, uni_speaker_ptr, (uint8_t*) uni_speaker_ptr + CLONE_STACK_SZ);
-            //fprintf(stderr, "clone %d <%p - %p>\n", multi_listener_thread_id, multi_listener_ptr, (uint8_t*) multi_listener_ptr + CLONE_STACK_SZ);
-            //fprintf(stderr, "clone %d <%p - %p>\n", multi_speaker_thread_id, multi_speaker_ptr, (uint8_t*) multi_speaker_ptr + CLONE_STACK_SZ);
 
             return;
          }
@@ -595,6 +407,8 @@ namespace NLCBSMM {
                         // A new packet
                         new (packet_memory) UnicastJoinAcceptance(uja))
                      );
+               // Signal unicast speaker there is queued work
+               cond_signal(&uni_speaker_cond);
 
                MS_STATE = HEARTBEAT;
                break;
@@ -635,6 +449,8 @@ namespace NLCBSMM {
                               // A new packet
                               new (packet_memory) SyncPage(page_addr, page_data))
                            );
+                     // Signal unicast speaker there is queued work
+                     cond_signal(&uni_speaker_cond);
                   }
                }
 
@@ -648,6 +464,8 @@ namespace NLCBSMM {
                         // A new packet
                         new (packet_memory) GenericPacket(SYNC_DONE_F))
                      );
+               // Signal unicast speaker there is queued work
+               cond_signal(&uni_speaker_cond);
 
 
                break;
@@ -717,11 +535,13 @@ namespace NLCBSMM {
                   fprintf(stderr, " > Release ownership of the page table\n");
                   // Inform the sender that it now has ownership of the pt
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                     // A new work tuple
-                     new (work_memory) WorkTupleType(retaddr,
-                        // A new packet
-                        new (packet_memory) ReleaseWriteLock())
-                     );
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) ReleaseWriteLock())
+                        );
+                  // Signal unicast speaker there is queued work
+                  cond_signal(&uni_speaker_cond);
 
                   // TODO: BROADCAST NEW PT OWNER
 
@@ -732,7 +552,7 @@ namespace NLCBSMM {
                   //TODO: send the reroute packet, we are not the pt_owner
                   // Therefore we cannot give away the ownership
                }
-           
+
                mutex_unlock(&pt_owner_lock);
                break;
 
@@ -820,6 +640,7 @@ namespace NLCBSMM {
             switch (MS_STATE) {
 
             case JOIN:
+               //TODO: use binary form of IP and ditch the string payload
                // Build packet
                p = new (buffer) MulticastJoin(strlen(local_ip), &main, &_end, (uint8_t*) global_base());
                // Add packet payload (the user IP address)
@@ -827,6 +648,7 @@ namespace NLCBSMM {
                break;
 
             case HEARTBEAT:
+               //TODO: use binary form of IP and ditch the string payload
                // Build packet
                p = new (buffer) MulticastHeartbeat(strlen(local_ip));
                // Add packet payload (the user IP address)
@@ -994,6 +816,7 @@ namespace NLCBSMM {
                      retaddr.sin_addr.s_addr = inet_addr(payload_buf);
                      retaddr.sin_port        = htons(UNICAST_PORT);
 
+                     //TODO: use binary form of IP and ditch the string payload
                      // Push work onto the uni_speaker's queue
                      safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                            // A new work tuple
@@ -1005,6 +828,8 @@ namespace NLCBSMM {
                                  _next_uuid++,
                                  pt_owner))
                            );
+                     // Signal unicast speaker there is queued work
+                     cond_signal(&uni_speaker_cond);
                   }
                   else {
                      fprintf(stderr, "> invalid address space detected\n");
@@ -1017,6 +842,7 @@ namespace NLCBSMM {
                // Convert binary ip to correct structure
                addr.s_addr = ntohl(sr->ip);
                fprintf(stderr, "> %s reserving %p(%d)\n", inet_ntoa(addr), (void*) ntohl(sr->start_addr), ntohl(sr->sz));
+               //TODO: mmap page into memory (set PROT_NONE)
                break;
 
             case MULTICAST_HEARTBEAT_F:
@@ -1162,12 +988,10 @@ namespace NLCBSMM {
       }
       pt_heap = new (raw_obj) PageTableHeapType();
 
-      //Ensure that the pt_heap region is being mmaped
-      void * p = pt_heap->malloc(8);
-      pt_heap->free(p);
-      //Ensure that the clone_heap region is being mmaped
-      void * p2 = clone_heap.malloc(8);
-      clone_heap.free(p2);
+      // Ensure that the pt_heap region is being mmaped
+      pt_heap->free(pt_heap->malloc(8));
+      // Ensure that the clone_heap region is being mmaped
+      clone_heap.free(clone_heap.malloc(8));
 
       // Dedicated memory to maintaining the page table
       void* raw         = (void*) mmap((void*) global_page_table(),
