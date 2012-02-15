@@ -272,13 +272,10 @@ namespace NLCBSMM {
                   }
 
                   // Another thread allocated memory and queued it for work, so
-                  // free memory when we're sending it.
+                  // free memory when we're done sending it.
                   clone_heap.free(p);
                   clone_heap.free(work);
                }
-
-               // TODO: do we need this?
-               sleep(1);
             }
             return 0;
          }
@@ -464,6 +461,7 @@ namespace NLCBSMM {
                         // A new packet
                         new (packet_memory) GenericPacket(SYNC_DONE_F))
                      );
+
                // Signal unicast speaker there is queued work
                cond_signal(&uni_speaker_cond);
 
@@ -474,7 +472,6 @@ namespace NLCBSMM {
                syncp = reinterpret_cast<SyncPage*>(buffer);
 
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
-
                // Sync the page (assume page table is already locked)
                memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
 
@@ -484,9 +481,11 @@ namespace NLCBSMM {
                fprintf(stderr, "> sync done\n");
 
                print_page_table();
+
+               // Map any new pages and set permissions
                reserve_pages();
 
-               // Page table can now be modified
+               // Page table can now be accessed/modified by other worker threads
                mutex_unlock(&pt_lock);
 
                fprintf(stderr, "> application ready!\n");
@@ -525,7 +524,7 @@ namespace NLCBSMM {
                mutex_lock(&pt_owner_lock);
                // IF we are the pt_owner
                if(pt_owner == local_addr.s_addr) {
-                  fprintf(stderr," > Updated the current pt_owner(old:%s,new:%s) to be the sender of the Acquire packet\n", inet_ntoa((struct in_addr&)pt_owner), inet_ntoa(retaddr.sin_addr));
+
                   // OK to give ownership of the pt away
                   pt_owner =  retaddr.sin_addr.s_addr;
 
@@ -540,24 +539,28 @@ namespace NLCBSMM {
                            // A new packet
                            new (packet_memory) ReleaseWriteLock())
                         );
+
                   // Signal unicast speaker there is queued work
                   cond_signal(&uni_speaker_cond);
 
                   // TODO: BROADCAST NEW PT OWNER
-
-
                }
                else {
-                  fprintf(stderr," > Cannot fulfill AcquireWriteLock packet, because I am not the owner, owner is %s! Need to reroute\n", inet_ntoa((struct in_addr&)pt_owner));
+                  fprintf(stderr," > Need to reroute\n");
                   //TODO: send the reroute packet, we are not the pt_owner
-                  // Therefore we cannot give away the ownership
                }
 
                mutex_unlock(&pt_owner_lock);
                break;
 
+            case RELEASE_WRITE_LOCK_F:
+               // The lock is always released to a client/server connection (never to the
+               // global listeners).  See mmapwrapper.h for an example.
+               fprintf(stderr, "ERROR> global listener heard a RELEASE_WRITE_LOCK_F\n");
+               break;
+
             default:
-               fprintf(stderr, "> unknown packet type (%x)\n", p->get_flag());
+               fprintf(stderr, "ERROR> unknown packet type (%x)\n", p->get_flag());
                break;
             }
             return;
@@ -753,9 +756,6 @@ namespace NLCBSMM {
              * Process the packet in buffer (which is nbytes long) and take appropriate
              * action (if applicable).
              *
-             * E.g., if we receive a packet of type MULTICAST_JOIN_F, then verify address
-             * space information, build a UnicastJoinAcceptance packet, queue the new packet
-             * for process in the unicast_speaker's work queue, and return.
              */
             Packet*                p              = NULL;
             MulticastJoin*         mjp            = NULL;
@@ -765,9 +765,12 @@ namespace NLCBSMM {
             WorkTupleType*         work           = NULL;
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
+            void*                  test           = NULL;
             char*                  payload_buf    = NULL;
             uint32_t               payload_sz     = 0;
             uint32_t               ip             = 0;
+            uint32_t               start_addr     = 0;
+            uint32_t               memory_sz      = 0;
             struct sockaddr_in     retaddr        = {0};
             struct in_addr         addr           = {0};
 
@@ -839,10 +842,37 @@ namespace NLCBSMM {
 
             case SYNC_RESERVE_F:
                sr = reinterpret_cast<SyncReserve*>(buffer);
-               // Convert binary ip to correct structure
-               addr.s_addr = ntohl(sr->ip);
-               fprintf(stderr, "> %s reserving %p(%d)\n", inet_ntoa(addr), (void*) ntohl(sr->start_addr), ntohl(sr->sz));
-               //TODO: mmap page into memory (set PROT_NONE)
+
+               ip             = ntohl(sr->ip);
+               start_addr     = ntohl(sr->start_addr);
+               memory_sz      = ntohl(sr->sz);
+
+               // If message is from someone in page table
+               if (page_table->count(ip) > 0) {
+                  // Convert to in_addr struct
+                  addr.s_addr = ip;
+
+                  fprintf(stderr, "> %s reserving %p(%d)\n",
+                        inet_ntoa(addr),
+                        (void*) start_addr,
+                        memory_sz);
+
+                  // Map this memory into our address space
+                  test = mmap((void*) start_addr, 
+                        memory_sz, 
+                        PROT_NONE,
+                        MAP_FIXED | MAP_ANON, -1, 0);
+
+                  if (test == MAP_FAILED) {
+                     fprintf(stderr, "> map failed\n");
+                  }
+
+                  // TODO: insert this mapping into the page table (i think)
+
+               }
+               else {
+                  fprintf(stderr, "> Reserve request from non-cluster member\n");
+               }
                break;
 
             case MULTICAST_HEARTBEAT_F:

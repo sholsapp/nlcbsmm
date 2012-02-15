@@ -123,6 +123,7 @@ namespace HL {
                fprintf(stderr, "> Already own lock\n");
             }
 
+            // TODO: should this happen after init_nlcbsmm_memory()?
             mutex_unlock(&pt_owner_lock);
 
             // Allocate memory

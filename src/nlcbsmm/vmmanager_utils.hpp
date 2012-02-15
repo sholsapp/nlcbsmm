@@ -99,24 +99,25 @@ namespace NLCBSMM {
 
 
    void reserve_pages() {
+      /**
+       *
+       */
       PageTableItr    pt_itr;
       PageVectorItr   vec_itr;
       PageVectorType* temp   = NULL;
       struct in_addr  addr   = {0};
 
-      fprintf(stderr, "**** Reserving pages ****\n");
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
          addr.s_addr = (*pt_itr).first;
-         //fprintf(stderr, "%% %s : <", inet_ntoa(addr));
          temp = (*pt_itr).second;
          for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
             // Reserve the memory in the virtual address space
-            void* mmap_test = mmap((void*)(*vec_itr)->address, PAGE_SZ, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_ANON, -1, 0);
-            //fprintf(stderr, " [%p, map ret:%p]", (void*) (*vec_itr)->address,mmap_test);
+            void* mmap_test = mmap((void*)(*vec_itr)->address, 
+                  PAGE_SZ, 
+                  PROT_NONE, 
+                  MAP_FIXED | MAP_ANON, -1, 0);
          }
-         //fprintf(stderr, " >\n");
       }
-      //fprintf(stderr, "********************\n\n");
    }
 
 
