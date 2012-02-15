@@ -858,10 +858,11 @@ namespace NLCBSMM {
                         memory_sz);
 
                   // Map this memory into our address space
-                  test = mmap((void*) start_addr, 
-                        memory_sz, 
+                  test = mmap((void*) start_addr,
+                        memory_sz,
                         PROT_NONE,
-                        MAP_FIXED | MAP_ANON, -1, 0);
+                        MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+                        -1, 0);
 
                   if (test == MAP_FAILED) {
                      fprintf(stderr, "> map failed\n");
@@ -1011,7 +1012,8 @@ namespace NLCBSMM {
        */
       void* raw_obj    = (void*) mmap((void*) global_page_table_obj(),
             PAGE_TABLE_OBJ_SZ,
-            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
             -1, 0);
       if (raw_obj == MAP_FAILED) {
          fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
