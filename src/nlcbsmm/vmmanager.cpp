@@ -863,7 +863,8 @@ namespace NLCBSMM {
                   // Map this memory into our address space
                   test = mmap((void*) start_addr,
                         memory_sz,
-                        PROT_NONE,
+                        // TODO: set this to PROT_NONE
+                        PROT_READ | PROT_WRITE,
                         MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
                         -1, 0);
 
