@@ -860,6 +860,7 @@ namespace NLCBSMM {
                         (void*) start_addr,
                         memory_sz);
 
+                  /*
                   // Map this memory into our address space
                   test = mmap((void*) start_addr,
                         memory_sz,
@@ -871,6 +872,7 @@ namespace NLCBSMM {
                   if (test == MAP_FAILED) {
                      fprintf(stderr, "> map failed\n");
                   }
+                  */
 
                   // TODO: insert this mapping into the page table (i think)
 
