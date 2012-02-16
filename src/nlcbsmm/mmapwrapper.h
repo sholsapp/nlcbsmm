@@ -25,7 +25,7 @@ namespace HL {
       public:
 
          // Linux and most other operating systems align memory to a 4K boundary.
-         enum { Size = 4 * 1024 };
+         enum { Size      = 4 * 1024 };
          enum { Alignment = 4 * 1024 };
 
          static void * map (size_t sz) {
@@ -106,7 +106,8 @@ namespace HL {
 
                if (p->get_flag() == RELEASE_WRITE_LOCK_F) {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec_buffer);
-                  fprintf(stderr, "> Received write lock\n");
+                  fprintf(stderr, "> Received write lock.  Next avail memory = %p\n", (void*) ntohl(rel->next_addr));
+                  next_addr = ntohl(rel->next_addr);
                   // Take ownership of write lock
                   pt_owner = local_addr.s_addr;
                }
@@ -114,7 +115,7 @@ namespace HL {
                   fprintf(stderr, "> Unknown packet response\n");
                }
 
-               // TODO: need to re-route packets to new owner sometiems
+               // TODO: need to re-route packets to new owner sometimes
 
                // Close socket
                close(sk);
@@ -123,6 +124,8 @@ namespace HL {
                fprintf(stderr, "> Already own lock\n");
             }
 
+
+            fprintf(stderr, "Should allocate at %p\n", (void*) next_addr);
             // Allocate memory
             ptr = mmap (0, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
@@ -134,6 +137,7 @@ namespace HL {
             else {
                // Alert NLCBSMM of new memory
                init_nlcbsmm_memory(ptr, sz);
+               next_addr = (uint32_t) (((uint8_t*) next_addr) + sz);
                mutex_unlock(&pt_owner_lock);
                return ptr;
             }
