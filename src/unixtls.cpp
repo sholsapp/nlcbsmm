@@ -250,6 +250,10 @@ throw ()
             new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg))
          );
 
+   // Signal unicast speaker there is queued work
+   cond_signal(&uni_speaker_cond);
+
+   // TODO: return a valid nlcbsmm thread id (so the caller can wait for it later)
    return -1;
 
    // TODO: don't forget to start thread eventually
