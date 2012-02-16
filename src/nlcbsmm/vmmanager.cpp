@@ -801,8 +801,6 @@ namespace NLCBSMM {
 
                      ip = inet_addr(payload_buf);
 
-                     mutex_lock(&pt_lock);
-
                      // TODO: make sure user isn't is in the page table
 
                      // Debug
@@ -837,8 +835,6 @@ namespace NLCBSMM {
                            );
                      // Signal unicast speaker there is queued work
                      cond_signal(&uni_speaker_cond);
-
-                     mutex_unlock(&pt_lock);
                   }
                   else {
                      // TODO: error-handling
