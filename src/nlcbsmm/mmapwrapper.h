@@ -71,7 +71,7 @@ namespace HL {
                self.sin_family      = AF_INET;
                self.sin_port        = 0;
                selflen              = sizeof(self);
-             
+
                addr.sin_family      = AF_INET;
                addr.sin_addr.s_addr = pt_owner;
                addr.sin_port        = htons(UNICAST_PORT);
@@ -123,18 +123,18 @@ namespace HL {
                fprintf(stderr, "> Already own lock\n");
             }
 
-            // TODO: should this happen after init_nlcbsmm_memory()?
-            mutex_unlock(&pt_owner_lock);
-
             // Allocate memory
             ptr = mmap (0, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
             if (ptr == MAP_FAILED) {
                fprintf (stderr, "Virtual memory exhausted.\n");
+               mutex_unlock(&pt_owner_lock);
                return NULL;
-            } else {
+            }
+            else {
                // Alert NLCBSMM of new memory
                init_nlcbsmm_memory(ptr, sz);
+               mutex_unlock(&pt_owner_lock);
                return ptr;
             }
 
