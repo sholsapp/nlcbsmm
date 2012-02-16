@@ -537,7 +537,7 @@ namespace NLCBSMM {
                         // A new work tuple
                         new (work_memory) WorkTupleType(retaddr,
                            // A new packet
-                           new (packet_memory) ReleaseWriteLock())
+                           new (packet_memory) ReleaseWriteLock(next_addr))
                         );
 
                   // Signal unicast speaker there is queued work
