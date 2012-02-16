@@ -837,235 +837,234 @@ namespace NLCBSMM {
                            );
                      // Signal unicast speaker there is queued work
                      cond_signal(&uni_speaker_cond);
+
+                     mutex_unlock(&pt_lock);
+                  }
+                  else {
+                     // TODO: error-handling
+                     fprintf(stderr, "> invalid address space detected\n");
+                  }
+               }
+               break;
+
+            case SYNC_RESERVE_F:
+               sr = reinterpret_cast<SyncReserve*>(buffer);
+
+               ip             = ntohl(sr->ip);
+               start_addr     = ntohl(sr->start_addr);
+               memory_sz      = ntohl(sr->sz);
+
+               // If message is from someone in page table
+               if (page_table->count(ip) > 0) {
+                  // Convert to in_addr struct
+                  addr.s_addr = ip;
+
+                  fprintf(stderr, "> %s reserving %p(%d)\n",
+                        inet_ntoa(addr),
+                        (void*) start_addr,
+                        memory_sz);
+
+                  // Map this memory into our address space
+                  test = mmap((void*) start_addr,
+                        memory_sz,
+                        PROT_NONE,
+                        MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+                        -1, 0);
+
+                  if (test == MAP_FAILED) {
+                     fprintf(stderr, "> map failed\n");
                   }
 
-                  mutex_unlock(&pt_lock);
+                  // TODO: insert this mapping into the page table (i think)
+
                }
                else {
-                  // TODO: error-handling
-                  fprintf(stderr, "> invalid address space detected\n");
+                  fprintf(stderr, "> Reserve request from non-cluster member\n");
                }
-            }
-            break;
+               break;
 
-         case SYNC_RESERVE_F:
-            sr = reinterpret_cast<SyncReserve*>(buffer);
+            case MULTICAST_HEARTBEAT_F:
+               mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
+               fprintf(stderr, "%s: <3\n", payload_buf);
+               break;
 
-            ip             = ntohl(sr->ip);
-            start_addr     = ntohl(sr->start_addr);
-            memory_sz      = ntohl(sr->sz);
-
-            // If message is from someone in page table
-            if (page_table->count(ip) > 0) {
-               // Convert to in_addr struct
-               addr.s_addr = ip;
-
-               fprintf(stderr, "> %s reserving %p(%d)\n",
-                     inet_ntoa(addr),
-                     (void*) start_addr,
-                     memory_sz);
-
-               // Map this memory into our address space
-               test = mmap((void*) start_addr,
-                     memory_sz,
-                     PROT_NONE,
-                     MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-                     -1, 0);
-
-               if (test == MAP_FAILED) {
-                  fprintf(stderr, "> map failed\n");
-               }
-
-               // TODO: insert this mapping into the page table (i think)
+            default:
+               break;
 
             }
-            else {
-               fprintf(stderr, "> Reserve request from non-cluster member\n");
-            }
-            break;
-
-         case MULTICAST_HEARTBEAT_F:
-            mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
-            fprintf(stderr, "%s: <3\n", payload_buf);
-            break;
-
-         default:
-            break;
-
          }
-   }
 
-   private:
+      private:
 
-   uint32_t multi_speaker_thread_id;
-   uint32_t multi_listener_thread_id;
-   uint32_t uni_speaker_thread_id;
-   uint32_t uni_listener_thread_id;
-};
-
-
-/**
- * This is the distributed system server
- */
-NetworkManager networkmanager;
+         uint32_t multi_speaker_thread_id;
+         uint32_t multi_listener_thread_id;
+         uint32_t uni_speaker_thread_id;
+         uint32_t uni_listener_thread_id;
+   };
 
 
-void signal_handler(int signo, siginfo_t* info, void* contex) {
    /**
-    * The actual signal handler for SIGSEGV
+    * This is the distributed system server
     */
-   sigset_t oset;
-   sigset_t set;
+   NetworkManager networkmanager;
 
-   //block SIGSEGV
-   sigemptyset(&set);
-   sigaddset(&set, SIGSEGV);
-   sigprocmask(SIG_BLOCK, &set, &oset);
 
-   //fprintf(stderr, "SIGSEGV Caught\n");
+   void signal_handler(int signo, siginfo_t* info, void* contex) {
+      /**
+       * The actual signal handler for SIGSEGV
+       */
+      sigset_t oset;
+      sigset_t set;
 
-   unsigned char* p = pageAlign((unsigned char*) info->si_addr);
-   fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
+      //block SIGSEGV
+      sigemptyset(&set);
+      sigaddset(&set, SIGSEGV);
+      sigprocmask(SIG_BLOCK, &set, &oset);
 
-   PageTableItr    pt_itr;
-   PageVectorItr   vec_itr;
-   PageVectorType* temp   = NULL;
-   struct in_addr  addr   = {0};
-   int found = 0;
+      //fprintf(stderr, "SIGSEGV Caught\n");
 
-   fprintf(stderr, "**** Searching through page table ****\n");
-   for (pt_itr = page_table->begin(); !found && pt_itr != page_table->end(); pt_itr++) {
+      unsigned char* p = pageAlign((unsigned char*) info->si_addr);
+      fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
+
+      PageTableItr    pt_itr;
+      PageVectorItr   vec_itr;
+      PageVectorType* temp   = NULL;
+      struct in_addr  addr   = {0};
       int found = 0;
-      addr.s_addr = (*pt_itr).first;
-      fprintf(stderr, "%% %s : <\n", inet_ntoa(addr));
-      temp = (*pt_itr).second;
-      for (vec_itr = temp->begin(); !found && vec_itr != temp->end(); vec_itr++) {
-         // IF the faulting address is on this machine
-         if(p == (void*) (*vec_itr)->address) {
-            fprintf(stderr,"Found!");
-            found = 1;
+
+      fprintf(stderr, "**** Searching through page table ****\n");
+      for (pt_itr = page_table->begin(); !found && pt_itr != page_table->end(); pt_itr++) {
+         int found = 0;
+         addr.s_addr = (*pt_itr).first;
+         fprintf(stderr, "%% %s : <\n", inet_ntoa(addr));
+         temp = (*pt_itr).second;
+         for (vec_itr = temp->begin(); !found && vec_itr != temp->end(); vec_itr++) {
+            // IF the faulting address is on this machine
+            if(p == (void*) (*vec_itr)->address) {
+               fprintf(stderr,"Found!");
+               found = 1;
+            }
          }
+         // If the packet wasn't found
+         if(!found) {
+            fprintf(stderr,"Not found:[");
+         }
+         fprintf(stderr, ">\n");
       }
-      // If the packet wasn't found
-      if(!found) {
-         fprintf(stderr,"Not found:[");
+      fprintf(stderr, "********************\n\n");
+
+      // TODO: Add in logic to pull the page table from the network and set permissions
+
+      // Unblock sigsegv
+      sigprocmask(SIG_UNBLOCK, &set, &oset);
+   }
+
+
+   void register_signal_handlers() {
+      /**
+       * Registers signal handler for SIGSEGV
+       */
+      //fprintf(stderr, "Registering SIGSEGV handler...");
+      struct sigaction act;
+      act.sa_sigaction = signal_handler;
+      act.sa_flags     = SA_SIGINFO;
+      sigemptyset(&act.sa_mask);
+      sigaction(SIGSEGV, &act, 0);
+      //fprintf(stderr, "done\n");
+      return;
+   }
+
+
+   void print_log_sep(int len) {
+      /**
+       *
+       */
+      fprintf(stdout, "\n");
+      for (int i = 0; i < len; i++) {
+         fprintf(stderr, "%c", (char) 144);
       }
-      fprintf(stderr, ">\n");
+      fprintf(stdout, "\n\n");
    }
-   fprintf(stderr, "********************\n\n");
-
-   // TODO: Add in logic to pull the page table from the network and set permissions
-
-   // Unblock sigsegv
-   sigprocmask(SIG_UNBLOCK, &set, &oset);
-}
 
 
-void register_signal_handlers() {
-   /**
-    * Registers signal handler for SIGSEGV
-    */
-   //fprintf(stderr, "Registering SIGSEGV handler...");
-   struct sigaction act;
-   act.sa_sigaction = signal_handler;
-   act.sa_flags     = SA_SIGINFO;
-   sigemptyset(&act.sa_mask);
-   sigaction(SIGSEGV, &act, 0);
-   //fprintf(stderr, "done\n");
-   return;
-}
-
-
-void print_log_sep(int len) {
-   /**
-    *
-    */
-   fprintf(stdout, "\n");
-   for (int i = 0; i < len; i++) {
-      fprintf(stderr, "%c", (char) 144);
+   void print_init_message() {
+      /**
+       *
+       */
+      print_log_sep(40);
+      fprintf(stdout, "> nlcbsmm init on local ip: %s <\n", local_ip);
+      fprintf(stdout, "> main (%p) | _end (%p)\n",          &main, &_end);
+      fprintf(stdout, "> base %p (thread stacks go here)\n", (void*) global_base());
+      fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
+      fprintf(stdout, "> clone heap offset %p\n",            (void*) global_clone_heap());
+      fprintf(stdout, "> page table obj offset %p\n",        (void*) global_page_table_obj());
+      fprintf(stdout, "> page table offset %p\n",            (void*) global_page_table());
+      fprintf(stdout, "> page table alloc heap offset %p\n", (void*) global_page_table_alloc_heap());
+      fprintf(stdout, "> page table heap offset %p\n",       (void*) global_page_table_heap());
+      print_log_sep(40);
+      return;
    }
-   fprintf(stdout, "\n\n");
-}
 
 
-void print_init_message() {
-   /**
-    *
-    */
-   print_log_sep(40);
-   fprintf(stdout, "> nlcbsmm init on local ip: %s <\n", local_ip);
-   fprintf(stdout, "> main (%p) | _end (%p)\n",          &main, &_end);
-   fprintf(stdout, "> base %p (thread stacks go here)\n", (void*) global_base());
-   fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
-   fprintf(stdout, "> clone heap offset %p\n",            (void*) global_clone_heap());
-   fprintf(stdout, "> page table obj offset %p\n",        (void*) global_page_table_obj());
-   fprintf(stdout, "> page table offset %p\n",            (void*) global_page_table());
-   fprintf(stdout, "> page table alloc heap offset %p\n", (void*) global_page_table_alloc_heap());
-   fprintf(stdout, "> page table heap offset %p\n",       (void*) global_page_table_heap());
-   print_log_sep(40);
-   return;
-}
+   void nlcbsmm_init() {
 
 
-void nlcbsmm_init() {
+      next_addr = global_application_heap();
+      fprintf(stderr, "> next_addr = %p\n", (void*) next_addr);
 
+      /**
+       * Hook entry.
+       */
+      void* raw_obj    = (void*) mmap((void*) global_page_table_obj(),
+            PAGE_TABLE_OBJ_SZ,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            -1, 0);
+      if (raw_obj == MAP_FAILED) {
+         fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
+      }
+      pt_heap = new (raw_obj) PageTableHeapType();
 
-   next_addr = global_application_heap();
-   fprintf(stderr, "> next_addr = %p\n", (void*) next_addr);
+      // Ensure that the pt_heap region is being mmaped
+      pt_heap->free(pt_heap->malloc(8));
+      // Ensure that the clone_heap region is being mmaped
+      clone_heap.free(clone_heap.malloc(8));
 
-   /**
-    * Hook entry.
-    */
-   void* raw_obj    = (void*) mmap((void*) global_page_table_obj(),
-         PAGE_TABLE_OBJ_SZ,
-         PROT_READ | PROT_WRITE,
-         MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-         -1, 0);
-   if (raw_obj == MAP_FAILED) {
-      fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
+      // Dedicated memory to maintaining the page table
+      void* raw         = (void*) mmap((void*) global_page_table(),
+            PAGE_TABLE_SZ,
+            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            -1, 0);
+      if (raw_obj == MAP_FAILED) {
+         fprintf(stderr, "Cannot map gpt: %p\n", (void*) global_page_table());
+      }
+      page_table        = new (raw) PageTableType();
+      _start_page_table = (uint32_t) raw;
+      _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
+      _uuid             = (uint32_t) -1;
+
+      // Obtain the IP address of the local ethernet interface
+      local_ip = get_local_interface();
+      // Binary form of IP address
+      local_addr.s_addr = inet_addr(local_ip);
+
+      // Setup condition and mutex variables
+      cond_init(&uni_speaker_cond,       NULL);
+      mutex_init(&uni_speaker_cond_lock, NULL);
+      mutex_init(&uni_speaker_lock,      NULL);
+      mutex_init(&multi_speaker_lock,    NULL);
+      mutex_init(&pt_owner_lock,         NULL);
+      mutex_init(&pt_lock,               NULL);
+
+      pt_owner = -1;
+
+      print_init_message();
+
+      // Register SIGSEGV handler
+      //register_signal_handlers();
+
+      // Spawn the thread that speaks/listens to cluster
+      networkmanager.start_comms();
    }
-   pt_heap = new (raw_obj) PageTableHeapType();
-
-   // Ensure that the pt_heap region is being mmaped
-   pt_heap->free(pt_heap->malloc(8));
-   // Ensure that the clone_heap region is being mmaped
-   clone_heap.free(clone_heap.malloc(8));
-
-   // Dedicated memory to maintaining the page table
-   void* raw         = (void*) mmap((void*) global_page_table(),
-         PAGE_TABLE_SZ,
-         PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-         -1, 0);
-   if (raw_obj == MAP_FAILED) {
-      fprintf(stderr, "Cannot map gpt: %p\n", (void*) global_page_table());
-   }
-   page_table        = new (raw) PageTableType();
-   _start_page_table = (uint32_t) raw;
-   _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
-   _uuid             = (uint32_t) -1;
-
-   // Obtain the IP address of the local ethernet interface
-   local_ip = get_local_interface();
-   // Binary form of IP address
-   local_addr.s_addr = inet_addr(local_ip);
-
-   // Setup condition and mutex variables
-   cond_init(&uni_speaker_cond,       NULL);
-   mutex_init(&uni_speaker_cond_lock, NULL);
-   mutex_init(&uni_speaker_lock,      NULL);
-   mutex_init(&multi_speaker_lock,    NULL);
-   mutex_init(&pt_owner_lock,         NULL);
-   mutex_init(&pt_lock,               NULL);
-
-   pt_owner = -1;
-
-   print_init_message();
-
-   // Register SIGSEGV handler
-   //register_signal_handlers();
-
-   // Spawn the thread that speaks/listens to cluster
-   networkmanager.start_comms();
-}
 
 }
