@@ -60,6 +60,7 @@ uint32_t& global_application_heap() {
    static uint32_t off = (uint32_t)
       ((uint8_t*) global_page_table_heap()
        + PAGE_TABLE_HEAP_SZ
-       + PAGE_SZ);
+       // TODO: remove this
+       + (PAGE_SZ + 0xA0000000));
    return off;
 }
