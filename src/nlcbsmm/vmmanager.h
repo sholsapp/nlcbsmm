@@ -97,7 +97,9 @@ namespace NLCBSMM {
    // page table.
    extern mutex pt_lock;
 
-
+   // The next valid address to pull memory from. This is transmitted in the releaseWriteLock
+   // packet.
+   extern uint32_t next_addr;
 
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m);
 

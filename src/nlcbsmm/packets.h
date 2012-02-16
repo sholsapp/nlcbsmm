@@ -258,11 +258,13 @@ class ReleaseWriteLock : public Packet {
       uint32_t sequence;
       uint32_t payload_sz;
       uint8_t  flag;
+      uint32_t next_addr;
 
-      ReleaseWriteLock() {
+      ReleaseWriteLock(uint32_t _next_addr) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = RELEASE_WRITE_LOCK_F;
+         next_addr  = htonl(_next_addr);
       }
 
 }__attribute__((packed));
