@@ -57,3 +57,4 @@ extern uint32_t& global_page_table_obj();
 extern uint32_t& global_page_table();
 extern uint32_t& global_page_table_alloc_heap();
 extern uint32_t& global_page_table_heap();
+extern uint32_t& global_application_heap();

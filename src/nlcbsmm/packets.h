@@ -84,7 +84,10 @@ class MulticastJoin : public Packet {
       uint32_t end_addr;
       uint32_t prog_break_addr;
 
-      MulticastJoin(uint32_t user_length, uint8_t** _main_addr, uint8_t** _end_addr, uint8_t* _prog_break_addr) {
+      MulticastJoin(uint32_t user_length, 
+            uint8_t** _main_addr, 
+            uint8_t** _end_addr, 
+            uint8_t* _prog_break_addr) {
          /**
           *
           */
@@ -123,7 +126,11 @@ class UnicastJoinAcceptance : public Packet {
          this->set_flag(UNICAST_JOIN_ACCEPT_ACK_F);
       }
 
-      UnicastJoinAcceptance(uint32_t _user_length, uint32_t _start_pt, uint32_t _end_pt, uint32_t _uuid, uint32_t _pt_owner) {
+      UnicastJoinAcceptance(uint32_t _user_length,
+            uint32_t _start_pt, 
+            uint32_t _end_pt, 
+            uint32_t _uuid, 
+            uint32_t _pt_owner) {
 
          sequence          = htonl(0);
          payload_sz        = htonl(_user_length);

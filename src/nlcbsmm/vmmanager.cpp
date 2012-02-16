@@ -800,41 +800,53 @@ namespace NLCBSMM {
 
                      ip = inet_addr(payload_buf);
 
-                     // Esnure user is not in page table
-                     // Debug
-                     fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
+                     mutex_lock(&pt_lock);
 
-                     page_table->insert(
-                           // IP -> std::vector<Page>
-                           std::pair<uint32_t, PageVectorType*>(
-                              ip,
-                              new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
+                     // TODO: make sure user isn't is in the page table
+                     if (page_table->count(ip) <= 0) {
 
-                     // Allocate memory for the new work/packet
-                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                        // Debug
+                        fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
 
-                     // Who to contact
-                     retaddr.sin_family      = AF_INET;
-                     retaddr.sin_addr.s_addr = inet_addr(payload_buf);
-                     retaddr.sin_port        = htons(UNICAST_PORT);
+                        page_table->insert(
+                              // IP -> std::vector<Page>
+                              std::pair<uint32_t, PageVectorType*>(
+                                 ip,
+                                 new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
 
-                     //TODO: use binary form of IP and ditch the string payload
-                     // Push work onto the uni_speaker's queue
-                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                           // A new work tuple
-                           new (work_memory) WorkTupleType(retaddr,
-                              // A new packet
-                              new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
-                                 _start_page_table,
-                                 _end_page_table,
-                                 _next_uuid++,
-                                 pt_owner))
-                           );
-                     // Signal unicast speaker there is queued work
-                     cond_signal(&uni_speaker_cond);
+                        // Allocate memory for the new work/packet
+                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+                        // Who to contact
+                        retaddr.sin_family      = AF_INET;
+                        retaddr.sin_addr.s_addr = inet_addr(payload_buf);
+                        retaddr.sin_port        = htons(UNICAST_PORT);
+
+                        //TODO: use binary form of IP and ditch the string payload
+                        // Push work onto the uni_speaker's queue
+                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                              // A new work tuple
+                              new (work_memory) WorkTupleType(retaddr,
+                                 // A new packet
+                                 new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
+                                    _start_page_table,
+                                    _end_page_table,
+                                    _next_uuid++,
+                                    pt_owner))
+                              );
+                        // Signal unicast speaker there is queued work
+                        cond_signal(&uni_speaker_cond);
+                     }
+                     else {
+                        // TODO: error-handling
+                        fprintf(stderr, "> user already in page table\n");
+                     }
+
+                     mutex_unlock(&pt_lock);
                   }
                   else {
+                     // TODO: error-handling
                      fprintf(stderr, "> invalid address space detected\n");
                   }
                }

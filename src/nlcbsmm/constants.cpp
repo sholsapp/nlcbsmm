@@ -15,31 +15,51 @@ uint32_t& global_base() {
 }
 
 uint32_t& global_clone_alloc_heap() {
-   static uint32_t off = (uint32_t) ((uint8_t*) global_base() + (CLONE_STACK_SZ * 4));
+   static uint32_t off = (uint32_t) 
+      ((uint8_t*) global_base() 
+       + (CLONE_STACK_SZ * 4));
    return off;
 }
 
 uint32_t& global_clone_heap() {
-   static uint32_t off = (uint32_t) ((uint8_t*) global_clone_alloc_heap() + (CLONE_ALLOC_HEAP_SZ));
+   static uint32_t off = (uint32_t) 
+      ((uint8_t*) global_clone_alloc_heap() 
+       + CLONE_ALLOC_HEAP_SZ);
    return off;
 }
 
 uint32_t& global_page_table_obj() {
-  static uint32_t off = (uint32_t) ((uint8_t*) global_clone_heap() + (CLONE_HEAP_SZ));
+  static uint32_t off = (uint32_t) 
+     ((uint8_t*) global_clone_heap() 
+      + CLONE_HEAP_SZ);
   return off;
 }
 
 uint32_t& global_page_table() {
-   static uint32_t off = (uint32_t) ((uint8_t*) global_page_table_obj() + (PAGE_TABLE_OBJ_SZ));
+   static uint32_t off = (uint32_t) 
+      ((uint8_t*) global_page_table_obj() 
+       + PAGE_TABLE_OBJ_SZ);
    return off;
 }
 
 uint32_t& global_page_table_alloc_heap() {
-   static uint32_t off = (uint32_t) ((uint8_t*) global_page_table() + (PAGE_TABLE_SZ));
+   static uint32_t off = (uint32_t) 
+      ((uint8_t*) global_page_table() 
+       + PAGE_TABLE_SZ);
    return off;
 }
 
 uint32_t& global_page_table_heap() {
-   static uint32_t off = (uint32_t) ((uint8_t*) global_page_table_alloc_heap() + (PAGE_TABLE_ALLOC_HEAP_SZ));
+   static uint32_t off = (uint32_t) 
+      ((uint8_t*) global_page_table_alloc_heap() 
+       + PAGE_TABLE_ALLOC_HEAP_SZ);
    return off;
+}
+
+uint32_t& global_application_heap() {
+   static uint32_t off = (uint32_t) 
+      ((uint8_t*) global_page_table_heap() 
+       + PAGE_TABLE_HEAP_SZ 
+       + PAGE_SZ);
+
 }
