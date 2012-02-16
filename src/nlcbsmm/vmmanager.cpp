@@ -76,6 +76,7 @@ namespace NLCBSMM {
    uint32_t _uuid             = 0;
    uint32_t _next_uuid        = 1;
 
+   uint32_t next_addr         = global_application_heap();
 }
 
 // The implementation of utility functions defined in this file
