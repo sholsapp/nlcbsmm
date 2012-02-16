@@ -127,7 +127,7 @@ namespace HL {
 
             fprintf(stderr, "Should allocate at %p\n", (void*) next_addr);
             // Allocate memory
-            ptr = mmap (0, sz, HL_MMAP_PROTECTION_MASK, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            ptr = mmap ((void*)next_addr, sz, HL_MMAP_PROTECTION_MASK, MAP_ANONYMOUS | MAP_FIXED | MAP_PRIVATE, -1, 0);
 
             if (ptr == MAP_FAILED) {
                fprintf (stderr, "Virtual memory exhausted.\n");
