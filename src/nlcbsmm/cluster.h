@@ -541,7 +541,6 @@ namespace NLCBSMM {
                   (uint8_t*) global_base());
 
             for (cnt = 0; cnt < MAX_JOIN_ATTEMPTS && _uuid == -1; cnt++) {
-               memset(buffer, 0, psz);
                // Send join request
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                   perror("cluster.h, 2, sendto");
