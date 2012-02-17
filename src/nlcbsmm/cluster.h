@@ -894,6 +894,8 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
+            fprintf(stderr, "> Established blocking communication on %d\n", self.sin_port);
+
             // Send packet
             if (sendto(sk,
                      send,
