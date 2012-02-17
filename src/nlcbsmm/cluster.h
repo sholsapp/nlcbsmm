@@ -261,7 +261,9 @@ namespace NLCBSMM {
             UnicastJoinAcceptance* uja            = NULL;
             SyncPage*              syncp          = NULL;
             ThreadCreate*          tc             = NULL;
+            ThreadCreateAck*       tca            = NULL;
             WorkTupleType*         work           = NULL;
+
             uint8_t*               payload_buf    = NULL;
             uint8_t*               page_ptr       = NULL;
             void*                  packet_memory  = NULL;
@@ -440,6 +442,11 @@ namespace NLCBSMM {
                }
                // Send the thread id and our uuid back to master
                fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
+
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               direct_comm(retaddr.sin_addr.s_addr,
+                     new (packet_memory) ThreadCreateAck(thr_id));
 
                break;
 
@@ -803,7 +810,60 @@ namespace NLCBSMM {
          }
 
 
-         static Packet* direct_comm(uint32_t rec_ip, Packet* send) {
+         static void direct_comm(uint32_t rec_ip, Packet* send) {
+            /**
+             *
+             */
+            void*    ptr              = NULL;
+            uint8_t* rec_buffer       = NULL;
+            uint32_t sk               =  0;
+            uint32_t nbytes           =  0;
+            uint32_t addrlen          =  0;
+            uint32_t selflen          =  0;
+            uint32_t ret              =  0;
+            struct   sockaddr_in addr = {0};
+            struct   sockaddr_in self = {0};
+            Packet*  p                = NULL;
+
+            // Setup client/server to block until lock is acquired
+            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+               perror("mmapwrapper.h, socket");
+               exit(EXIT_FAILURE);
+            }
+
+            self.sin_family      = AF_INET;
+            self.sin_port        = 0; // Any
+            selflen              = sizeof(self);
+
+            addr.sin_family      = AF_INET;
+            addr.sin_addr.s_addr = rec_ip;
+            addr.sin_port        = htons(UNICAST_PORT);
+            addrlen              = sizeof(addr);
+
+            if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
+               perror("mmapwrapper.h, bind");
+               exit(EXIT_FAILURE);
+            }
+
+            // Send packet
+            if (sendto(sk,
+                     send,
+                     MAX_PACKET_SZ,
+                     0,
+                     (struct sockaddr *) &addr,
+                     addrlen) < 0) {
+               perror("mmapwrapper.h, sendto");
+               exit(EXIT_FAILURE);
+            }
+
+            // Release memory
+            clone_heap.free(send);
+            // Close socket
+            close(sk);
+         }
+
+
+         static Packet* blocking_comm(uint32_t rec_ip, Packet* send, uint32_t timeout) {
             /**
              *
              */
@@ -853,7 +913,7 @@ namespace NLCBSMM {
 
             // TODO: select for lock, handle errors or timeout
 
-            if ((ret = select_call(sk, 1, 0)) > 0) {
+            if ((ret = select_call(sk, timeout, 0)) > 0) {
                // Wait (block) for response
                if ((nbytes = recvfrom(sk,
                            rec_buffer,
@@ -866,6 +926,7 @@ namespace NLCBSMM {
                }
             }
             else {
+               // TODO: handle failure intelligently
                fprintf(stderr, "> Direct communication timed out\n");
             }
 
