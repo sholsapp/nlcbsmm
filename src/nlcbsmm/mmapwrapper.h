@@ -86,6 +86,12 @@ namespace HL {
 
                acq = new (send_buffer) AcquireWriteLock();
 
+               fprintf(stderr, "sk = %d\n", sk);
+               fprintf(stderr, "send_buffer is: ", send_buffer == NULL ? "NULL\n" : "not NULL\n");
+               fprintf(stderr, "MAX_PACKET_SZ = %d\n", MAX_PACKET_SZ);
+               fprintf(stderr, "ip/port = %s/%d\n", inet_ntoa(addr.sin_addr), addr.sin_port);
+               fprintf(stderr, "addrlen = %d\n", addrlen);
+
                // Send request to acquire write lock
                if (sendto(sk, 
                         send_buffer, 
