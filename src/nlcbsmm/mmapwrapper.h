@@ -199,16 +199,19 @@ namespace HL {
                return;
             }
 
-            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            // If we're still bootstrapping don't broadcast changes
+            if (_uuid == -1) {
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            // Push work onto broadcast speaker's queue
-            safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
-                  // A new work tuple
-                  new (work_memory) WorkTupleType(fake,
-                     // A new packet
-                     new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
-                  );
+               // Push work onto broadcast speaker's queue
+               safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
+                     // A new work tuple
+                     new (work_memory) WorkTupleType(fake,
+                        // A new packet
+                        new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
+                     );
+            }
 
             if (node_list->count(local_addr.s_addr) == 0) {
                fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
