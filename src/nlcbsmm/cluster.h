@@ -577,9 +577,9 @@ namespace NLCBSMM {
                }
 
                // If there is work, override default action
-               //if (work != NULL) {
-               //  p = work->second;
-               //}
+               if (work != NULL) {
+                 p = work->second;
+               }
 
                fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
 

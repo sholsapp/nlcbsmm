@@ -209,8 +209,6 @@ namespace HL {
                      // A new packet
                      new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
                   );
-            // Signal unicast speaker there is queued work
-            cond_signal(&uni_speaker_cond);
 
             if (node_list->count(local_addr.s_addr) == 0) {
                fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
