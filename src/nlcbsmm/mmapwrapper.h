@@ -200,6 +200,16 @@ namespace HL {
                return;
             }
 
+            if (node_list->count(local_addr.s_addr) == 0) {
+               fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
+               raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
+               node_list->insert(
+                     std::pair<uint32_t, Machine*>(
+                        local_addr.s_addr,
+                        new (raw) Machine(local_addr.s_addr))
+                     );
+            }
+
             // TODO: error checking
             mach_status = node_list->find(local_addr.s_addr)->second->status;
 
@@ -214,16 +224,6 @@ namespace HL {
                      new (work_memory) WorkTupleType(fake,
                         // A new packet
                         new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
-                     );
-            }
-
-            if (node_list->count(local_addr.s_addr) == 0) {
-               fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
-               raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
-               node_list->insert(
-                     std::pair<uint32_t, Machine*>(
-                        local_addr.s_addr,
-                        new (raw) Machine(local_addr.s_addr))
                      );
             }
 
