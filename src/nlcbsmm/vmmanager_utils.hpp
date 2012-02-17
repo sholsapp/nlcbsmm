@@ -148,15 +148,13 @@ namespace NLCBSMM {
        *
        * TODO: implement this correctly (returns first non-master IP address)
        */
-      PageTableItr pt_itr;
+      MachineTableItr node_itr;
       uint32_t s_addr;
 
-      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
-         s_addr = (*pt_itr).first;
-         if (s_addr != inet_addr(local_ip)) {
-
-            mutex_unlock(&pt_lock);
-            return s_addr;
+      for(node_itr = node_list->begin(); node_itr != node_list->end(); node_itr++) {
+         s_addr = (*node_itr).first;
+         if (s_addr != local_addr.s_addr) {
+           return s_addr;
          }
       }
       return -1;

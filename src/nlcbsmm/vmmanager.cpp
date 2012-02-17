@@ -490,6 +490,7 @@ namespace NLCBSMM {
                print_page_table_v2();
 
                // Map any new pages and set permissions
+               // TODO: fix this call to use new data types
                //reserve_pages();
 
                // Page table can now be accessed/modified by other worker threads
