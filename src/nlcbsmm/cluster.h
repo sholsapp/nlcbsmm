@@ -847,7 +847,7 @@ namespace NLCBSMM {
                      MAX_PACKET_SZ,
                      0,
                      (struct sockaddr *) &retaddr,
-                     addrlen) < 0) {
+                     sizeof(retaddr)) < 0) {
                perror("cluster.h, 3, sendto");
                exit(EXIT_FAILURE);
             }
