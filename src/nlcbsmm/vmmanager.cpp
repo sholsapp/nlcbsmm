@@ -1011,6 +1011,8 @@ namespace NLCBSMM {
 
    void nlcbsmm_init() {
 
+      void* raw;
+
 
       next_addr = global_application_heap();
       fprintf(stderr, "> next_addr = %p\n", (void*) next_addr);
@@ -1033,8 +1035,17 @@ namespace NLCBSMM {
       // Ensure that the clone_heap region is being mmaped
       clone_heap.free(clone_heap.malloc(8));
 
-      // Dedicated memory to maintaining the page table
-      void* raw         = (void*) mmap((void*) global_page_table(),
+      // Dedicated memory for maintaining the machine list
+      raw         = (void*) mmap((void*) global_page_table_mach_list(),
+            PAGE_TABLE_MACH_LIST_SZ,
+            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            -1, 0);
+      if (raw_obj == MAP_FAILED) {
+         fprintf(stderr, "Cannot map gptml: %p\n", (void*) global_page_table());
+      }
+
+      // Dedicated memory for maintaining the page table
+      raw         = (void*) mmap((void*) global_page_table(),
             PAGE_TABLE_SZ,
             PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
             -1, 0);
