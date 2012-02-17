@@ -208,6 +208,7 @@ extern "C" int pthread_create (pthread_t *thread,
     */
    void*               packet_memory  = NULL;
    void*               work_memory    = NULL;
+   void*               raw            = NULL;
    uint32_t            remote_ip      = 0;
    struct sockaddr_in  remote_addr    = {0};
 
@@ -248,22 +249,30 @@ extern "C" int pthread_create (pthread_t *thread,
    work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
    packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
+   /*
    // Push work onto the uni_speaker's queue
    safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-         // A new work tuple
-         new (work_memory) WorkTupleType(remote_addr,
-            // A new packet
-            new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg))
-         );
+   // A new work tuple
+   new (work_memory) WorkTupleType(remote_addr,
+   // A new packet
+   new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg))
+   );
 
    // Signal unicast speaker there is queued work
    cond_signal(&uni_speaker_cond);
+    */
 
    // TODO: Fix this
-   //tca = NetworkManager::direct_comm(remote_ip, 
-   //      new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg));
-   // // This was returned to us, we're done with it
-   //clone_heap.free(tca);
+   p = ClusterCoordinator::direct_comm(
+         remote_ip,
+         reinterpret_cast<Packet*>(
+            new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg))
+         );
+
+   fprintf(stderr, "> pthread got a %x back\n", p->get_flag());
+
+   // This was returned to us, we're done with it
+   clone_heap.free(tca);
 
    // TODO: return a valid nlcbsmm thread id (so the caller can wait for it later)
    return -1;

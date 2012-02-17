@@ -533,7 +533,7 @@ namespace NLCBSMM {
                memset(buffer, 0, psz);
 
                // If received no response from a master
-               if (cnt > MAX_JOIN_ATTEMPTS 
+               if (cnt > MAX_JOIN_ATTEMPTS
                      && _uuid == (uint32_t) -1) {
                   // I am master
                   _uuid = 0;
@@ -546,9 +546,9 @@ namespace NLCBSMM {
                else if (_uuid == (uint32_t) -1) {
                   //TODO: use binary form of IP and ditch the string payload
                   // Build packet
-                  p = new (buffer) MulticastJoin(strlen(local_ip), 
-                        (uint8_t*) global_main(), 
-                        (uint8_t*) global_end(), 
+                  p = new (buffer) MulticastJoin(strlen(local_ip),
+                        (uint8_t*) global_main(),
+                        (uint8_t*) global_end(),
                         (uint8_t*) global_base());
                   // Add packet payload (the user IP address)
                   memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
@@ -813,6 +813,7 @@ namespace NLCBSMM {
             uint32_t nbytes           =  0;
             uint32_t addrlen          =  0;
             uint32_t selflen          =  0;
+            uint32_t ret              =  0;
             struct   sockaddr_in addr = {0};
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
@@ -852,15 +853,20 @@ namespace NLCBSMM {
 
             // TODO: select for lock, handle errors or timeout
 
-            // Wait (block) for response
-            if ((nbytes = recvfrom(sk,
-                        rec_buffer,
-                        MAX_PACKET_SZ,
-                        0,
-                        (struct sockaddr *) &addr,
-                        &addrlen)) < 0) {
-               perror("recvfrom");
-               exit(EXIT_FAILURE);
+            if ((ret = select_call(sk, 1, 0)) > 0) {
+               // Wait (block) for response
+               if ((nbytes = recvfrom(sk,
+                           rec_buffer,
+                           MAX_PACKET_SZ,
+                           0,
+                           (struct sockaddr *) &addr,
+                           &addrlen)) < 0) {
+                  perror("recvfrom");
+                  exit(EXIT_FAILURE);
+               }
+            }
+            else {
+               fprintf(stderr, "> Direct communication timed out\n");
             }
 
             // Release memory
@@ -869,6 +875,20 @@ namespace NLCBSMM {
             close(sk);
 
             return reinterpret_cast<Packet*>(rec_buffer);
+         }
+
+
+         static int select_call(int socket, int seconds, int useconds) {
+            /**
+             *
+             */
+            fd_set rfds;
+            struct timeval tv;
+            FD_ZERO(&rfds);
+            FD_SET(socket, &rfds);
+            tv.tv_sec = seconds;
+            tv.tv_usec = useconds;
+            return select(socket + 1, &rfds, NULL, NULL, &tv);
          }
 
       private:
