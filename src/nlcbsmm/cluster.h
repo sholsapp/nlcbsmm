@@ -445,7 +445,7 @@ namespace NLCBSMM {
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               direct_comm(retaddr.sin_addr.s_addr,
+               direct_comm(retaddr,
                      new (packet_memory) ThreadCreateAck(thr_id));
 
                break;
@@ -810,7 +810,7 @@ namespace NLCBSMM {
          }
 
 
-         static void direct_comm(uint32_t rec_ip, Packet* send) {
+         static void direct_comm(struct sockaddr_in retaddr, Packet* send) {
             /**
              *
              */
@@ -821,7 +821,6 @@ namespace NLCBSMM {
             uint32_t addrlen          =  0;
             uint32_t selflen          =  0;
             uint32_t ret              =  0;
-            struct   sockaddr_in addr = {0};
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
 
@@ -835,11 +834,6 @@ namespace NLCBSMM {
             self.sin_port        = 0; // Any
             selflen              = sizeof(self);
 
-            addr.sin_family      = AF_INET;
-            addr.sin_addr.s_addr = rec_ip;
-            addr.sin_port        = htons(UNICAST_PORT);
-            addrlen              = sizeof(addr);
-
             if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
                perror("mmapwrapper.h, bind");
                exit(EXIT_FAILURE);
@@ -850,7 +844,7 @@ namespace NLCBSMM {
                      send,
                      MAX_PACKET_SZ,
                      0,
-                     (struct sockaddr *) &addr,
+                     (struct sockaddr *) &retaddr,
                      addrlen) < 0) {
                perror("mmapwrapper.h, sendto");
                exit(EXIT_FAILURE);
