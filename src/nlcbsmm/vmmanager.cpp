@@ -70,6 +70,7 @@ namespace NLCBSMM {
    mutex pt_lock;
 
    PageTableType* page_table;
+   PageTableType2* page_table_v2;
 
    uint32_t _start_page_table = 0;
    uint32_t _end_page_table   = 0;
@@ -375,7 +376,8 @@ namespace NLCBSMM {
                pt_owner = ntohl(uja->pt_owner);
 
                // How big is the region we're sync'ing?
-               region_sz = PAGE_TABLE_OBJ_SZ
+               region_sz = PAGE_TABLE_MACH_LIST_SZ
+                  + PAGE_TABLE_OBJ_SZ
                   + PAGE_TABLE_SZ
                   + PAGE_TABLE_ALLOC_HEAP_SZ
                   + PAGE_TABLE_HEAP_SZ;
@@ -418,7 +420,8 @@ namespace NLCBSMM {
                retaddr.sin_port = htons(UNICAST_PORT);
 
                // How big is the region we're sync'ing?
-               region_sz = PAGE_TABLE_OBJ_SZ
+               region_sz = PAGE_TABLE_MACH_LIST_SZ
+                  + PAGE_TABLE_OBJ_SZ
                   + PAGE_TABLE_SZ
                   + PAGE_TABLE_ALLOC_HEAP_SZ
                   + PAGE_TABLE_HEAP_SZ;
@@ -1039,6 +1042,7 @@ namespace NLCBSMM {
          fprintf(stderr, "Cannot map gpt: %p\n", (void*) global_page_table());
       }
       page_table        = new (raw) PageTableType();
+
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;

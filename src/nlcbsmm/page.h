@@ -15,10 +15,12 @@ namespace NLCBSMM {
       public:
          uint32_t address;
          uint32_t protection;
+         uint32_t version;
 
          Page(uint32_t _address, uint32_t _protection) {
             address    = _address;
             protection = _protection;
+            version    = 0;
          }
 
    }__attribute__((packed));

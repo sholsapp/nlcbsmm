@@ -15,6 +15,7 @@
 #include <deque>
 
 #include "page.h"
+#include "machine.h"
 #include "packets.h"
 #include "cln_allocator.h"
 #include "pt_allocator.h"
@@ -28,7 +29,8 @@ namespace NLCBSMM {
    // A vector of NLCBSMM::Page objects
    typedef
       std::vector<Page*,
-           PageTableAllocator<Page*> > PageVectorType;
+      PageTableAllocator<Page*> >
+         PageVectorType;
 
    typedef
       PageVectorType::iterator PageVectorItr;
@@ -37,22 +39,52 @@ namespace NLCBSMM {
    // binary representation of the IPv4 address in dot-notation.
    typedef
       std::map<uint32_t,
-           PageVectorType*,
-           std::less<uint32_t>,
-           PageTableAllocator<std::pair<uint32_t, PageVectorType*> > > PageTableType;
+      PageVectorType*,
+      std::less<uint32_t>,
+      PageTableAllocator<std::pair<uint32_t, PageVectorType*> > >
+         PageTableType;
 
    typedef
       PageTableType::iterator PageTableItr;
 
-   // Who to contact, and with what
+   //
+   // Page table types
+   //
+   typedef
+      std::vector<Machine,
+      PageTableAllocator<Machine> >
+         MachineVectorType;
+
+   typedef
+      MachineVectorType::iterator MachineVectorItr;
+
+   typedef
+      std::pair<Page, Machine> PageTableElementType;
+
+   typedef
+      std::map<uint32_t,
+      PageTableElementType,
+      std::less<uint32_t>,
+      PageTableAllocator<std::pair<uint32_t, PageTableElementType> > >
+         PageTableType2;
+
+   typedef
+      PageTableType2::iterator PageTableItr2;
+
+   //
+   // Work queue types
+   //
    typedef
       std::pair<struct sockaddr_in, Packet*> WorkTupleType;
 
-   // A queue of work
    typedef
       std::deque<WorkTupleType*,
-           CloneAllocator<WorkTupleType* > > PacketQueueType;
+      CloneAllocator<WorkTupleType* > > PacketQueueType;
 
+
+   //
+   // The pthread library function signatures
+   //
    typedef
       void* (*threadFunctionType) (void *);
 
@@ -72,7 +104,7 @@ namespace NLCBSMM {
    extern const char* local_ip;
 
    // The node's IP address (binary form)
-   extern struct in_addr local_addr;    
+   extern struct in_addr local_addr;
 
    // The page table
    extern PageTableType* page_table;
