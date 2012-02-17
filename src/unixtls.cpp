@@ -206,7 +206,6 @@ extern "C" int pthread_create (pthread_t *thread,
    /**
     *
     */
-   fprintf(stderr, "> inside pthread_create\n");
    void*               packet_memory  = NULL;
    void*               work_memory    = NULL;
    uint32_t            remote_ip      = 0;

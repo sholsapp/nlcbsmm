@@ -20,7 +20,7 @@ benchmark-malloc: benchmark.o
 
 # Order that we include the libraries matters?! WTF
 benchmark-hoard: benchmark.o
-	$(CPP) -o $@ $^ $(LDFLAGS) $(HOARD_LDFLAGS)
+	$(CPP) -o $@ $^ $(HOARD_LDFLAGS) $(LDFLAGS)
 
 benchmark.o: benchmark.cpp
 	$(CPP) $(CFLAGS) -c $<
