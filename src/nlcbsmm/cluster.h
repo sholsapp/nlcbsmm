@@ -839,6 +839,8 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
+            fprintf(stderr, "> Direct communication to %s:%d\n", inet_ntoa(retaddr.sin_addr), retaddr.sin_port);
+
             // Send packet
             if (sendto(sk,
                      send,
@@ -921,7 +923,7 @@ namespace NLCBSMM {
             }
             else {
                // TODO: handle failure intelligently
-               fprintf(stderr, "> Direct communication timed out\n");
+               fprintf(stderr, "> Blocking communication timed out\n");
             }
 
             // Release memory
