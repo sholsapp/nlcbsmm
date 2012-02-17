@@ -262,11 +262,8 @@ extern "C" int pthread_create (pthread_t *thread,
    // TODO: Fix this
    //tca = NetworkManager::direct_comm(remote_ip, 
    //      new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg));
-
-   
-
-   // This was returned to us, we're done with it
-   clone_heap.free(tca);
+   // // This was returned to us, we're done with it
+   //clone_heap.free(tca);
 
    // TODO: return a valid nlcbsmm thread id (so the caller can wait for it later)
    return -1;
