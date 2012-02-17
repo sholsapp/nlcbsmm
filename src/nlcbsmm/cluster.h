@@ -785,7 +785,7 @@ namespace NLCBSMM {
                   // Map this memory into our address space
                   if((test = mmap((void*) start_addr,
                               memory_sz,
-                              PROT_READ | PROT_WRITE | PROT_EXEC,
+                              PROT_NONE,
                               MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
                               -1, 0)) == MAP_FAILED) {
                      fprintf(stderr, "> map failed, setting protections\n");
