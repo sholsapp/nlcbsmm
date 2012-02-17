@@ -206,6 +206,7 @@ extern "C" int pthread_create (pthread_t *thread,
    /**
     *
     */
+   fprintf(stderr, "> inside pthread_create\n");
    void*               packet_memory  = NULL;
    void*               work_memory    = NULL;
    uint32_t            remote_ip      = 0;
@@ -216,7 +217,7 @@ extern "C" int pthread_create (pthread_t *thread,
    ThreadCreateAck* tca = NULL;
 
    // Force initialization of the TLAB before our first thread is created.
-   //volatile static TheCustomHeapType * t = getCustomHeap();
+   volatile static TheCustomHeapType * t = getCustomHeap();
 
    char fname[] = "pthread_create";
 
