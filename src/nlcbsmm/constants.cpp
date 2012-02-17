@@ -71,3 +71,11 @@ uint32_t& global_application_heap() {
        + (PAGE_SZ + 0xA0000000));
    return off;
 }
+
+uint32_t& global_pt_start_addr() {
+   /**
+    * Return the first address where the "page table region" starts.
+    *
+    */
+   return global_page_table_mach_list();
+}
