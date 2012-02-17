@@ -250,7 +250,7 @@ extern "C" int pthread_create (pthread_t *thread,
    work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
    packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-   timeout = 1;
+   timeout = 5;
 
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
