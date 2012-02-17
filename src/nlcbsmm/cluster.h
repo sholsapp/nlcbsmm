@@ -109,15 +109,6 @@ namespace NLCBSMM {
             multi_speaker_ptr    = (void*) (((uint8_t*) multi_speaker_stack)  + CLONE_STACK_SZ);
             multi_listener_ptr   = (void*) (((uint8_t*) multi_listener_stack) + CLONE_STACK_SZ);
 
-            if((multi_listener_thread_id =
-                     clone(&multi_listener,
-                        multi_listener_ptr,
-                        CLONE_ATTRS,
-                        argument)) == -1) {
-               perror("vmmanager.cpp, clone, listener");
-               exit(EXIT_FAILURE);
-            }
-
             if((uni_listener_thread_id =
                      clone(&uni_listener,
                         uni_listener_ptr,
@@ -127,18 +118,28 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            if((multi_speaker_thread_id =
-                     clone(&multi_speaker,
-                        multi_speaker_ptr,
+            if((uni_speaker_thread_id =
+                     clone(&uni_speaker,
+                        uni_speaker_ptr,
                         CLONE_ATTRS,
                         argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
                exit(EXIT_FAILURE);
             }
 
-            if((uni_speaker_thread_id =
-                     clone(&uni_speaker,
-                        uni_speaker_ptr,
+
+            if((multi_listener_thread_id =
+                     clone(&multi_listener,
+                        multi_listener_ptr,
+                        CLONE_ATTRS,
+                        argument)) == -1) {
+               perror("vmmanager.cpp, clone, listener");
+               exit(EXIT_FAILURE);
+            }
+
+            if((multi_speaker_thread_id =
+                     clone(&multi_speaker,
+                        multi_speaker_ptr,
                         CLONE_ATTRS,
                         argument)) == -1) {
                perror("vmmanager.cpp, clone, speaker");
@@ -281,6 +282,8 @@ namespace NLCBSMM {
             p           = reinterpret_cast<Packet*>(buffer);
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<uint8_t*>(p->get_payload_ptr());
+
+            fprintf(stderr, "> received a packet (%x)\n", p->get_flag());
 
             switch (p->get_flag()) {
 
