@@ -490,7 +490,7 @@ namespace NLCBSMM {
                print_page_table_v2();
 
                // Map any new pages and set permissions
-               reserve_pages();
+               //reserve_pages();
 
                // Page table can now be accessed/modified by other worker threads
                mutex_unlock(&pt_lock);
