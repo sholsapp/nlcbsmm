@@ -1020,6 +1020,9 @@ namespace NLCBSMM {
        */
       void* raw = NULL;
 
+      // Used in the heap allocators
+      next_addr = global_application_heap();
+
       if ((raw = (void*) mmap((void*) global_page_table_obj(),
             PAGE_TABLE_OBJ_SZ,
             PROT_READ | PROT_WRITE,
