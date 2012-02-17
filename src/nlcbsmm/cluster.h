@@ -599,7 +599,7 @@ namespace NLCBSMM {
 
                }
 
-               //fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
+               fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
 
                // Send whatever we just built
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {

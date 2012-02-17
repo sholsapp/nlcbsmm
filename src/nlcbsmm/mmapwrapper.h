@@ -218,6 +218,7 @@ namespace HL {
 
             if (mach_status == MACHINE_ACTIVE
                   || mach_status == MACHINE_MASTER) {
+
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
@@ -226,7 +227,7 @@ namespace HL {
                      // A new work tuple
                      new (work_memory) WorkTupleType(fake,
                         // A new packet
-                        new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
+                        new (packet_memory) SyncReserve(local_addr.s_addr, ptr, sz))
                      );
             }
 
