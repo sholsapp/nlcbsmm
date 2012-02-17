@@ -788,6 +788,12 @@ namespace NLCBSMM {
                      fprintf(stderr, "> map failed, setting protections\n");
                      mprotect((void*) start_addr, memory_sz, PROT_NONE);
                   }
+                  else {
+                     fprintf(stderr, "> Reserved %p (%d) for %s\n", 
+                           (void*) start_addr,
+                           memory_sz,
+                           inet_ntoa(addr));
+                  }
                   // TODO: insert this mapping into the page table (i think)
                }
                else {

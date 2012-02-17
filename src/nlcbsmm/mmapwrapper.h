@@ -59,7 +59,7 @@ namespace HL {
                   // AND we do not own write lock on page table
                   && local_addr.s_addr != pt_owner) {
 
-               fprintf(stderr, "> Asking %s for lock.\n", 
+               fprintf(stderr, "> Asking %s for lock.\n",
                      inet_ntoa((struct in_addr&) pt_owner));
 
                // Setup client/server to block until lock is acquired
@@ -95,11 +95,11 @@ namespace HL {
                fprintf(stderr, "addrlen = %d\n", addrlen);
 
                // Send request to acquire write lock
-               if (sendto(sk, 
-                        send_buffer, 
-                        MAX_PACKET_SZ, 
-                        0, 
-                        (struct sockaddr *) &addr , 
+               if (sendto(sk,
+                        send_buffer,
+                        MAX_PACKET_SZ,
+                        0,
+                        (struct sockaddr *) &addr ,
                         addrlen) < 0) {
                   perror("mmapwrapper.h, sendto");
                   exit(EXIT_FAILURE);
@@ -110,11 +110,11 @@ namespace HL {
                // TODO: select for lock, handle errors or timeout
 
                // Wait (block) for owner to release write lock
-               if ((nbytes = recvfrom(sk, 
-                           rec_buffer, 
-                           MAX_PACKET_SZ, 
-                           0, 
-                           (struct sockaddr *) &addr, 
+               if ((nbytes = recvfrom(sk,
+                           rec_buffer,
+                           MAX_PACKET_SZ,
+                           0,
+                           (struct sockaddr *) &addr,
                            &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
@@ -125,7 +125,7 @@ namespace HL {
                if (p->get_flag() == RELEASE_WRITE_LOCK_F) {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec_buffer);
 
-                  fprintf(stderr, "> Received write lock.  Next avail memory = %p\n", 
+                  fprintf(stderr, "> Received write lock.  Next avail memory = %p\n",
                         (void*) ntohl(rel->next_addr));
 
                   next_addr = ntohl(rel->next_addr);
@@ -149,11 +149,11 @@ namespace HL {
             }
 
             // Allocate memory
-            if ((ptr = mmap ((void*)next_addr, 
-                  sz, 
-                  HL_MMAP_PROTECTION_MASK, 
-                  MAP_ANONYMOUS | MAP_FIXED | MAP_PRIVATE, 
-                  -1, 0)) == MAP_FAILED) {
+            if ((ptr = mmap ((void*)next_addr,
+                        sz,
+                        HL_MMAP_PROTECTION_MASK,
+                        MAP_ANONYMOUS | MAP_FIXED | MAP_PRIVATE,
+                        -1, 0)) == MAP_FAILED) {
                fprintf (stderr, "Virtual memory exhausted.\n");
                mutex_unlock(&pt_owner_lock);
                return NULL;
@@ -209,6 +209,8 @@ namespace HL {
                      // A new packet
                      new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
                   );
+            // Signal unicast speaker there is queued work
+            cond_signal(&uni_speaker_cond);
 
             if (node_list->count(local_addr.s_addr) == 0) {
                fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
