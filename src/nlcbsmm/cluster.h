@@ -575,11 +575,15 @@ namespace NLCBSMM {
                if (safe_size(&multi_speaker_work_deque, &multi_speaker_lock) > 0) {
                   // Pop work from work queue
                   work = safe_pop(&multi_speaker_work_deque, &multi_speaker_lock);
-               }
 
-               // If there is work, override default action
-               if (work != NULL) {
-                 p = work->second;
+                  // If there is work, override default action
+                  if (work != NULL) {
+                     // Overwrite the packet with useful work
+                     memcpy(buffer, work->second, MAX_PACKET_SZ);
+                     // Free the old pointer
+                     clone_heap.free(work->second);
+                  }
+
                }
 
                fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
