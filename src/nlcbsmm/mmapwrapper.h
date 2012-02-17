@@ -182,6 +182,7 @@ namespace HL {
             fprintf(stderr, "> NLCBSMM memory init %p(%d)\n", (void*) ptr, sz);
 
             uint32_t page_count  = 0;
+            uint32_t mach_status = 0;
             uint8_t* block_addr  = NULL;
             uint8_t* page_addr   = NULL;
             void* work_memory    = NULL;
@@ -199,16 +200,22 @@ namespace HL {
                return;
             }
 
-            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            // TODO: error checking
+            mach_status = node_list->find(local_addr.s_addr)->second->status;
 
-            // Push work onto broadcast speaker's queue
-            safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
-                  // A new work tuple
-                  new (work_memory) WorkTupleType(fake,
-                     // A new packet
-                     new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
-                  );
+            if (mach_status == MACHINE_ACTIVE
+                  || mach_status == MACHINE_MASTER) {
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               // Push work onto broadcast speaker's queue
+               safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
+                     // A new work tuple
+                     new (work_memory) WorkTupleType(fake,
+                        // A new packet
+                        new (packet_memory) SyncReserve(inet_addr(local_ip), ptr, sz))
+                     );
+            }
 
             if (node_list->count(local_addr.s_addr) == 0) {
                fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));

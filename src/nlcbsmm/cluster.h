@@ -392,6 +392,9 @@ namespace NLCBSMM {
                // Signal unicast speaker there is queued work
                cond_signal(&uni_speaker_cond);
 
+               // TODO: error checking
+               node_list->find(retaddr.sin_addr.s_addr)->second->status = MACHINE_IDLE;
+
 
                break;
 
@@ -409,8 +412,11 @@ namespace NLCBSMM {
 
                print_page_table();
 
+               // TODO: error checking
+               node_list->find(local_addr.s_addr)->second->status = MACHINE_IDLE;
                // Map any new pages and set permissions
                // TODO: fix this call to use new data types
+
 
                //reserve_pages();
 

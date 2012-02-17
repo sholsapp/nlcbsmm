@@ -51,6 +51,13 @@
 #define PACKET_MAX_PAYLOAD_SZ        8192
 #define MAX_PACKET_SZ                (256 + 8192)
 
+#define MACHINE_INIT    0
+#define MACHINE_SYNC    1
+#define MACHINE_IDLE    2
+#define MACHINE_ACTIVE  3
+#define MACHINE_MIA     4
+#define MACHINE_MASTER  5
+
 /**
  *
  */
