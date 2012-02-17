@@ -866,33 +866,33 @@ namespace NLCBSMM {
                addr.s_addr = ip;
 
                // If message is from someone in page table
-               if (page_table->count(ip) > 0) {
+               /*
+                  if (page_table->count(ip) > 0) {
 
                   fprintf(stderr, "> %s reserving %p(%d)\n",
-                        inet_ntoa(addr),
-                        (void*) start_addr,
-                        memory_sz);
+                  inet_ntoa(addr),
+                  (void*) start_addr,
+                  memory_sz);
 
-                  /*
-                  // Map this memory into our address space
-                  test = mmap((void*) start_addr,
-                  memory_sz,
-                  // TODO: set this to PROT_NONE
-                  PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-                  -1, 0);
+               // Map this memory into our address space
+               test = mmap((void*) start_addr,
+               memory_sz,
+               // TODO: set this to PROT_NONE
+               PROT_READ | PROT_WRITE,
+               MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+               -1, 0);
 
-                  if (test == MAP_FAILED) {
-                  fprintf(stderr, "> map failed\n");
-                  }
-                   */
+               if (test == MAP_FAILED) {
+               fprintf(stderr, "> map failed\n");
+               }
 
-                  // TODO: insert this mapping into the page table (i think)
+               // TODO: insert this mapping into the page table (i think)
 
                }
                else {
-                  fprintf(stderr, "> Reserve request from non-cluster member %s\n", inet_ntoa(addr));
+               fprintf(stderr, "> Reserve request from non-cluster member %s\n", inet_ntoa(addr));
                }
+                */
                break;
 
             case MULTICAST_HEARTBEAT_F:
