@@ -97,6 +97,11 @@ namespace NLCBSMM {
        */
       sigset_t oset;
       sigset_t set;
+      PageTableItr2 pt_itr;
+      PageTableElementType tuple;
+      Machine*      node = NULL;
+      Page*         page = NULL;
+      uint32_t      perm = 0;
 
       //block SIGSEGV
       sigemptyset(&set);
@@ -108,36 +113,64 @@ namespace NLCBSMM {
       unsigned char* p = pageAlign((unsigned char*) info->si_addr);
       fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
 
-      /*
-         PageTableItr    pt_itr;
-         PageVectorItr   vec_itr;
-         PageVectorType* temp   = NULL;
-         struct in_addr  addr   = {0};
-         int found = 0;
+      fprintf(stderr, "**** Searching through page table ****\n");
 
-         fprintf(stderr, "**** Searching through page table ****\n");
-         for (pt_itr = page_table->begin(); !found && pt_itr != page_table->end(); pt_itr++) {
-         int found = 0;
-         addr.s_addr = (*pt_itr).first;
-         fprintf(stderr, "%% %s : <\n", inet_ntoa(addr));
-         temp = (*pt_itr).second;
-         for (vec_itr = temp->begin(); !found && vec_itr != temp->end(); vec_itr++) {
-      // IF the faulting address is on this machine
-      if(p == (void*) (*vec_itr)->address) {
-      fprintf(stderr,"Found!");
-      found = 1;
+      pt_itr = page_table->find((uint32_t)p);
+      //IF the address was not found in the page table
+      if(pt_itr == page_table->end()) {
+         //Bad news bears
+         fprintf(stderr,"!> %p not found in the page table, man down.\n", p);
       }
-      }
-      // If the packet wasn't found
-      if(!found) {
-      fprintf(stderr,"Not found:[");
-      }
-      fprintf(stderr, ">\n");
-      }
-      fprintf(stderr, "********************\n\n");
-       */
+      else {
+         tuple = (*pt_itr).second;
+         page  = tuple.first;
+         node  = tuple.second;
+         //Get the permissions from the page
+         perm = page->protection;
 
-      // TODO: Add in logic to pull the page table from the network and set permissions
+         //Mprotect the region, so we can memcpy the real page
+         //IMPORTANT: at this point this page should already be mmaped into the address space!
+         if(mprotect(p, PAGE_SZ, perm) < 0) {
+            fprintf(stderr, "!> mprotect in the signal handler failed! addr = %p, permissions = %d\n",p,perm); 
+         }
+          
+         void*               packet_memory  = NULL;
+         void*               work_memory    = NULL;
+         void*               raw            = NULL;
+         uint32_t            remote_ip      = 0;
+         uint32_t            timeout        = 0;
+         struct sockaddr_in  remote_addr    = {0};
+
+         Packet*          p   = NULL;
+         ThreadCreate*    tc  = NULL;
+         ThreadCreateAck* tca = NULL;
+
+         remote_ip = node->ip_address;
+         
+         remote_addr.sin_family      = AF_INET;
+         remote_addr.sin_addr.s_addr = remote_ip;
+         remote_addr.sin_port        = htons(UNICAST_PORT);
+ 
+         work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+         packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+         timeout = 5;
+
+         /*p = ClusterCoordinator::blocking_comm(
+                    remote_ip,
+                    reinterpret_cast<Packet*>(
+                    new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg)),
+                    timeout
+         );*/
+
+        fprintf(stderr, "> signal handler finished the blocking communication \n");
+
+
+        // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
+ 
+        clone_heap.free(p);
+      }
+      // TODO: increment the version of the page? 
 
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
