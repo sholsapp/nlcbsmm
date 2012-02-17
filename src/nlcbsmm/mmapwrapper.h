@@ -32,15 +32,13 @@ namespace HL {
             /**
              *
              */
-            void*    ptr;
+            void*    ptr              = NULL;
             uint8_t* send_buffer      = NULL;
             uint8_t* rec_buffer       = NULL;
             uint32_t sk               =  0;
             uint32_t nbytes           =  0;
             uint32_t addrlen          =  0;
             uint32_t selflen          =  0;
-            uint32_t yes              =  1;
-            struct   ip_mreq mreq     = {0};
             struct   sockaddr_in addr = {0};
             struct   sockaddr_in self = {0};
 
@@ -60,7 +58,9 @@ namespace HL {
             if (pt_owner != -1
                   // AND we do not own write lock on page table
                   && local_addr.s_addr != pt_owner) {
-               fprintf(stderr, "> Not owner, asking %s for lock.\n", inet_ntoa((struct in_addr&) pt_owner));
+
+               fprintf(stderr, "> Asking %s for lock.\n", 
+                     inet_ntoa((struct in_addr&) pt_owner));
 
                // Setup client/server to block until lock is acquired
                if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -87,7 +87,12 @@ namespace HL {
                acq = new (send_buffer) AcquireWriteLock();
 
                // Send request to acquire write lock
-               if (sendto(sk, send_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
+               if (sendto(sk, 
+                        send_buffer, 
+                        MAX_PACKET_SZ, 
+                        0, 
+                        (struct sockaddr *) &addr , 
+                        addrlen) < 0) {
                   perror("mmapwrapper.h, sendto");
                   exit(EXIT_FAILURE);
                }
@@ -97,7 +102,12 @@ namespace HL {
                // TODO: select for lock, handle errors or timeout
 
                // Wait (block) for owner to release write lock
-               if ((nbytes = recvfrom(sk, rec_buffer, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr, &addrlen)) < 0) {
+               if ((nbytes = recvfrom(sk, 
+                           rec_buffer, 
+                           MAX_PACKET_SZ, 
+                           0, 
+                           (struct sockaddr *) &addr, 
+                           &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
                }
@@ -106,7 +116,10 @@ namespace HL {
 
                if (p->get_flag() == RELEASE_WRITE_LOCK_F) {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec_buffer);
-                  fprintf(stderr, "> Received write lock.  Next avail memory = %p\n", (void*) ntohl(rel->next_addr));
+
+                  fprintf(stderr, "> Received write lock.  Next avail memory = %p\n", 
+                        (void*) ntohl(rel->next_addr));
+
                   next_addr = ntohl(rel->next_addr);
                   // Take ownership of write lock
                   pt_owner = local_addr.s_addr;
@@ -117,6 +130,9 @@ namespace HL {
 
                // TODO: need to re-route packets to new owner sometimes
 
+               // Release memory
+               clone_heap.free(rec_buffer);
+               clone_heap.free(send_buffer);
                // Close socket
                close(sk);
             }
@@ -124,12 +140,12 @@ namespace HL {
                fprintf(stderr, "> Already own lock\n");
             }
 
-
-            fprintf(stderr, "Should allocate at %p\n", (void*) next_addr);
             // Allocate memory
-            ptr = mmap ((void*)next_addr, sz, HL_MMAP_PROTECTION_MASK, MAP_ANONYMOUS | MAP_FIXED | MAP_PRIVATE, -1, 0);
-
-            if (ptr == MAP_FAILED) {
+            if ((ptr = mmap ((void*)next_addr, 
+                  sz, 
+                  HL_MMAP_PROTECTION_MASK, 
+                  MAP_ANONYMOUS | MAP_FIXED | MAP_PRIVATE, 
+                  -1, 0)) == MAP_FAILED) {
                fprintf (stderr, "Virtual memory exhausted.\n");
                mutex_unlock(&pt_owner_lock);
                return NULL;
@@ -137,6 +153,7 @@ namespace HL {
             else {
                // Alert NLCBSMM of new memory
                init_nlcbsmm_memory(ptr, sz);
+               // Increment the next address the allocator may pull from
                next_addr = (uint32_t) (((uint8_t*) next_addr) + sz);
                mutex_unlock(&pt_owner_lock);
                return ptr;

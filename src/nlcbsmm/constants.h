@@ -3,6 +3,10 @@
 
 #define MAX_JOIN_ATTEMPTS 5
 
+#define CLONE_ATTRS (CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE)
+#define CLONE_MMAP_PROT_FLAGS (PROT_READ | PROT_WRITE)
+#define CLONE_MMAP_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED)
+
 #define PAGE_SZ                      4096
 
 /**
@@ -50,6 +54,8 @@
 /**
  *
  */
+extern uint32_t& global_main();
+extern uint32_t& global_end();
 extern uint32_t& global_base();
 extern uint32_t& global_clone_alloc_heap();
 extern uint32_t& global_clone_heap();

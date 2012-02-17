@@ -6,7 +6,18 @@
  * Offsets
  */
 
+extern uint8_t* main;
 extern uint8_t* _end;
+
+uint32_t& global_main() {
+  static uint32_t m = ((uint32_t) &main);
+  return m;
+}
+
+uint32_t& global_end() {
+  static uint32_t e = ((uint32_t) &_end);
+  return e;
+}
 
 uint32_t& global_base() {
    // Page align the _end of the program + a page

@@ -17,6 +17,7 @@
 #define SYNC_RESERVE_F            0x2C
 
 #define THREAD_CREATE_F           0x3A
+#define THREAD_CREATE_ACK_F       0x3B
 
 #define ACQUIRE_WRITE_LOCK_F      0x4A
 #define RELEASE_WRITE_LOCK_F      0x4B
@@ -85,8 +86,8 @@ class MulticastJoin : public Packet {
       uint32_t prog_break_addr;
 
       MulticastJoin(uint32_t user_length, 
-            uint8_t** _main_addr, 
-            uint8_t** _end_addr, 
+            uint8_t* _main_addr, 
+            uint8_t* _end_addr, 
             uint8_t* _prog_break_addr) {
          /**
           *
@@ -225,8 +226,13 @@ class ThreadCreateAck : public Packet {
       uint32_t payload_sz;
       uint8_t  flag;
 
-      ThreadCreateAck() {
+      uint32_t thread_id;
 
+      ThreadCreateAck(uint32_t _thread_id) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = THREAD_CREATE_ACK_F;
+         thread_id  = htonl(_thread_id);
       }
 
 }__attribute__((packed));

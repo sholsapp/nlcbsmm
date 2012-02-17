@@ -44,21 +44,21 @@
 
 
 /*
-extern "C" {
+   extern "C" {
 
    typedef void * (*threadFunctionType) (void *);
 
    typedef
-      int (*pthread_create_function) (pthread_t *thread,
-            const pthread_attr_t *attr,
-            threadFunctionType start_routine,
-            void *arg);
+   int (*pthread_create_function) (pthread_t *thread,
+   const pthread_attr_t *attr,
+   threadFunctionType start_routine,
+   void *arg);
 
    typedef
-      void (*pthread_exit_function) (void *arg);
+   void (*pthread_exit_function) (void *arg);
 
-}
-*/
+   }
+ */
 
 // A special routine we call on thread exits to free up some resources.
 static void exitRoutine (void) {
@@ -202,22 +202,23 @@ extern "C" void pthread_exit (void *value_ptr) {
 extern "C" int pthread_create (pthread_t *thread,
       const pthread_attr_t *attr,
       void * (*start_routine) (void *),
-      void * arg)
-#if !defined(__SUNPRO_CC) && !defined(__APPLE__)
-throw ()
-#endif
-{
+      void * arg) {
+   /**
+    *
+    */
    void*               packet_memory  = NULL;
    void*               work_memory    = NULL;
-   struct sockaddr_in  master_addr    = {0};
-   // Force initialization of the TLAB before our first thread is created.
-   volatile static TheCustomHeapType * t = getCustomHeap();
+   uint32_t            remote_ip      = 0;
+   struct sockaddr_in  remote_addr    = {0};
 
-#if defined(linux) || defined(__APPLE__)
+   Packet*          p   = NULL;
+   ThreadCreate*    tc  = NULL;
+   ThreadCreateAck* tca = NULL;
+
+   // Force initialization of the TLAB before our first thread is created.
+   //volatile static TheCustomHeapType * t = getCustomHeap();
+
    char fname[] = "pthread_create";
-#else
-   char fname[] = "_pthread_create";
-#endif
 
    // A pointer to the library version of pthread_create.
    static pthread_create_function real_pthread_create =
@@ -232,12 +233,13 @@ throw ()
       new
       pair<threadFunctionType, void *> (start_routine, arg);
 
-   fprintf(stderr, ">>>> real pthread create = %p\n", (void*) real_pthread_create);
    fprintf(stderr, ">>>> pthread_create(%s) func(%p) arg(%p)\n", local_ip, start_routine, arg);
 
-   master_addr.sin_family      = AF_INET;
-   master_addr.sin_addr.s_addr = get_available_worker();
-   master_addr.sin_port        = htons(UNICAST_PORT);
+   remote_ip = get_available_worker();
+
+   remote_addr.sin_family      = AF_INET;
+   remote_addr.sin_addr.s_addr = remote_ip;
+   remote_addr.sin_port        = htons(UNICAST_PORT);
 
    work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
    packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
@@ -245,7 +247,7 @@ throw ()
    // Push work onto the uni_speaker's queue
    safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
          // A new work tuple
-         new (work_memory) WorkTupleType(master_addr,
+         new (work_memory) WorkTupleType(remote_addr,
             // A new packet
             new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg))
          );
@@ -253,12 +255,17 @@ throw ()
    // Signal unicast speaker there is queued work
    cond_signal(&uni_speaker_cond);
 
+   // TODO: Fix this
+   //tca = NetworkManager::direct_comm(remote_ip, 
+   //      new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg));
+
+   
+
+   // This was returned to us, we're done with it
+   clone_heap.free(tca);
+
    // TODO: return a valid nlcbsmm thread id (so the caller can wait for it later)
    return -1;
-
-   // TODO: don't forget to start thread eventually
-   //int result = (*real_pthread_create)(thread, attr, startMeUp, args);
-   //return result;
 }
 
 #endif

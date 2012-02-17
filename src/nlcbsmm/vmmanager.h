@@ -17,9 +17,13 @@
 #include "page.h"
 #include "machine.h"
 #include "packets.h"
+
 #include "cln_allocator.h"
 #include "pt_allocator.h"
+
 #include "mutex.h"
+
+#include "cluster.h"
 
 namespace NLCBSMM {
 
@@ -77,25 +81,25 @@ namespace NLCBSMM {
 
    typedef
       void (*pthread_exit_function) (void *arg);
+
 }
 
 namespace NLCBSMM {
 
    // The node's IP address
    extern const char* local_ip;
-
-   // The node's IP address (binary form)
    extern struct in_addr local_addr;
 
    // The page table
    extern PageTableType* page_table;
-
    extern MachineTableType* node_list;
 
 
+   // The work queues
    extern PacketQueueType uni_speaker_work_deque;
    extern PacketQueueType multi_speaker_work_deque;
 
+   // The locks
    extern cv    uni_speaker_cond;
    extern mutex uni_speaker_cond_lock;
    extern mutex uni_speaker_lock;
@@ -116,29 +120,26 @@ namespace NLCBSMM {
    // packet.
    extern uint32_t next_addr;
 
-   WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m);
+   extern uint32_t _start_page_table;
+   extern uint32_t _end_page_table;
+   extern uint32_t _uuid;
+   extern uint32_t _next_uuid;
 
-   void safe_push(PacketQueueType* queue, mutex* m, WorkTupleType* work);
+   extern uint32_t next_addr;
 
-   int safe_size(PacketQueueType* queue, mutex* m);
 
-   uint32_t get_available_worker();
-
+   // Function prototypes
+   WorkTupleType*     safe_pop(PacketQueueType* queue, mutex* m);
+   void               safe_push(PacketQueueType* queue, mutex* m, WorkTupleType* work);
+   int                safe_size(PacketQueueType* queue, mutex* m);
    PageTableHeapType* get_pt_heap(mutex* m);
-
-   // Helper function to page align a pointer
-   unsigned char* pageAlign(unsigned char* p);
-
-   // Helper function to return page number in superblock
-   unsigned int pageIndex(unsigned char* p, unsigned char* base);
-
-   // The actual signal handler for SIGSEGV
-   void signal_handler(int signo, siginfo_t* info, void* contex);
-
-   // Registers signal handler for SIGSEGV
-   void register_signal_handlers();
-
-   // Initialize the NLCBSMM system
-   void nlcbsmm_init();
+   uint32_t           get_available_worker();
+   unsigned char*     pageAlign(unsigned char* p);
+   unsigned int       pageIndex(unsigned char* p, unsigned char* base);
+   void               signal_handler(int signo, siginfo_t* info, void* contex);
+   void               register_signal_handlers();
+   void               nlcbsmm_init();
+   void               print_page_table();
+   bool               isPageZeros(void* p);
 
 }
