@@ -51,21 +51,23 @@ namespace NLCBSMM {
    // Page table types
    //
    typedef
-      std::vector<Machine,
-      PageTableAllocator<Machine> >
-         MachineVectorType;
+      std::map<uint32_t,
+      Machine*,
+      std::less<uint32_t>,
+      PageTableAllocator<std::pair<uint32_t, Machine* > > >
+         MachineTableType;
 
    typedef
-      MachineVectorType::iterator MachineVectorItr;
+      MachineTableType::iterator MachineTableItr;
 
    typedef
-      std::pair<Page, Machine> PageTableElementType;
+      std::pair<Page*, Machine*> PageTableElementType;
 
    typedef
       std::map<uint32_t,
       PageTableElementType,
       std::less<uint32_t>,
-      PageTableAllocator<std::pair<uint32_t, PageTableElementType> > >
+      PageTableAllocator<std::pair<uint32_t, PageTableElementType > > >
          PageTableType2;
 
    typedef
@@ -108,6 +110,9 @@ namespace NLCBSMM {
 
    // The page table
    extern PageTableType* page_table;
+   extern PageTableType2* page_table_v2;
+
+   extern MachineTableType* node_list;
 
 
    extern PacketQueueType uni_speaker_work_deque;

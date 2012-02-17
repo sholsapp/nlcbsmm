@@ -70,7 +70,10 @@ namespace NLCBSMM {
    mutex pt_lock;
 
    PageTableType* page_table;
-   PageTableType2* page_table_v2;
+
+
+   MachineTableType* node_list;
+   PageTableType2*    page_table_v2;
 
    uint32_t _start_page_table = 0;
    uint32_t _end_page_table   = 0;
@@ -484,7 +487,7 @@ namespace NLCBSMM {
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
 
-               print_page_table();
+               print_page_table_v2();
 
                // Map any new pages and set permissions
                reserve_pages();
@@ -770,6 +773,7 @@ namespace NLCBSMM {
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  test           = NULL;
+            void*                  raw            = NULL;
             char*                  payload_buf    = NULL;
             uint32_t               payload_sz     = 0;
             uint32_t               ip             = 0;
@@ -806,14 +810,19 @@ namespace NLCBSMM {
 
                      // TODO: make sure user isn't is in the page table
 
-                     // Debug
-                     fprintf(stderr, "> Adding %s to page_table\n", payload_buf);
+                     //page_table->insert(
+                     //      // IP -> std::vector<Page>
+                     //      std::pair<uint32_t, PageVectorType*>(
+                     //         ip,
+                     //         new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
 
-                     page_table->insert(
-                           // IP -> std::vector<Page>
-                           std::pair<uint32_t, PageVectorType*>(
+                     fprintf(stderr, "> Adding %s to node list\n", payload_buf);
+                     raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
+                     node_list->insert(
+                           std::pair<uint32_t, Machine*>(
                               ip,
-                              new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
+                              new (raw) Machine(ip))
+                           );
 
                      // Allocate memory for the new work/packet
                      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
@@ -1013,22 +1022,21 @@ namespace NLCBSMM {
 
       void* raw;
 
-
       next_addr = global_application_heap();
       fprintf(stderr, "> next_addr = %p\n", (void*) next_addr);
 
       /**
        * Hook entry.
        */
-      void* raw_obj    = (void*) mmap((void*) global_page_table_obj(),
+      raw = (void*) mmap((void*) global_page_table_obj(),
             PAGE_TABLE_OBJ_SZ,
             PROT_READ | PROT_WRITE,
             MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
             -1, 0);
-      if (raw_obj == MAP_FAILED) {
+      if (raw == MAP_FAILED) {
          fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
       }
-      pt_heap = new (raw_obj) PageTableHeapType();
+      pt_heap = new (raw) PageTableHeapType();
 
       // Ensure that the pt_heap region is being mmaped
       pt_heap->free(pt_heap->malloc(8));
@@ -1036,23 +1044,27 @@ namespace NLCBSMM {
       clone_heap.free(clone_heap.malloc(8));
 
       // Dedicated memory for maintaining the machine list
-      raw         = (void*) mmap((void*) global_page_table_mach_list(),
+      raw = (void*) mmap((void*) global_page_table_mach_list(),
             PAGE_TABLE_MACH_LIST_SZ,
-            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
             -1, 0);
-      if (raw_obj == MAP_FAILED) {
+      if (raw == MAP_FAILED) {
          fprintf(stderr, "Cannot map gptml: %p\n", (void*) global_page_table());
       }
+      node_list = new (raw) MachineTableType();
 
       // Dedicated memory for maintaining the page table
-      raw         = (void*) mmap((void*) global_page_table(),
+      raw = (void*) mmap((void*) global_page_table(),
             PAGE_TABLE_SZ,
-            PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
             -1, 0);
-      if (raw_obj == MAP_FAILED) {
+      if (raw == MAP_FAILED) {
          fprintf(stderr, "Cannot map gpt: %p\n", (void*) global_page_table());
       }
-      page_table        = new (raw) PageTableType();
+      //page_table = new (raw) PageTableType();
+      page_table_v2 = new (raw) PageTableType2();
 
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;

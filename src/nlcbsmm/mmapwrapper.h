@@ -161,6 +161,7 @@ namespace HL {
             uint8_t* page_addr   = NULL;
             void* work_memory    = NULL;
             void* packet_memory  = NULL;
+            void* raw            = NULL;
 
             struct sockaddr_in fake = {0};
 
@@ -185,14 +186,24 @@ namespace HL {
                   );
 
             // Does this node exist in the page table?
-            if (page_table->count(inet_addr(local_ip)) == 0) {
-               fprintf(stderr, "> Adding %s to page_table\n", local_ip);
-               // Init a new vector for this node
-               page_table->insert(
-                     // IP -> std::vector<Page>
-                     std::pair<uint32_t, PageVectorType*>(
-                        inet_addr(local_ip),
-                        new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
+            //if (page_table->count(inet_addr(local_ip)) == 0) {
+            //   fprintf(stderr, "> Adding %s to page_table\n", local_ip);
+            //   // Init a new vector for this node
+            //   page_table->insert(
+            //         // IP -> std::vector<Page>
+            //         std::pair<uint32_t, PageVectorType*>(
+            //            inet_addr(local_ip),
+            //            new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
+            //}
+
+            if (node_list->count(local_addr.s_addr) == 0) {
+               fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
+               raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
+               node_list->insert(
+                     std::pair<uint32_t, Machine*>(
+                        local_addr.s_addr,
+                        new (raw) Machine(local_addr.s_addr))
+                     );
             }
 
             // This should already be page algined, but w/e
@@ -201,11 +212,26 @@ namespace HL {
 
             for (int page = 0; page < page_count; page++) {
                page_addr = block_addr + (page * PAGE_SZ);
+
                //fprintf(stderr, "Superblock (%p) - Page (%p)\n", block_addr, page_addr);
-               page_table->find(inet_addr(local_ip))->second->push_back(
-                     new (get_pt_heap(&pt_lock)->malloc(sizeof(Page)))
-                     Page((uint32_t) page_addr,
-                        0xD010101D));
+
+               //page_table->find(inet_addr(local_ip))->second->push_back(
+               //      new (get_pt_heap(&pt_lock)->malloc(sizeof(Page)))
+               //      Page((uint32_t) page_addr,
+               //         0xD010101D));
+
+               raw = get_pt_heap(&pt_lock)->malloc(sizeof(Page));
+               page_table_v2->insert(
+                     std::pair<uint32_t, PageTableElementType>((uint32_t) page_addr,
+                        PageTableElementType(
+                           // A new page
+                           new (raw) Page((uint32_t) page_addr, 0xD010101D),
+                           // Pointer to this machine (in the node list)
+                           node_list->find(local_addr.s_addr)->second
+                           ))
+                     );
+
+
             }
          }
    };

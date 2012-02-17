@@ -98,6 +98,26 @@ namespace NLCBSMM {
    }
 
 
+   void print_page_table_v2() {
+      /**
+       *
+       */
+      PageTableItr2 pt_itr;
+      PageTableElementType tuple;
+      Machine*      node;
+
+      fprintf(stderr, "**** PAGE_TABLE ****\n");
+      for (pt_itr = page_table_v2->begin(); pt_itr != page_table_v2->end(); pt_itr++) {
+         tuple = (*pt_itr).second;
+         node = tuple.second;
+         fprintf(stderr, "%p -> %s\n",
+               (void*) (*pt_itr).first,
+               inet_ntoa((struct in_addr&) node->ip_address));
+      }
+      fprintf(stderr, "********************\n\n");
+   }
+
+
    void reserve_pages() {
       /**
        *
@@ -112,9 +132,9 @@ namespace NLCBSMM {
          temp = (*pt_itr).second;
          for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
             // Reserve the memory in the virtual address space
-            void* mmap_test = mmap((void*)(*vec_itr)->address, 
-                  PAGE_SZ, 
-                  PROT_NONE, 
+            void* mmap_test = mmap((void*)(*vec_itr)->address,
+                  PAGE_SZ,
+                  PROT_NONE,
                   MAP_FIXED | MAP_ANON, -1, 0);
          }
       }
