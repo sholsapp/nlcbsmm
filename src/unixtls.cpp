@@ -219,7 +219,11 @@ extern "C" int pthread_create (pthread_t *thread,
    // Force initialization of the TLAB before our first thread is created.
    volatile static TheCustomHeapType * t = getCustomHeap();
 
+#if defined(linux) || defined(__APPLE__)
    char fname[] = "pthread_create";
+#else
+   char fname[] = "_pthread_create";
+#endif
 
    // A pointer to the library version of pthread_create.
    static pthread_create_function real_pthread_create =
