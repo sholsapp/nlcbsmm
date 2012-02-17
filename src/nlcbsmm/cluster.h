@@ -430,6 +430,9 @@ namespace NLCBSMM {
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
+               // Received work, we're now active
+               node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
+
                // Get address of function
                func = (void*) ntohl(tc->func_ptr);
                arg  = (void*) ntohl(tc->arg);
