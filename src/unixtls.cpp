@@ -260,7 +260,8 @@ extern "C" int pthread_create (pthread_t *thread,
          );
 
    fprintf(stderr, "> pthread got a %x back\n", p->get_flag());
-
+   
+   node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
    // TODO: adjust if error condition is returned
    // This was returned to us, we're done with it
