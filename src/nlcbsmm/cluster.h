@@ -411,6 +411,7 @@ namespace NLCBSMM {
 
                // Map any new pages and set permissions
                // TODO: fix this call to use new data types
+
                //reserve_pages();
 
                // Page table can now be accessed/modified by other worker threads
@@ -769,33 +770,29 @@ namespace NLCBSMM {
                addr.s_addr = ip;
 
                // If message is from someone in page table
-               /*
-                  if (page_table->count(ip) > 0) {
+               if (node_list->count(ip) > 0 
+                     // And we didn't send this packet
+                     && ip != local_addr.s_addr) {
 
                   fprintf(stderr, "> %s reserving %p(%d)\n",
-                  inet_ntoa(addr),
-                  (void*) start_addr,
-                  memory_sz);
+                        inet_ntoa(addr),
+                        (void*) start_addr,
+                        memory_sz);
 
-               // Map this memory into our address space
-               test = mmap((void*) start_addr,
-               memory_sz,
-               // TODO: set this to PROT_NONE
-               PROT_READ | PROT_WRITE,
-               MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-               -1, 0);
-
-               if (test == MAP_FAILED) {
-               fprintf(stderr, "> map failed\n");
-               }
-
-               // TODO: insert this mapping into the page table (i think)
-
+                  // Map this memory into our address space
+                  if((test = mmap((void*) start_addr,
+                        memory_sz,
+                        PROT_NONE,
+                        MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+                        -1, 0)) == MAP_FAILED) {
+                     fprintf(stderr, "> map failed, setting protections\n");
+                     mprotect((void*) start_addr, memory_sz, PROT_NONE);
+                  }
+                  // TODO: insert this mapping into the page table (i think)
                }
                else {
-               fprintf(stderr, "> Reserve request from non-cluster member %s\n", inet_ntoa(addr));
+                  fprintf(stderr, "> Reserve request from non-cluster member %s\n", inet_ntoa(addr));
                }
-                */
                break;
 
             case MULTICAST_HEARTBEAT_F:
