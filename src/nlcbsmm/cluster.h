@@ -547,7 +547,7 @@ namespace NLCBSMM {
                   perror("cluster.h, 2, sendto");
                   exit(EXIT_FAILURE);
                }
-               sleep(0.5);
+               sleep(1);
             }
 
             // No one responded
