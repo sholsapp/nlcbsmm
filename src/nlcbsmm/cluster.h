@@ -894,6 +894,8 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
+            getsockname(sk, (struct sockaddr*) &self, &selflen);
+
             fprintf(stderr, "> Established blocking communication on %d\n", self.sin_port);
 
             // Send packet
