@@ -540,6 +540,7 @@ namespace NLCBSMM {
                }
                // Else if we're still trying to join
                else if (_uuid == (uint32_t) -1) {
+                  fprintf(stderr, "> Sending join packet...\n");
                   //TODO: use binary form of IP and ditch the string payload
                   // Build packet
                   p = new (buffer) MulticastJoin(strlen(local_ip), 
@@ -551,6 +552,7 @@ namespace NLCBSMM {
                }
                // Else we've already join
                else if (_uuid != -1) {
+                  fprintf(stderr, "> Building heartbeat...\n");
                   //TODO: use binary form of IP and ditch the string payload
                   // Build packet
                   p = new (buffer) MulticastHeartbeat(strlen(local_ip));
