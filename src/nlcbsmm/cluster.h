@@ -533,7 +533,8 @@ namespace NLCBSMM {
                memset(buffer, 0, psz);
 
                // If received no response from a master
-               if (cnt > MAX_JOIN_ATTEMPTS && _uuid == (uint32_t) -1) {
+               if (cnt > MAX_JOIN_ATTEMPTS 
+                     && _uuid == (uint32_t) -1) {
                   // I am master
                   _uuid = 0;
                   // Give ourselves write lock on page table
@@ -543,7 +544,6 @@ namespace NLCBSMM {
                }
                // Else if we're still trying to join
                else if (_uuid == (uint32_t) -1) {
-                  fprintf(stderr, "> Sending join packet...\n");
                   //TODO: use binary form of IP and ditch the string payload
                   // Build packet
                   p = new (buffer) MulticastJoin(strlen(local_ip), 
@@ -555,7 +555,6 @@ namespace NLCBSMM {
                }
                // Else we've already join
                else if (_uuid != -1) {
-                  fprintf(stderr, "> Building heartbeat...\n");
                   //TODO: use binary form of IP and ditch the string payload
                   // Build packet
                   p = new (buffer) MulticastHeartbeat(strlen(local_ip));
@@ -574,7 +573,7 @@ namespace NLCBSMM {
                   p = work->second;
                }
 
-               //fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
+               fprintf(stderr, "> broadcasting a packet (0x%x)!\n", p->get_flag());
 
                // Send whatever we just built
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
