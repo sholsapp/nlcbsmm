@@ -189,7 +189,7 @@ namespace NLCBSMM {
                   fprintf(stderr, "> sending a packet (0x%x) to %s:%d!\n", p->get_flag(), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
                   if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
-                     perror("vmmanager.cpp, sendto");
+                     perror("cluster.h, 1, sendto");
                      exit(EXIT_FAILURE);
                   }
 
@@ -488,7 +488,7 @@ namespace NLCBSMM {
 
             case RELEASE_WRITE_LOCK_F:
                // The lock is always released to a client/server connection (never to the
-               // global listeners).  See mmapwrapper.h for an example.
+               // global listeners).  See cluster.h for an example.
                fprintf(stderr, "ERROR> global listener heard a RELEASE_WRITE_LOCK_F\n");
                break;
 
@@ -584,7 +584,7 @@ namespace NLCBSMM {
 
                // Send whatever we just built
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-                  perror("vmmanager.cpp, sendto");
+                  perror("cluster.h, 2, sendto");
                   exit(EXIT_FAILURE);
                }
 
@@ -826,7 +826,7 @@ namespace NLCBSMM {
 
             // Setup client/server to block until lock is acquired
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-               perror("mmapwrapper.h, socket");
+               perror("cluster.h, 1, socket");
                exit(EXIT_FAILURE);
             }
 
@@ -835,7 +835,7 @@ namespace NLCBSMM {
             selflen              = sizeof(self);
 
             if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
-               perror("mmapwrapper.h, bind");
+               perror("cluster.h, bind");
                exit(EXIT_FAILURE);
             }
 
@@ -848,7 +848,7 @@ namespace NLCBSMM {
                      0,
                      (struct sockaddr *) &retaddr,
                      addrlen) < 0) {
-               perror("mmapwrapper.h, sendto");
+               perror("cluster.h, 3, sendto");
                exit(EXIT_FAILURE);
             }
 
@@ -876,7 +876,7 @@ namespace NLCBSMM {
 
             // Setup client/server to block until lock is acquired
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-               perror("mmapwrapper.h, socket");
+               perror("cluster.h, socket");
                exit(EXIT_FAILURE);
             }
 
@@ -890,7 +890,7 @@ namespace NLCBSMM {
             addrlen              = sizeof(addr);
 
             if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
-               perror("mmapwrapper.h, bind");
+               perror("cluster.h, bind");
                exit(EXIT_FAILURE);
             }
 
@@ -905,7 +905,7 @@ namespace NLCBSMM {
                      0,
                      (struct sockaddr *) &addr,
                      addrlen) < 0) {
-               perror("mmapwrapper.h, sendto");
+               perror("cluster.h, 2, sendto");
                exit(EXIT_FAILURE);
             }
 
