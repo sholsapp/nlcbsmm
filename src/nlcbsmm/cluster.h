@@ -861,7 +861,7 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            fprintf(stderr, "> Direct communication to %s:%d\n", inet_ntoa(retaddr.sin_addr), retaddr.sin_port);
+            //fprintf(stderr, "> Direct communication to %s:%d\n", inet_ntoa(retaddr.sin_addr), retaddr.sin_port);
 
             // Send packet
             if (sendto(sk,
@@ -918,7 +918,7 @@ namespace NLCBSMM {
 
             getsockname(sk, (struct sockaddr*) &self, &selflen);
 
-            fprintf(stderr, "> Established blocking communication on %d\n", self.sin_port);
+            //fprintf(stderr, "> Established blocking communication on %d\n", self.sin_port);
 
             // Send packet
             if (sendto(sk,

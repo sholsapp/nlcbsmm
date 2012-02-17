@@ -213,6 +213,9 @@ namespace HL {
             // TODO: error checking
             mach_status = node_list->find(local_addr.s_addr)->second->status;
 
+
+            fprintf(stderr, "> %s state %d\n", inet_ntoa(local_addr), mach_status);
+
             if (mach_status == MACHINE_ACTIVE
                   || mach_status == MACHINE_MASTER) {
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
