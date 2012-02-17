@@ -559,10 +559,15 @@ namespace NLCBSMM {
             if (_uuid == -1) {
                // I am master
                _uuid = 0;
-               // Give ourselves write lock on page table
-               pt_owner = local_addr.s_addr;
+
+               // Set status to master
+               node_list->find(local_addr.s_addr)->second->status = MACHINE_MASTER;
+
                fprintf(stderr, " > Taking pt_owner = %s\n",
                      inet_ntoa((struct in_addr&)pt_owner));
+
+               // Give ourselves write lock on page table
+               pt_owner = local_addr.s_addr;
 
             }
 
