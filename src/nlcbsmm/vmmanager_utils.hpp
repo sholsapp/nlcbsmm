@@ -78,36 +78,12 @@ namespace NLCBSMM {
       /**
        *
        */
-      PageTableItr    pt_itr;
-      PageVectorItr   vec_itr;
-      PageVectorType* temp   = NULL;
-      struct in_addr  addr   = {0};
-
-      fprintf(stderr, "**** PAGE_TABLE ****\n");
-      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
-         addr.s_addr = (*pt_itr).first;
-         fprintf(stderr, "%% %s : <\n", inet_ntoa(addr));
-         // The list of pages
-         temp = (*pt_itr).second;
-         for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
-            fprintf(stderr, "\t[&: %p, *:%p]\n", (void*) (*vec_itr), (void*) (*vec_itr)->address);
-         }
-         fprintf(stderr, ">\n");
-      }
-      fprintf(stderr, "********************\n\n");
-   }
-
-
-   void print_page_table_v2() {
-      /**
-       *
-       */
       PageTableItr2 pt_itr;
       PageTableElementType tuple;
       Machine*      node;
 
       fprintf(stderr, "**** PAGE_TABLE ****\n");
-      for (pt_itr = page_table_v2->begin(); pt_itr != page_table_v2->end(); pt_itr++) {
+      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
          tuple = (*pt_itr).second;
          node = tuple.second;
          fprintf(stderr, "%p -> %s\n",
@@ -120,8 +96,9 @@ namespace NLCBSMM {
 
    void reserve_pages() {
       /**
-       *
+       * TODO: reimplement with new data types
        */
+      /*
       PageTableItr    pt_itr;
       PageVectorItr   vec_itr;
       PageVectorType* temp   = NULL;
@@ -138,6 +115,7 @@ namespace NLCBSMM {
                   MAP_FIXED | MAP_ANON, -1, 0);
          }
       }
+      */
    }
 
 
@@ -202,6 +180,5 @@ namespace NLCBSMM {
       mutex_unlock(m);
       return alloc;
    }
-
 
 }

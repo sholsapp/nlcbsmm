@@ -26,27 +26,6 @@ namespace NLCBSMM {
    typedef
       FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> > PageTableHeapType;
 
-   // A vector of NLCBSMM::Page objects
-   typedef
-      std::vector<Page*,
-      PageTableAllocator<Page*> >
-         PageVectorType;
-
-   typedef
-      PageVectorType::iterator PageVectorItr;
-
-   // A mapping of 'ip address' to a NLCBSMM::PageVector, where 'ip address' is the
-   // binary representation of the IPv4 address in dot-notation.
-   typedef
-      std::map<uint32_t,
-      PageVectorType*,
-      std::less<uint32_t>,
-      PageTableAllocator<std::pair<uint32_t, PageVectorType*> > >
-         PageTableType;
-
-   typedef
-      PageTableType::iterator PageTableItr;
-
    //
    // Page table types
    //
@@ -68,10 +47,10 @@ namespace NLCBSMM {
       PageTableElementType,
       std::less<uint32_t>,
       PageTableAllocator<std::pair<uint32_t, PageTableElementType > > >
-         PageTableType2;
+         PageTableType;
 
    typedef
-      PageTableType2::iterator PageTableItr2;
+      PageTableType::iterator PageTableItr2;
 
    //
    // Work queue types
@@ -110,7 +89,6 @@ namespace NLCBSMM {
 
    // The page table
    extern PageTableType* page_table;
-   extern PageTableType2* page_table_v2;
 
    extern MachineTableType* node_list;
 

@@ -52,13 +52,15 @@ namespace NLCBSMM {
    PacketQueueType uni_speaker_work_deque;
    cv              uni_speaker_cond;
    mutex           uni_speaker_cond_lock;
-   mutex           uni_speaker_lock; // This locks the queue during push/pop/size ops
+   // This locks the queue during push/pop/size ops
+   mutex           uni_speaker_lock;
 
    // This set of condition variables adn mutex allows us to shut down the multicast speaker
    // while there is no work for it to perform in its work queue.
    //TODO: make this look like unicast speaker (above)
    PacketQueueType multi_speaker_work_deque;
-   mutex           multi_speaker_lock; // This locks the queue during push/pop/size ops
+   // This locks the queue during push/pop/size ops
+   mutex           multi_speaker_lock;
 
    // This (binary form IP address) identifies who currently has the page table lock.
    uint32_t pt_owner;
@@ -69,11 +71,8 @@ namespace NLCBSMM {
    // page table.
    mutex pt_lock;
 
-   PageTableType* page_table;
-
-
    MachineTableType* node_list;
-   PageTableType2*    page_table_v2;
+   PageTableType*    page_table;
 
    uint32_t _start_page_table = 0;
    uint32_t _end_page_table   = 0;
@@ -487,7 +486,7 @@ namespace NLCBSMM {
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
 
-               print_page_table_v2();
+               print_page_table();
 
                // Map any new pages and set permissions
                // TODO: fix this call to use new data types
@@ -811,12 +810,6 @@ namespace NLCBSMM {
 
                      // TODO: make sure user isn't is in the page table
 
-                     //page_table->insert(
-                     //      // IP -> std::vector<Page>
-                     //      std::pair<uint32_t, PageVectorType*>(
-                     //         ip,
-                     //         new (get_pt_heap(&pt_lock)->malloc(sizeof(PageVectorType))) PageVectorType()));
-
                      fprintf(stderr, "> Adding %s to node list\n", payload_buf);
                      raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
                      node_list->insert(
@@ -939,6 +932,7 @@ namespace NLCBSMM {
       unsigned char* p = pageAlign((unsigned char*) info->si_addr);
       fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
 
+      /*
       PageTableItr    pt_itr;
       PageVectorItr   vec_itr;
       PageVectorType* temp   = NULL;
@@ -965,6 +959,7 @@ namespace NLCBSMM {
          fprintf(stderr, ">\n");
       }
       fprintf(stderr, "********************\n\n");
+      */
 
       // TODO: Add in logic to pull the page table from the network and set permissions
 
@@ -1020,60 +1015,51 @@ namespace NLCBSMM {
 
 
    void nlcbsmm_init() {
-
-      void* raw;
-
-      next_addr = global_application_heap();
-      fprintf(stderr, "> next_addr = %p\n", (void*) next_addr);
-
       /**
        * Hook entry.
        */
-      raw = (void*) mmap((void*) global_page_table_obj(),
+      void* raw = NULL;
+
+      if ((raw = (void*) mmap((void*) global_page_table_obj(),
             PAGE_TABLE_OBJ_SZ,
             PROT_READ | PROT_WRITE,
             MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-            -1, 0);
-      if (raw == MAP_FAILED) {
-         fprintf(stderr, "Cannot map gpto: %p\n", (void*) global_page_table_obj());
+            -1, 0)) == MAP_FAILED) {
+         perror("mmap(gpto)");
       }
       pt_heap = new (raw) PageTableHeapType();
 
-      // Ensure that the pt_heap region is being mmaped
+      // Force initialization of NLCBSMM memory regions
       pt_heap->free(pt_heap->malloc(8));
-      // Ensure that the clone_heap region is being mmaped
       clone_heap.free(clone_heap.malloc(8));
 
       // Dedicated memory for maintaining the machine list
-      raw = (void*) mmap((void*) global_page_table_mach_list(),
+      if ((raw = (void*) mmap((void*) global_page_table_mach_list(),
             PAGE_TABLE_MACH_LIST_SZ,
             PROT_READ | PROT_WRITE,
             MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-            -1, 0);
-      if (raw == MAP_FAILED) {
-         fprintf(stderr, "Cannot map gptml: %p\n", (void*) global_page_table());
+            -1, 0)) == MAP_FAILED) {
+         perror("mmap(gptml)");
       }
       node_list = new (raw) MachineTableType();
 
       // Dedicated memory for maintaining the page table
-      raw = (void*) mmap((void*) global_page_table(),
+      if ((raw = (void*) mmap((void*) global_page_table(),
             PAGE_TABLE_SZ,
             PROT_READ | PROT_WRITE,
             MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-            -1, 0);
-      if (raw == MAP_FAILED) {
-         fprintf(stderr, "Cannot map gpt: %p\n", (void*) global_page_table());
+            -1, 0)) == MAP_FAILED) {
+         perror("mmap(gpt)");
       }
-      //page_table = new (raw) PageTableType();
-      page_table_v2 = new (raw) PageTableType2();
+      page_table = new (raw) PageTableType();
 
       _start_page_table = (uint32_t) raw;
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
+      pt_owner          = (uint32_t) -1;
 
       // Obtain the IP address of the local ethernet interface
-      local_ip = get_local_interface();
-      // Binary form of IP address
+      local_ip          = get_local_interface();
       local_addr.s_addr = inet_addr(local_ip);
 
       // Setup condition and mutex variables
@@ -1083,8 +1069,6 @@ namespace NLCBSMM {
       mutex_init(&multi_speaker_lock,    NULL);
       mutex_init(&pt_owner_lock,         NULL);
       mutex_init(&pt_lock,               NULL);
-
-      pt_owner = -1;
 
       print_init_message();
 
