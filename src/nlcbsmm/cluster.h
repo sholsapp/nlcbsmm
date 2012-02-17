@@ -534,41 +534,42 @@ namespace NLCBSMM {
             psz     = MAX_PACKET_SZ;
             buffer  = clone_heap.malloc(psz);
 
-            // Initial state
+            // Build packet
+            p = new (buffer) MulticastJoin(local_addr.s_addr,
+                  (uint8_t*) global_main(),
+                  (uint8_t*) global_end(),
+                  (uint8_t*) global_base());
+
+            for (cnt = 0; cnt < MAX_JOIN_ATTEMPTS && _uuid == -1; cnt++) {
+               memset(buffer, 0, psz);
+               // Send join request
+               if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+                  perror("cluster.h, 2, sendto");
+                  exit(EXIT_FAILURE);
+               }
+               sleep(0.5);
+            }
+
+            // No one responded
+            if (_uuid == -1) {
+               // I am master
+               _uuid = 0;
+               // Give ourselves write lock on page table
+               pt_owner = local_addr.s_addr;
+               fprintf(stderr, " > Taking pt_owner = %s\n",
+                     inet_ntoa((struct in_addr&)pt_owner));
+
+            }
 
             for (cnt = 0; ; cnt++) {
                // Clear the memory buffer each time
                memset(buffer, 0, psz);
 
-               // If received no response from a master
-               if (cnt > MAX_JOIN_ATTEMPTS
-                     && _uuid == (uint32_t) -1) {
-                  // I am master
-                  _uuid = 0;
-                  // Give ourselves write lock on page table
-                  pt_owner = local_addr.s_addr;
-                  fprintf(stderr, " > Taking pt_owner = %s\n",
-                        inet_ntoa((struct in_addr&)pt_owner));
-               }
-               // Else if we're still trying to join
-               else if (_uuid == (uint32_t) -1) {
-                  //TODO: use binary form of IP and ditch the string payload
-                  // Build packet
-                  p = new (buffer) MulticastJoin(strlen(local_ip),
-                        (uint8_t*) global_main(),
-                        (uint8_t*) global_end(),
-                        (uint8_t*) global_base());
-                  // Add packet payload (the user IP address)
-                  memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
-               }
-               // Else we've already join
-               else if (_uuid != -1) {
-                  //TODO: use binary form of IP and ditch the string payload
-                  // Build packet
-                  p = new (buffer) MulticastHeartbeat(strlen(local_ip));
-                  // Add packet payload (the user IP address)
-                  memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
-               }
+               //TODO: use binary form of IP and ditch the string payload
+               // Build packet
+               p = new (buffer) MulticastHeartbeat(strlen(local_ip));
+               // Add packet payload (the user IP address)
+               memcpy(p->get_payload_ptr(), local_ip, strlen(local_ip));
 
                // Check if there is work on the deque
                if (safe_size(&multi_speaker_work_deque, &multi_speaker_lock) > 0) {
@@ -591,7 +592,6 @@ namespace NLCBSMM {
 
                // TODO: replace sleeping with checking the work queue for work?
                sleep(1);
-
             }
 
             // Shit is scarce, son!
@@ -716,11 +716,11 @@ namespace NLCBSMM {
                         && (uint32_t) global_end() == ntohl(mjp->end_addr)
                         && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
-                     ip = inet_addr(payload_buf);
+                     addr.s_addr = ip = ntohl(mjp->ip_address);
 
                      // TODO: make sure user isn't is in the page table
 
-                     fprintf(stderr, "> Adding %s to node list\n", payload_buf);
+                     fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(addr));
                      raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
                      node_list->insert(
                            std::pair<uint32_t, Machine*>(
@@ -734,7 +734,7 @@ namespace NLCBSMM {
 
                      // Who to contact
                      retaddr.sin_family      = AF_INET;
-                     retaddr.sin_addr.s_addr = inet_addr(payload_buf);
+                     retaddr.sin_addr.s_addr = ip;
                      retaddr.sin_port        = htons(UNICAST_PORT);
 
                      //TODO: use binary form of IP and ditch the string payload
@@ -743,7 +743,7 @@ namespace NLCBSMM {
                            // A new work tuple
                            new (work_memory) WorkTupleType(retaddr,
                               // A new packet
-                              new (packet_memory) UnicastJoinAcceptance(strlen(local_ip),
+                              new (packet_memory) UnicastJoinAcceptance(local_addr.s_addr,
                                  _start_page_table,
                                  _end_page_table,
                                  _next_uuid++,
@@ -770,7 +770,7 @@ namespace NLCBSMM {
                addr.s_addr = ip;
 
                // If message is from someone in page table
-               if (node_list->count(ip) > 0 
+               if (node_list->count(ip) > 0
                      // And we didn't send this packet
                      && ip != local_addr.s_addr) {
 
@@ -781,15 +781,15 @@ namespace NLCBSMM {
 
                   // Map this memory into our address space
                   if((test = mmap((void*) start_addr,
-                        memory_sz,
-                        PROT_NONE,
-                        MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-                        -1, 0)) == MAP_FAILED) {
+                              memory_sz,
+                              PROT_NONE,
+                              MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+                              -1, 0)) == MAP_FAILED) {
                      fprintf(stderr, "> map failed, setting protections\n");
                      mprotect((void*) start_addr, memory_sz, PROT_NONE);
                   }
                   else {
-                     fprintf(stderr, "> Reserved %p (%d) for %s\n", 
+                     fprintf(stderr, "> Reserved %p (%d) for %s\n",
                            (void*) start_addr,
                            memory_sz,
                            inet_ntoa(addr));
