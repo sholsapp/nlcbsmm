@@ -383,7 +383,7 @@ namespace NLCBSMM {
                   + PAGE_TABLE_HEAP_SZ;
 
                // Where does the region start?
-               page_ptr  = reinterpret_cast<uint8_t*>(global_page_table_obj());
+               page_ptr  = reinterpret_cast<uint8_t*>(global_page_table_mach_list());
 
                // TODO: get our current entry in the page table, and set all pages
                // allocated to PROT_NONE
