@@ -997,6 +997,7 @@ namespace NLCBSMM {
             AcquireWriteLock*  acq    = NULL;
             ReleaseWriteLock*  rel    = NULL;
 
+
             //fprintf(stderr, "> pt_owner = %s\n", inet_ntoa((struct in_addr&) pt_owner));
 
             // If write lock is not in init state
@@ -1007,17 +1008,18 @@ namespace NLCBSMM {
                fprintf(stderr, "> Asking %s for lock.\n",
                      inet_ntoa((struct in_addr&) pt_owner));
 
+               // Build acquire lock packet
                send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               acq         = new (send_buffer) AcquireWriteLock();
+               timeout     = 5; // seconds
 
-               rec = ClusterCoordinator::blocking_comm(
-                     pt_owner, 
-                     new (send_buffer) AcquireWriteLock(), 
-                     5);
+               // Send packet, wait for response
+               rec = ClusterCoordinator::blocking_comm(pt_owner, acq, timeout);
 
                if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec);
 
-                  fprintf(stderr, "> Received write lock (next avail = %p)\n",
+                  fprintf(stderr, "> Received write lock.  Next avail memory = %p\n",
                         (void*) ntohl(rel->next_addr));
 
                   next_addr = ntohl(rel->next_addr);
@@ -1031,15 +1033,16 @@ namespace NLCBSMM {
                // TODO: need to re-route packets to new owner sometimes
 
                // Release memory
-               clone_heap.free(send_buffer);
                clone_heap.free(rec);
-
+               clone_heap.free(send_buffer);
                // Close socket
                close(sk);
             }
             else {
                fprintf(stderr, "> Already own lock\n");
             }
+
+
             return;
          }
 

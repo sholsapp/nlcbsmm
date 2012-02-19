@@ -54,6 +54,8 @@ namespace HL {
 
             mutex_lock(&pt_owner_lock);
 
+            ClusterCoordinator::acquire_allocation_lock();
+            /*
             //fprintf(stderr, "> pt_owner = %s\n", inet_ntoa((struct in_addr&) pt_owner));
 
             // If write lock is not in init state
@@ -97,6 +99,7 @@ namespace HL {
             else {
                fprintf(stderr, "> Already own lock\n");
             }
+            */
 
             // Allocate memory
             if ((ptr = mmap ((void*)next_addr,
