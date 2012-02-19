@@ -410,6 +410,7 @@ namespace NLCBSMM {
                break;
 
             case ACQUIRE_WRITE_LOCK_F:
+               // TODO: when is it "ideal" to release lock?  How do we know we won't need it soon?
                // Lock the pt_owner_lock, this ensures that we are not currently inserting into the pt
                // when someone else wants to aquire the lock
                fprintf(stderr, " > Recieved a request to acquire ownership of the pt\n");
@@ -423,7 +424,7 @@ namespace NLCBSMM {
                   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-                  fprintf(stderr, " > Release ownership of the page table\n");
+                  fprintf(std:err, " > Release ownership of the page table\n");
                   // Inform the sender that it now has ownership of the pt
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                         // A new work tuple
@@ -775,6 +776,18 @@ namespace NLCBSMM {
                break;
 
             }
+         }
+
+
+         static void active_pt_sync(struct sockaddr_in retaddr) {
+            /**
+             *
+             */
+            // TODO: lock pt_lock
+            // TODO: check pt_owner_lock?
+            // TODO: for non-zero pages in page table region, send SyncPage
+            return;
+
          }
 
 
