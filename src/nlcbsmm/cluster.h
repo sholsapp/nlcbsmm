@@ -1040,7 +1040,7 @@ namespace NLCBSMM {
             else {
                fprintf(stderr, "> Already own lock\n");
             }
-            
+            return;
          }
 
 
