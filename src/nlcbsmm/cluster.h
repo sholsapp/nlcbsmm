@@ -339,62 +339,11 @@ namespace NLCBSMM {
             case UNICAST_JOIN_ACCEPT_ACK_F:
                fprintf(stderr, "> received join accept ack\n");
 
-               // Respond to the other server's listener
-               retaddr.sin_port = htons(UNICAST_PORT);
-
-               // How big is the region we're sync'ing?
-               region_sz = PAGE_TABLE_MACH_LIST_SZ
-                  + PAGE_TABLE_OBJ_SZ
-                  + PAGE_TABLE_SZ
-                  + PAGE_TABLE_ALLOC_HEAP_SZ
-                  + PAGE_TABLE_HEAP_SZ;
-
-               // Where does the region start?
-               page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
-
-               // TODO: lock page while we're sending it
-
-               // Queue work to send page table
-               for (i = 0; i < region_sz; i += PAGE_SZ) {
-
-                  page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
-                  page_data = reinterpret_cast<void*>(page_ptr + i);
-
-                  // If this page has non-zero contents
-                  if (!isPageZeros(page_data)) {
-
-                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-                     // Push work onto the uni_speaker's queue
-                     safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                           // A new work tuple
-                           new (work_memory) WorkTupleType(retaddr,
-                              // A new packet
-                              new (packet_memory) SyncPage(page_addr, page_data))
-                           );
-                     // Signal unicast speaker there is queued work
-                     cond_signal(&uni_speaker_cond);
-                  }
-               }
-
-               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-               // Push work onto the uni_speaker's queue
-               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                     // A new work tuple
-                     new (work_memory) WorkTupleType(retaddr,
-                        // A new packet
-                        new (packet_memory) GenericPacket(SYNC_DONE_F))
-                     );
-
-               // Signal unicast speaker there is queued work
-               cond_signal(&uni_speaker_cond);
+               // Passively sync the page table region
+               passive_pt_sync(retaddr);
 
                // TODO: error checking
                node_list->find(retaddr.sin_addr.s_addr)->second->status = MACHINE_IDLE;
-
 
                break;
 
@@ -826,6 +775,78 @@ namespace NLCBSMM {
                break;
 
             }
+         }
+
+
+         static void passive_pt_sync(struct sockaddr_in retaddr) {
+            /**
+             *
+             */
+            Packet*                p              = NULL;
+            SyncPage*              syncp          = NULL;
+            WorkTupleType*         work           = NULL;
+
+            uint8_t*               page_ptr       = NULL;
+            void*                  packet_memory  = NULL;
+            void*                  work_memory    = NULL;
+            void*                  page_data      = NULL;
+            uint32_t               region_sz      = 0;
+            uint32_t               page_addr      = 0;
+            uint32_t               i              = 0;
+
+            // Respond to the other server's listener
+            retaddr.sin_port = htons(UNICAST_PORT);
+
+            // How big is the region we're sync'ing?
+            region_sz = PAGE_TABLE_MACH_LIST_SZ
+               + PAGE_TABLE_OBJ_SZ
+               + PAGE_TABLE_SZ
+               + PAGE_TABLE_ALLOC_HEAP_SZ
+               + PAGE_TABLE_HEAP_SZ;
+
+            // Where does the region start?
+            page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
+
+            // TODO: lock page while we're sending it
+
+            // Queue work to send page table
+            for (i = 0; i < region_sz; i += PAGE_SZ) {
+
+               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+               page_data = reinterpret_cast<void*>(page_ptr + i);
+
+               // If this page has non-zero contents
+               if (!isPageZeros(page_data)) {
+
+                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+                  // Push work onto the uni_speaker's queue
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) SyncPage(page_addr, page_data))
+                        );
+                  // Signal unicast speaker there is queued work
+                  cond_signal(&uni_speaker_cond);
+               }
+            }
+
+            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+            // Push work onto the uni_speaker's queue
+            safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                  // A new work tuple
+                  new (work_memory) WorkTupleType(retaddr,
+                     // A new packet
+                     new (packet_memory) GenericPacket(SYNC_DONE_F))
+                  );
+            // Signal unicast speaker there is queued work
+            cond_signal(&uni_speaker_cond);
+
+            return;
          }
 
 
