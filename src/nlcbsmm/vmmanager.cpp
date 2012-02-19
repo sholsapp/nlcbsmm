@@ -175,6 +175,7 @@ namespace NLCBSMM {
            );*/
 
          fprintf(stderr, "> Signal handler resolved fault via network \n");
+         fprintf(stderr, "> LOLZ, just kidding.\n");
 
          // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
 
@@ -184,6 +185,8 @@ namespace NLCBSMM {
 
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
+
+      exit(EXIT_FAILURE);
    }
 
 

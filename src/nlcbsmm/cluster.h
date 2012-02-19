@@ -795,7 +795,6 @@ namespace NLCBSMM {
                         (void*) start_addr,
                         memory_sz);
 
-                  /*
                   // Map this memory into our address space
                   if((test = mmap((void*) start_addr,
                               memory_sz,
@@ -811,7 +810,6 @@ namespace NLCBSMM {
                            memory_sz,
                            inet_ntoa(addr));
                   }
-                  */
                   // TODO: insert this mapping into the page table (i think)
                }
                else {
