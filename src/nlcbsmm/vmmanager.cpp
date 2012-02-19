@@ -128,6 +128,8 @@ namespace NLCBSMM {
 
       fprintf(stderr, "> Handler: Illegal access at %p in page %p\n", faulting_addr, aligned_addr);
 
+      print_page_table();
+
       pt_itr = page_table->find((uint32_t) aligned_addr);
       // If the address was not found in the page table
       if(pt_itr == page_table->end()) {
