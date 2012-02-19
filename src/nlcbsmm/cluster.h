@@ -970,7 +970,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> Blocking communication timed out\n");
             }
 
-            // Release memory
+            // Release memory (NOTE: we're returning the rec_buffer (don't free))
             clone_heap.free(send);
             // Close socket
             close(sk);

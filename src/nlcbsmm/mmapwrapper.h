@@ -39,10 +39,12 @@ namespace HL {
             uint32_t nbytes           =  0;
             uint32_t addrlen          =  0;
             uint32_t selflen          =  0;
+            uint32_t timeout          =  0;
             struct   sockaddr_in addr = {0};
             struct   sockaddr_in self = {0};
 
             Packet*            p      = NULL;
+            Packet*            rec    = NULL;
             AcquireWriteLock*  acq    = NULL;
             ReleaseWriteLock*  rel    = NULL;
 
@@ -56,74 +58,21 @@ namespace HL {
 
             // If write lock is not in init state
             if (pt_owner != -1
-                  // AND we do not own write lock on page table
+                  // And we do not own write lock on page table
                   && local_addr.s_addr != pt_owner) {
 
                fprintf(stderr, "> Asking %s for lock.\n",
                      inet_ntoa((struct in_addr&) pt_owner));
 
-               // Setup client/server to block until lock is acquired
-               if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-                  perror("mmapwrapper.h, socket");
-                  exit(EXIT_FAILURE);
-               }
-
-               self.sin_family      = AF_INET;
-               self.sin_port        = 0;
-               selflen              = sizeof(self);
-
-               addr.sin_family      = AF_INET;
-               addr.sin_addr.s_addr = pt_owner;
-               addr.sin_port        = htons(UNICAST_PORT);
-               addrlen              = sizeof(addr);
-
-               if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
-                  perror("mmapwrapper.h, bind");
-                  exit(EXIT_FAILURE);
-               }
-
                send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               acq         = new (send_buffer) AcquireWriteLock();
 
-               acq = new (send_buffer) AcquireWriteLock();
+               timeout     = 5;
 
-               fprintf(stderr, "sk = %d\n", sk);
-               if (send_buffer == NULL) {
-                  fprintf(stderr, "send_buffer is NULL\n");
-               }
-               fprintf(stderr, "MAX_PACKET_SZ = %d\n", MAX_PACKET_SZ);
-               fprintf(stderr, "ip/port = %s/%d\n", inet_ntoa(addr.sin_addr), addr.sin_port);
-               fprintf(stderr, "addrlen = %d\n", addrlen);
+               rec = ClusterCoordinator::blocking_comm(pt_owner, acq, timeout);
 
-               // Send request to acquire write lock
-               if (sendto(sk,
-                        send_buffer,
-                        MAX_PACKET_SZ,
-                        0,
-                        (struct sockaddr *) &addr ,
-                        addrlen) < 0) {
-                  perror("mmapwrapper.h, sendto");
-                  exit(EXIT_FAILURE);
-               }
-
-               rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-               // TODO: select for lock, handle errors or timeout
-
-               // Wait (block) for owner to release write lock
-               if ((nbytes = recvfrom(sk,
-                           rec_buffer,
-                           MAX_PACKET_SZ,
-                           0,
-                           (struct sockaddr *) &addr,
-                           &addrlen)) < 0) {
-                  perror("recvfrom");
-                  exit(EXIT_FAILURE);
-               }
-
-               p = reinterpret_cast<Packet*>(rec_buffer);
-
-               if (p->get_flag() == RELEASE_WRITE_LOCK_F) {
-                  rel = reinterpret_cast<ReleaseWriteLock*>(rec_buffer);
+               if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
+                  rel = reinterpret_cast<ReleaseWriteLock*>(rec);
 
                   fprintf(stderr, "> Received write lock.  Next avail memory = %p\n",
                         (void*) ntohl(rel->next_addr));
