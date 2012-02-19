@@ -978,6 +978,72 @@ namespace NLCBSMM {
          }
 
 
+         static void acquire_allocation_lock() {
+            /**
+             *
+             */
+            uint8_t* send_buffer      = NULL;
+            uint8_t* rec_buffer       = NULL;
+            uint32_t sk               =  0;
+            uint32_t nbytes           =  0;
+            uint32_t addrlen          =  0;
+            uint32_t selflen          =  0;
+            uint32_t timeout          =  0;
+            struct   sockaddr_in addr = {0};
+            struct   sockaddr_in self = {0};
+
+            Packet*            p      = NULL;
+            Packet*            rec    = NULL;
+            AcquireWriteLock*  acq    = NULL;
+            ReleaseWriteLock*  rel    = NULL;
+
+            //fprintf(stderr, "> pt_owner = %s\n", inet_ntoa((struct in_addr&) pt_owner));
+
+            // If write lock is not in init state
+            if (pt_owner != -1
+                  // And we do not own write lock on page table
+                  && local_addr.s_addr != pt_owner) {
+
+               fprintf(stderr, "> Asking %s for lock.\n",
+                     inet_ntoa((struct in_addr&) pt_owner));
+
+               send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               rec = ClusterCoordinator::blocking_comm(
+                     pt_owner, 
+                     new (send_buffer) AcquireWriteLock(), 
+                     5);
+
+               if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
+                  rel = reinterpret_cast<ReleaseWriteLock*>(rec);
+
+                  fprintf(stderr, "> Received write lock (next avail = %p)\n",
+                        (void*) ntohl(rel->next_addr));
+
+                  next_addr = ntohl(rel->next_addr);
+                  // Take ownership of write lock
+                  pt_owner = local_addr.s_addr;
+               }
+               else {
+                  fprintf(stderr, "> Unknown packet response\n");
+               }
+
+               // TODO: need to re-route packets to new owner sometimes
+
+               // Release memory
+               clone_heap.free(send_buffer);
+               clone_heap.free(rec);
+
+               // Close socket
+               close(sk);
+            }
+            else {
+               fprintf(stderr, "> Already own lock\n");
+            }
+            
+         }
+
+
          static int select_call(int socket, int seconds, int useconds) {
             /**
              *

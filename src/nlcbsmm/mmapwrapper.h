@@ -54,49 +54,8 @@ namespace HL {
 
             mutex_lock(&pt_owner_lock);
 
-            fprintf(stderr, "> pt_owner = %s\n", inet_ntoa((struct in_addr&) pt_owner));
-
-            // If write lock is not in init state
-            if (pt_owner != -1
-                  // And we do not own write lock on page table
-                  && local_addr.s_addr != pt_owner) {
-
-               fprintf(stderr, "> Asking %s for lock.\n",
-                     inet_ntoa((struct in_addr&) pt_owner));
-
-               send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-               acq         = new (send_buffer) AcquireWriteLock();
-
-               timeout     = 5;
-
-               rec = ClusterCoordinator::blocking_comm(pt_owner, acq, timeout);
-
-
-               if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
-                  rel = reinterpret_cast<ReleaseWriteLock*>(rec);
-
-                  fprintf(stderr, "> Received write lock.  Next avail memory = %p\n",
-                        (void*) ntohl(rel->next_addr));
-
-                  next_addr = ntohl(rel->next_addr);
-                  // Take ownership of write lock
-                  pt_owner = local_addr.s_addr;
-               }
-               else {
-                  fprintf(stderr, "> Unknown packet response\n");
-               }
-
-               // TODO: need to re-route packets to new owner sometimes
-
-               // Release memory
-               //clone_heap.free(rec_buffer);
-               clone_heap.free(send_buffer);
-               // Close socket
-               close(sk);
-            }
-            else {
-               fprintf(stderr, "> Already own lock\n");
-            }
+            // Before allocating memory, acquire ownership of the page table lock
+            ClusterCoordinator::acquire_allocation_lock();
 
             // Allocate memory
             if ((ptr = mmap ((void*)next_addr,
