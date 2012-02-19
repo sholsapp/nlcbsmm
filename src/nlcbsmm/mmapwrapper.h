@@ -89,7 +89,7 @@ namespace HL {
                // TODO: need to re-route packets to new owner sometimes
 
                // Release memory
-               clone_heap.free(rec_buffer);
+               //clone_heap.free(rec_buffer);
                clone_heap.free(send_buffer);
                // Close socket
                close(sk);
