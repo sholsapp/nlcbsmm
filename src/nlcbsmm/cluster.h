@@ -997,9 +997,6 @@ namespace NLCBSMM {
             AcquireWriteLock*  acq    = NULL;
             ReleaseWriteLock*  rel    = NULL;
 
-
-            //fprintf(stderr, "> pt_owner = %s\n", inet_ntoa((struct in_addr&) pt_owner));
-
             // If write lock is not in init state
             if (pt_owner != -1
                   // And we do not own write lock on page table
@@ -1014,7 +1011,7 @@ namespace NLCBSMM {
                timeout     = 5; // seconds
 
                // Send packet, wait for response
-               rec = ClusterCoordinator::blocking_comm(pt_owner, acq, timeout);
+               rec = blocking_comm(pt_owner, acq, timeout);
 
                if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec);
@@ -1041,7 +1038,6 @@ namespace NLCBSMM {
             else {
                fprintf(stderr, "> Already own lock\n");
             }
-
 
             return;
          }
