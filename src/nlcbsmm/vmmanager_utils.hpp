@@ -78,7 +78,7 @@ namespace NLCBSMM {
       /**
        *
        */
-      PageTableItr2 pt_itr;
+      PageTableItr pt_itr;
       PageTableElementType tuple;
       Machine*      node;
 

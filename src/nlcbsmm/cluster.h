@@ -593,7 +593,6 @@ namespace NLCBSMM {
                   if (work != NULL) {
                      // Overwrite the packet with useful work
                      memcpy(buffer, work->second, MAX_PACKET_SZ);
-                     // Free the old pointer
                      clone_heap.free(work->second);
                   }
 

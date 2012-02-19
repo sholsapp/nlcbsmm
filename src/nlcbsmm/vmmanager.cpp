@@ -97,29 +97,42 @@ namespace NLCBSMM {
        */
       sigset_t oset;
       sigset_t set;
-      PageTableItr2 pt_itr;
-      PageTableElementType tuple;
-      Machine*      node = NULL;
-      Page*         page = NULL;
-      uint32_t      perm = 0;
+
+      void*                 packet_memory  = NULL;
+      void*                 work_memory    = NULL;
+      void*                 raw            = NULL;
+      uint8_t*              faulting_addr  = NULL;
+      uint8_t*              aligned_addr   = NULL;
+      uint32_t              remote_ip      = 0;
+      uint32_t              timeout        = 0;
+      uint32_t              perm           = 0;
+      struct sockaddr_in    remote_addr    = {0};
+      Packet*               p              = NULL;
+      ThreadCreate*         tc             = NULL;
+      ThreadCreateAck*      tca            = NULL;
+      Machine*              node           = NULL;
+      Page*                 page           = NULL;
+      PageTableItr          pt_itr;
+      PageTableElementType  tuple;
+
 
       //block SIGSEGV
       sigemptyset(&set);
       sigaddset(&set, SIGSEGV);
       sigprocmask(SIG_BLOCK, &set, &oset);
 
-      //fprintf(stderr, "SIGSEGV Caught\n");
+      faulting_addr = reinterpret_cast<uint8_t*>(info->si_addr);
+      aligned_addr  = pageAlign(faulting_addr);
 
-      unsigned char* p = pageAlign((unsigned char*) info->si_addr);
-      fprintf(stderr, "Illegal access at %p in page %p\n", info->si_addr, p);
 
-      fprintf(stderr, "**** Searching through page table ****\n");
 
-      pt_itr = page_table->find((uint32_t)p);
-      //IF the address was not found in the page table
+      fprintf(stderr, "> Handler: Illegal access at %p in page %p\n", faulting_addr, aligned_addr);
+
+      pt_itr = page_table->find((uint32_t) aligned_addr);
+      // If the address was not found in the page table
       if(pt_itr == page_table->end()) {
-         //Bad news bears
-         fprintf(stderr,"!> %p not found in the page table, man down.\n", p);
+         // Bad news bears
+         fprintf(stderr,"> ERROR: faulting address (%p) not found in the page table\n", aligned_addr);
       }
       else {
          tuple = (*pt_itr).second;
@@ -128,49 +141,44 @@ namespace NLCBSMM {
          //Get the permissions from the page
          perm = page->protection;
 
-         //Mprotect the region, so we can memcpy the real page
-         //IMPORTANT: at this point this page should already be mmaped into the address space!
-         if(mprotect(p, PAGE_SZ, perm) < 0) {
-            fprintf(stderr, "!> mprotect in the signal handler failed! addr = %p, permissions = %d\n",p,perm); 
-         }
-          
-         void*               packet_memory  = NULL;
-         void*               work_memory    = NULL;
-         void*               raw            = NULL;
-         uint32_t            remote_ip      = 0;
-         uint32_t            timeout        = 0;
-         struct sockaddr_in  remote_addr    = {0};
-
-         Packet*          p   = NULL;
-         ThreadCreate*    tc  = NULL;
-         ThreadCreateAck* tca = NULL;
-
          remote_ip = node->ip_address;
-         
          remote_addr.sin_family      = AF_INET;
          remote_addr.sin_addr.s_addr = remote_ip;
          remote_addr.sin_port        = htons(UNICAST_PORT);
- 
+
+         fprintf(stderr, "> Handler: %s has %p\n", inet_ntoa(remote_addr.sin_addr), (void*) page->address);
+
+         //Mprotect the region, so we can memcpy the real page
+         //IMPORTANT: at this point this page should already be mmaped into the address space!
+         if(mprotect(p, PAGE_SZ, perm) < 0) {
+            fprintf(stderr, "!> mprotect in the signal handler failed! addr = %p, permissions = %d\n", aligned_addr, perm);
+         }
+
+
+         remote_ip = node->ip_address;
+         remote_addr.sin_family      = AF_INET;
+         remote_addr.sin_addr.s_addr = remote_ip;
+         remote_addr.sin_port        = htons(UNICAST_PORT);
+
          work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
          packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
          timeout = 5;
 
          /*p = ClusterCoordinator::blocking_comm(
-                    remote_ip,
-                    reinterpret_cast<Packet*>(
-                    new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg)),
-                    timeout
-         );*/
+           remote_ip,
+           reinterpret_cast<Packet*>(
+           new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg)),
+           timeout
+           );*/
 
-        fprintf(stderr, "> signal handler finished the blocking communication \n");
+         fprintf(stderr, "> Signal handler resolved fault via network \n");
 
+         // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
 
-        // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
- 
-        clone_heap.free(p);
+         clone_heap.free(p);
       }
-      // TODO: increment the version of the page? 
+      // TODO: increment the version of the page?
 
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
@@ -210,8 +218,8 @@ namespace NLCBSMM {
        */
       print_log_sep(40);
       fprintf(stdout, "> nlcbsmm init on local ip: %s <\n", local_ip);
-      fprintf(stdout, "> main (%p) | _end (%p)\n",           (void*) global_main(), 
-                                                             (void*) global_end());
+      fprintf(stdout, "> main (%p) | _end (%p)\n",           (void*) global_main(),
+            (void*) global_end());
       fprintf(stdout, "> base %p (thread stacks go here)\n", (void*) global_base());
       fprintf(stdout, "> clone alloc heap offset %p\n",      (void*) global_clone_alloc_heap());
       fprintf(stdout, "> clone heap offset %p\n",            (void*) global_clone_heap());
@@ -286,7 +294,7 @@ namespace NLCBSMM {
       print_init_message();
 
       // Register SIGSEGV handler
-      //register_signal_handlers();
+      register_signal_handlers();
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();

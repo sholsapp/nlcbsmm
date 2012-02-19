@@ -54,7 +54,7 @@ namespace NLCBSMM {
          PageTableType;
 
    typedef
-      PageTableType::iterator PageTableItr2;
+      PageTableType::iterator PageTableItr;
 
    //
    // Work queue types
