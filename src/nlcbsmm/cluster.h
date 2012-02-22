@@ -1108,6 +1108,10 @@ namespace NLCBSMM {
                acq         = new (send_buffer) AcquireWriteLock(self.sin_port);
                timeout     = 5; // seconds
 
+               fprintf(stderr, "> Asking %s for lock (sync to %d).\n",
+                     inet_ntoa((struct in_addr&) pt_owner),
+                     ntohs(acq->ret_port));
+
                // Send packet, wait for response
                rec = blocking_comm(pt_owner, acq, timeout);
 
