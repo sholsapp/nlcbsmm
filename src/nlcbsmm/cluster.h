@@ -900,18 +900,22 @@ namespace NLCBSMM {
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                   // Push work onto the uni_speaker's queue
-                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                        // A new work tuple
-                        new (work_memory) WorkTupleType(retaddr,
-                           // A new packet
-                           new (packet_memory) SyncPage(page_addr, page_data))
-                        );
+                  //safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                  //      // A new work tuple
+                  //      new (work_memory) WorkTupleType(retaddr,
+                  //         // A new packet
+                  //         new (packet_memory) SyncPage(page_addr, page_data))
+                  //      );
                   // Signal unicast speaker there is queued work
                   cond_signal(&uni_speaker_cond);
+
+                  p = blocking_comm(retaddr.sin_addr.s_addr,
+                        new (packet_memory) SyncPage(page_addr, page_data),
+                        timeout);
                }
             }
 
-            sleep(3);
+            //sleep(3);
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
