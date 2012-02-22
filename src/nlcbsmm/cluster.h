@@ -386,9 +386,6 @@ namespace NLCBSMM {
 
                // Map any new pages and set permissions
 
-               // TODO: fix this call to use new data types
-               //reserve_pages();
-
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
@@ -464,6 +461,9 @@ namespace NLCBSMM {
 
                   // Respond to the specified sync port (already in network order)
                   retaddr.sin_port = awl->ret_port;
+
+                  // Lock the pt while we transfer it
+                  mutex_lock(&pt_lock);
 
                   // Sync page table region
                   active_pt_sync(retaddr);
