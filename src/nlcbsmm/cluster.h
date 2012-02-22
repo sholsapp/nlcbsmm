@@ -938,7 +938,7 @@ namespace NLCBSMM {
          }
 
 
-         static uint32_t new_listener() {
+         static uint32_t new_comm(uint32_t port=0) {
             /**
              *
              */
@@ -952,7 +952,7 @@ namespace NLCBSMM {
             }
 
             self.sin_family      = AF_INET;
-            self.sin_port        = 0; // Any
+            self.sin_port        = htons(port); // Any
             selflen              = sizeof(self);
 
             if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
@@ -979,19 +979,7 @@ namespace NLCBSMM {
             Packet*  p                = NULL;
 
             // Setup client/server to block until lock is acquired
-            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-               perror("cluster.h, 1, socket");
-               exit(EXIT_FAILURE);
-            }
-
-            self.sin_family      = AF_INET;
-            self.sin_port        = 0; // Any
-            selflen              = sizeof(self);
-
-            if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
-               perror("cluster.h, bind");
-               exit(EXIT_FAILURE);
-            }
+            sk = new_comm();
 
             //fprintf(stderr, "> Direct communication to %s:%d\n", inet_ntoa(retaddr.sin_addr), retaddr.sin_port);
 
