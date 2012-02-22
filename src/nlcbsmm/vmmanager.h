@@ -140,6 +140,7 @@ namespace NLCBSMM {
    void               register_signal_handlers();
    void               nlcbsmm_init();
    void               print_page_table();
+   void               reserve_pages();
    bool               isPageZeros(void* p);
 
 }

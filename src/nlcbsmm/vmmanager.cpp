@@ -205,14 +205,12 @@ namespace NLCBSMM {
             memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
 
          }
-
-         fprintf(stderr, "> Signal handler resolved fault via network \n");
-         fprintf(stderr, "> LOLZ, just kidding.\n");
-
          // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
 
+         // Free packet
          clone_heap.free(p);
       }
+
       // TODO: increment the version of the page?
 
       // Unblock sigsegv

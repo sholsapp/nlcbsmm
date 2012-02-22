@@ -421,8 +421,11 @@ namespace NLCBSMM {
                // TODO: error checking
                node_list->find(local_addr.s_addr)->second->status = MACHINE_IDLE;
 
-               // TODO: map any new pages and set permissions
+               // Map any new pages and set permissions
+               reserve_pages();
 
+               // TODO: need better assurance that sync is actually done (have we already
+               // received and mapped all the pages?).
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,

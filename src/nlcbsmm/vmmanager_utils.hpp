@@ -85,7 +85,7 @@ namespace NLCBSMM {
       fprintf(stderr, "**** PAGE_TABLE ****\n");
       for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
          tuple = (*pt_itr).second;
-         node = tuple.second;
+         node  = tuple.second;
          fprintf(stderr, "%p -> %s\n",
                (void*) (*pt_itr).first,
                inet_ntoa((struct in_addr&) node->ip_address));
@@ -96,26 +96,50 @@ namespace NLCBSMM {
 
    void reserve_pages() {
       /**
-       * TODO: reimplement with new data types
+       *
        */
-      /*
-      PageTableItr    pt_itr;
-      PageVectorItr   vec_itr;
-      PageVectorType* temp   = NULL;
-      struct in_addr  addr   = {0};
+      PageTableItr         pt_itr;
+      PageTableElementType tuple;
+      Page*                page = NULL;
+      Machine*             node = NULL;
+      void*                test = NULL;
+      void*                addr = NULL;
 
-      for (pt_itr = page_table->begin(); pt_itr != page_table->end(); pt_itr++) {
-         addr.s_addr = (*pt_itr).first;
-         temp = (*pt_itr).second;
-         for (vec_itr = temp->begin(); vec_itr != temp->end(); vec_itr++) {
-            // Reserve the memory in the virtual address space
-            void* mmap_test = mmap((void*)(*vec_itr)->address,
-                  PAGE_SZ,
-                  PROT_NONE,
-                  MAP_FIXED | MAP_ANON, -1, 0);
+      fprintf(stderr, "** reserving pages **\n");
+
+      for (pt_itr = page_table->begin();
+            pt_itr != page_table->end();
+            pt_itr++) {
+
+         addr  = (void*) (*pt_itr).first;
+         tuple = (*pt_itr).second;
+         page  = tuple.first;
+         node  = tuple.second;
+
+         // If we aren't the owner of this page
+         if (node->ip_address != local_addr.s_addr) {
+
+            // Try to map this memory into our address space
+            if((test = mmap(addr,
+                        PAGE_SZ,
+                        PROT_NONE,
+                        MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+                        -1, 0)) == MAP_FAILED) {
+
+               fprintf(stderr, "> %p already mapped\n", addr);
+
+               mprotect(addr, PAGE_SZ, PROT_READ | PROT_WRITE);
+            }
+            else {
+               fprintf(stderr, "> map success\n");
+            }
          }
       }
-      */
+
+      fprintf(stderr, "*********************\n");
+
+      return;
+
    }
 
 
@@ -132,7 +156,7 @@ namespace NLCBSMM {
       for(node_itr = node_list->begin(); node_itr != node_list->end(); node_itr++) {
          s_addr = (*node_itr).first;
          if (s_addr != local_addr.s_addr) {
-           return s_addr;
+            return s_addr;
          }
       }
       return -1;
