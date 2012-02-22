@@ -874,6 +874,7 @@ namespace NLCBSMM {
             // Lock page while we're sending it
             mutex_lock(&pt_lock);
 
+            timeout = 5;
             // Send a SYNC_DONE_F and wait for ack
             p = blocking_comm(retaddr.sin_addr.s_addr,
                   new (packet_memory) GenericPacket(SYNC_START_F),
