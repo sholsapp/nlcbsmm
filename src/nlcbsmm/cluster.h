@@ -911,6 +911,8 @@ namespace NLCBSMM {
                }
             }
 
+            sleep(3);
+
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
