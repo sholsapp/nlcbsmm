@@ -373,7 +373,6 @@ namespace NLCBSMM {
 
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                      new (work_memory) WorkTupleType(retaddr,
                         new (packet_memory) GenericPacket(SYNC_START_ACK_F))
@@ -403,11 +402,10 @@ namespace NLCBSMM {
                // TODO: error checking
                node_list->find(local_addr.s_addr)->second->status = MACHINE_IDLE;
 
-               // Map any new pages and set permissions
+               // TODO: map any new pages and set permissions
 
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                      new (work_memory) WorkTupleType(retaddr,
                         new (packet_memory) GenericPacket(SYNC_DONE_ACK_F))
@@ -900,22 +898,19 @@ namespace NLCBSMM {
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                   // Push work onto the uni_speaker's queue
-                  //safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                  //      // A new work tuple
-                  //      new (work_memory) WorkTupleType(retaddr,
-                  //         // A new packet
-                  //         new (packet_memory) SyncPage(page_addr, page_data))
-                  //      );
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) SyncPage(page_addr, page_data))
+                        );
                   // Signal unicast speaker there is queued work
-                  //cond_signal(&uni_speaker_cond);
-
-                  p = blocking_comm(retaddr.sin_addr.s_addr,
-                        new (packet_memory) SyncPage(page_addr, page_data),
-                        timeout);
+                  cond_signal(&uni_speaker_cond);
                }
             }
 
-            //sleep(3);
+            // TODO: get rid of this
+            sleep(3);
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
