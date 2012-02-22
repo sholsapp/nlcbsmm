@@ -266,7 +266,7 @@ extern "C" int pthread_create (pthread_t *thread,
    }
 
    // Sync page table
-   ClusterCoordinator::active_pt_sync(remote_addr);
+   ClusterCoordinator::passive_pt_sync(remote_addr);
 
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
