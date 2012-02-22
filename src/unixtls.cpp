@@ -266,6 +266,7 @@ extern "C" int pthread_create (pthread_t *thread,
    }
 
    // TODO: Sync page table with available worker
+   ClusterCoordinator::active_pt_sync(remote_addr);
 
    // Notify available worker to start thread
    p = ClusterCoordinator::blocking_comm(

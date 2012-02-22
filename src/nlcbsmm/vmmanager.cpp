@@ -194,7 +194,7 @@ namespace NLCBSMM {
       /**
        * Registers signal handler for SIGSEGV
        */
-      //fprintf(stderr, "Registering SIGSEGV handler...");
+      fprintf(stderr, "Registering SIGSEGV handler...");
       struct sigaction act;
       act.sa_sigaction = signal_handler;
       act.sa_flags     = SA_SIGINFO;
