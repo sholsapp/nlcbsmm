@@ -1095,13 +1095,12 @@ namespace NLCBSMM {
                // Start a new listener
                sk = new_comm();
 
+               getsockname(sk, (struct sockaddr*) &self, &selflen);
+
                // Lock the page table
                //mutex_lock(&pt_lock);
                // Owner will sync before releasing lock, so erase local pt
                //zero_pt();
-
-               fprintf(stderr, "> Asking %s for lock.\n",
-                     inet_ntoa((struct in_addr&) pt_owner));
 
                // Build acquire lock packet
                send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
