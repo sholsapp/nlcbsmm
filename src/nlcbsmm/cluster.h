@@ -381,13 +381,6 @@ namespace NLCBSMM {
 
                break;
 
-            case SYNC_RELEASE_PAGE_F:
-               rp = reinterpret_cast<ReleasePage*>(buffer);
-               fprintf(stderr, "> %s releases %p\n",
-                     inet_ntoa(retaddr.sin_addr),
-                     (void*) ntohl(rp->page_addr));
-               break;
-
             case SYNC_START_F:
                fprintf(stderr, "> received a sync start\n");
 
@@ -537,6 +530,7 @@ namespace NLCBSMM {
                break;
 
             case RELEASE_WRITE_LOCK_F:
+            case SYNC_RELEASE_PAGE_F:
             case SYNC_DONE_ACK_F:
                // These types of packets are handled directly
                fprintf(stderr, "ERROR> ignored packet type(%x)\n", p->get_flag());

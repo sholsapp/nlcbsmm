@@ -101,8 +101,11 @@ namespace NLCBSMM {
       void*                 packet_memory  = NULL;
       void*                 work_memory    = NULL;
       void*                 raw            = NULL;
+      void*                 test           = NULL;
+      void*                 rel_page       = NULL;
       uint8_t*              faulting_addr  = NULL;
       uint8_t*              aligned_addr   = NULL;
+      
       uint32_t              remote_ip      = 0;
       uint32_t              timeout        = 0;
       uint32_t              perm           = 0;
@@ -176,6 +179,29 @@ namespace NLCBSMM {
          if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
             rp = reinterpret_cast<ReleasePage*>(p);
             fprintf(stderr, "> release packet rec'd\n");
+
+            rel_page = (void*) ntohl(rp->page_addr);
+
+            // Try to map this memory into our address space
+            if((test = mmap(rel_page,
+                        PAGE_SZ,
+                        PROT_READ | PROT_WRITE, 
+                        MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+                        -1, 0)) == MAP_FAILED) {
+
+               fprintf(stderr, "> %p already mapped\n", rel_page);
+
+               mprotect((void*) ntohl(rp->page_addr), 
+                     PAGE_SZ, 
+                     PROT_READ | PROT_WRITE);
+            }
+            else {
+               fprintf(stderr, "> Map success, reserved %p (%d)\n",
+                     rel_page,
+                     PAGE_SZ);
+            }
+
+            
 
          }
 
