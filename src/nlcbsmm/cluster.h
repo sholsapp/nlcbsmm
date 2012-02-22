@@ -370,6 +370,12 @@ namespace NLCBSMM {
                memcpy((void*) ntohl(syncp->page_offset),
                      syncp->get_payload_ptr(),
                      PAGE_SZ);
+
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                     new (work_memory) WorkTupleType(retaddr,
+                        new (packet_memory) GenericPacket(SYNC_PAGE_ACK_F))
+                     );
+               cond_signal(&uni_speaker_cond);
                break;
 
             case SYNC_DONE_F:

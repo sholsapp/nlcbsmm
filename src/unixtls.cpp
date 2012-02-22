@@ -254,8 +254,6 @@ extern "C" int pthread_create (pthread_t *thread,
 
    timeout = 5;
 
-   ClusterCoordinator::active_pt_sync(remote_addr);
-
    // Map this memory into our address space
    // TODO: make this position agnostic (could fail when mapped into other address space)
    // TODO: insert this memory into the page table
@@ -266,6 +264,9 @@ extern "C" int pthread_create (pthread_t *thread,
                -1, 0)) == MAP_FAILED) {
       fprintf(stderr, "> pthread stack map failed\n");
    }
+
+   // Sync page table
+   ClusterCoordinator::active_pt_sync(remote_addr);
 
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
