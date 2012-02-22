@@ -858,6 +858,9 @@ namespace NLCBSMM {
             uint32_t               i              = 0;
             uint32_t               timeout        = 0;
 
+            // Set timeout to 5 seconds
+            timeout = 5;
+
             // Respond to the other server's listener
             retaddr.sin_port = htons(UNICAST_PORT);
 
@@ -871,12 +874,12 @@ namespace NLCBSMM {
             // Where does the region start?
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
-            timeout = 5;
+            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
-            //p = blocking_comm(retaddr.sin_addr.s_addr,
-            //      new (packet_memory) GenericPacket(SYNC_START_F),
-            //      timeout);
-
+            p = blocking_comm(retaddr.sin_addr.s_addr,
+                  new (packet_memory) GenericPacket(SYNC_START_F),
+                  timeout);
             // TODO: verify response is SYNC_START_ACK_F
 
             // Queue work to send page table
@@ -903,12 +906,12 @@ namespace NLCBSMM {
                }
             }
 
-            timeout = 5;
+            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
             p = blocking_comm(retaddr.sin_addr.s_addr,
                   new (packet_memory) GenericPacket(SYNC_DONE_F),
                   timeout);
-
             // TODO: verify response is SYNC_DONE_ACK_F
 
             return;
