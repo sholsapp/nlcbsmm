@@ -1087,6 +1087,8 @@ namespace NLCBSMM {
             AcquireWriteLock*  acq    = NULL;
             ReleaseWriteLock*  rel    = NULL;
 
+            selflen = sizeof(self);
+
             // If write lock is not in init state
             if (pt_owner != -1
                   // And we do not own write lock on page table
