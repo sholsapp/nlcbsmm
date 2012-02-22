@@ -125,54 +125,49 @@ namespace NLCBSMM {
       aligned_addr  = pageAlign(faulting_addr);
 
 
-
       fprintf(stderr, "> Handler: Illegal access at %p in page %p\n", faulting_addr, aligned_addr);
 
-      print_page_table();
-
       pt_itr = page_table->find((uint32_t) aligned_addr);
+
       // If the address was not found in the page table
       if(pt_itr == page_table->end()) {
-         // Bad news bears
-         fprintf(stderr,"> ERROR: faulting address (%p) not found in the page table\n", aligned_addr);
+         // This is a real segfault
+         fprintf(stderr,"> SEGFAULT: %p\n", aligned_addr);
+         exit(EXIT_FAILURE);
       }
       else {
          tuple = (*pt_itr).second;
+         // First element is the Page
          page  = tuple.first;
+         perm  = page->protection;
+         // Second element is the Machine
          node  = tuple.second;
-         //Get the permissions from the page
-         perm = page->protection;
-
-         remote_ip = node->ip_address;
-         remote_addr.sin_family      = AF_INET;
-         remote_addr.sin_addr.s_addr = remote_ip;
-         remote_addr.sin_port        = htons(UNICAST_PORT);
 
          fprintf(stderr, "> Handler: %s has %p\n", inet_ntoa(remote_addr.sin_addr), (void*) page->address);
 
          //Mprotect the region, so we can memcpy the real page
          //IMPORTANT: at this point this page should already be mmaped into the address space!
          if(mprotect(p, PAGE_SZ, perm) < 0) {
-            fprintf(stderr, "!> mprotect in the signal handler failed! addr = %p, permissions = %d\n", aligned_addr, perm);
+            fprintf(stderr, "ERROR> can't mprotect %p to %d\n", aligned_addr, perm);
          }
 
-
-         remote_ip = node->ip_address;
+         remote_ip                   = node->ip_address;
          remote_addr.sin_family      = AF_INET;
          remote_addr.sin_addr.s_addr = remote_ip;
          remote_addr.sin_port        = htons(UNICAST_PORT);
+
 
          work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
          packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
          timeout = 5;
 
-         /*p = ClusterCoordinator::blocking_comm(
-           remote_ip,
-           reinterpret_cast<Packet*>(
-           new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg)),
-           timeout
-           );*/
+         p = ClusterCoordinator::blocking_comm(
+               remote_ip,
+               reinterpret_cast<Packet*>(
+                  new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
+               timeout
+               );
 
          fprintf(stderr, "> Signal handler resolved fault via network \n");
          fprintf(stderr, "> LOLZ, just kidding.\n");
@@ -185,8 +180,6 @@ namespace NLCBSMM {
 
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
-
-      exit(EXIT_FAILURE);
    }
 
 

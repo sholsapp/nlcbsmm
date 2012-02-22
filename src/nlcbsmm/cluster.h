@@ -286,6 +286,8 @@ namespace NLCBSMM {
             ThreadCreate*          tc             = NULL;
             ThreadCreateAck*       tca            = NULL;
             AcquireWriteLock*      awl            = NULL;
+            AcquirePage*           ap             = NULL;
+            ReleasePage*           rp             = NULL;
             WorkTupleType*         work           = NULL;
 
             uint8_t*               payload_buf    = NULL;
@@ -360,6 +362,21 @@ namespace NLCBSMM {
 
                // TODO: error checking
                node_list->find(retaddr.sin_addr.s_addr)->second->status = MACHINE_IDLE;
+               break;
+
+
+            case SYNC_ACQUIRE_PAGE_F:
+               ap = reinterpret_cast<AcquirePage*>(buffer);
+               fprintf(stderr, "> %s wants %p\n", 
+                     inet_ntoa(retaddr.sin_addr), 
+                     (void*) ntohl(ap->page_addr));
+               break;
+
+            case SYNC_RELEASE_PAGE_F:
+               rp = reinterpret_cast<ReleasePage*>(buffer);
+               fprintf(stderr, "> %s releases %p\n", 
+                     inet_ntoa(retaddr.sin_addr), 
+                     (void*) ntohl(rp->page_addr));
                break;
 
             case SYNC_START_F:
@@ -910,6 +927,8 @@ namespace NLCBSMM {
             }
 
             // TODO: get rid of this
+            // This ensures that the pt is actually sync'd.  Need logic in SYNC_START/SYNC_DONE to
+            // fix this.
             sleep(3);
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));

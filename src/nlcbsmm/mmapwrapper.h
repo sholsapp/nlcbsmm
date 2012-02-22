@@ -116,12 +116,8 @@ namespace HL {
 
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-               // Push work onto broadcast speaker's queue
                safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
-                     // A new work tuple
                      new (work_memory) WorkTupleType(fake,
-                        // A new packet
                         new (packet_memory) SyncReserve(local_addr.s_addr, ptr, sz))
                      );
             }

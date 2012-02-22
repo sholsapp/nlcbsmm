@@ -14,6 +14,8 @@
 
 #define SYNC_START_F              0x20
 #define SYNC_START_ACK_F          0x21
+#define SYNC_ACQUIRE_PAGE_F       0x23
+#define SYNC_RELEASE_PAGE_F       0x24
 #define SYNC_PAGE_F               0x2A
 #define SYNC_PAGE_ACK_F           0x2B
 #define SYNC_DONE_F               0x2C
@@ -285,6 +287,49 @@ class ReleaseWriteLock : public Packet {
          payload_sz = htonl(0);
          flag       = RELEASE_WRITE_LOCK_F;
          next_addr  = htonl(_next_addr);
+      }
+
+}__attribute__((packed));
+
+
+class AcquirePage : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t page_addr;
+
+      AcquirePage(uint32_t _page_addr) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = SYNC_ACQUIRE_PAGE_F;
+         page_addr  = htonl(_page_addr);
+      }
+
+
+}__attribute__((packed));
+
+
+class ReleasePage : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t page_addr;
+
+      ReleasePage(uint32_t _page_addr) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = SYNC_RELEASE_PAGE_F;
+         page_addr  = htonl(_page_addr);
       }
 
 }__attribute__((packed));
