@@ -856,9 +856,10 @@ namespace NLCBSMM {
             uint32_t               sk             = 0;
             struct sockaddr_in*    addr           = {0};
 
-            sk      = new_comm();
-            timeout = 5;
+            // Respond to the other server's listener
+            retaddr.sin_port = htons(UNICAST_PORT);
 
+            // How big is the region we're sync'ing?
             region_sz = PAGE_TABLE_MACH_LIST_SZ
                + PAGE_TABLE_OBJ_SZ
                + PAGE_TABLE_SZ
@@ -868,27 +869,29 @@ namespace NLCBSMM {
             // Where does the region start?
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
+            // TODO: lock page while we're sending it
+
+            // Queue work to send page table
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
                page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
-               page_data = reinterpret_cast<void*>   (page_ptr + i);
+               page_data = reinterpret_cast<void*>(page_ptr + i);
 
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
 
-                  fprintf(stderr, "> Active sync (%p) to %s:%d\n",
-                        page_data,
-                        inet_ntoa((struct in_addr&) retaddr.sin_addr),
-                        ntohs(retaddr.sin_port));
-
+                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                  syncp         = new (packet_memory) SyncPage(page_addr, page_data);
 
-                  // Wait for a SYNC_PAGE_ACK_F
-                  rec = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr, syncp, timeout);
-                  if (rec->get_flag() != SYNC_PAGE_ACK_F) {
-                     fprintf(stderr, "> Weird response (%x)\n", rec->get_flag());
-                  }
+                  // Push work onto the uni_speaker's queue
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) SyncPage(page_addr, page_data))
+                        );
+                  // Signal unicast speaker there is queued work
+                  cond_signal(&uni_speaker_cond);
                }
             }
 
@@ -896,9 +899,9 @@ namespace NLCBSMM {
             gp            = new (packet_memory) GenericPacket(SYNC_DONE_F);
 
             // Wait for a SYNC_DONE_ACK_F response
-            rec = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr, gp, timeout);
-            if (p->get_flag() != SYNC_DONE_ACK_F) {
-               fprintf(stderr, "> Weird (and bad): %x.\n", p->get_flag());
+            rec = blocking_comm(retaddr.sin_addr.s_addr, gp, timeout);
+            if (p->get_flag() == SYNC_DONE_ACK_F) {
+               fprintf(stderr, "> pt actively synced!\n", p->get_flag());
             }
 
             fprintf(stderr, "> active_pt_sync done\n");

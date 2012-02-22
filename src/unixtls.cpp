@@ -265,9 +265,9 @@ extern "C" int pthread_create (pthread_t *thread,
       fprintf(stderr, "> pthread stack map failed\n");
    }
 
-   // Sync page table
-   ClusterCoordinator::passive_pt_sync(remote_addr);
+   // TODO: Sync page table with available worker
 
+   // Notify available worker to start thread
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
          reinterpret_cast<Packet*>(
