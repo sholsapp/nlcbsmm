@@ -106,40 +106,28 @@ namespace NLCBSMM {
       void*                addr = NULL;
 
       fprintf(stderr, "** reserving pages **\n");
-
       for (pt_itr = page_table->begin();
             pt_itr != page_table->end();
             pt_itr++) {
-
          addr  = (void*) (*pt_itr).first;
          tuple = (*pt_itr).second;
          page  = tuple.first;
          node  = tuple.second;
-
          // If we aren't the owner of this page
          if (node->ip_address != local_addr.s_addr) {
-
             // Try to map this memory into our address space
             if((test = mmap(addr,
                         PAGE_SZ,
                         PROT_NONE,
                         MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
                         -1, 0)) == MAP_FAILED) {
-
-               fprintf(stderr, "> %p already mapped\n", addr);
-
+               //fprintf(stderr, "> %p already mapped\n", addr);
                mprotect(addr, PAGE_SZ, PROT_READ | PROT_WRITE);
-            }
-            else {
-               fprintf(stderr, "> map success\n");
             }
          }
       }
-
       fprintf(stderr, "*********************\n");
-
       return;
-
    }
 
 

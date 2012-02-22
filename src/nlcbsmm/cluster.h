@@ -937,7 +937,7 @@ namespace NLCBSMM {
             // TODO: get rid of this
             // This ensures that the pt is actually sync'd.  Need logic in SYNC_START/SYNC_DONE to
             // fix this.
-            sleep(3);
+            sleep(1);
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
