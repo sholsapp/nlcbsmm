@@ -887,7 +887,7 @@ namespace NLCBSMM {
 
             p = blocking_comm(retaddr.sin_addr.s_addr, 
                   new (packet_memory) GenericPacket(SYNC_DONE_ACK_F),
-                  5);
+                  10);
 
             return;
          }
