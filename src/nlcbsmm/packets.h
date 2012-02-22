@@ -327,9 +327,11 @@ class ReleasePage : public Packet {
 
       ReleasePage(uint32_t _page_addr) {
          sequence   = htonl(0);
-         payload_sz = htonl(0);
+         payload_sz = htonl(PAGE_SZ);
          flag       = SYNC_RELEASE_PAGE_F;
          page_addr  = htonl(_page_addr);
+         // Copy payload into packet
+         memcpy(this->get_payload_ptr(), (void*) page_addr, MAX_PACKET_SZ);
       }
 
 }__attribute__((packed));

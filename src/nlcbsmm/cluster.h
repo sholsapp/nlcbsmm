@@ -367,15 +367,24 @@ namespace NLCBSMM {
 
             case SYNC_ACQUIRE_PAGE_F:
                ap = reinterpret_cast<AcquirePage*>(buffer);
-               fprintf(stderr, "> %s wants %p\n", 
-                     inet_ntoa(retaddr.sin_addr), 
-                     (void*) ntohl(ap->page_addr));
+
+               page_data = (void*) ntohl(ap->page_addr);
+
+               fprintf(stderr, "> %s wants %p\n",
+                     inet_ntoa(retaddr.sin_addr),
+                     page_data);
+
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               direct_comm(retaddr,
+                     new (packet_memory) ReleasePage((uint32_t) page_data));
+
                break;
 
             case SYNC_RELEASE_PAGE_F:
                rp = reinterpret_cast<ReleasePage*>(buffer);
-               fprintf(stderr, "> %s releases %p\n", 
-                     inet_ntoa(retaddr.sin_addr), 
+               fprintf(stderr, "> %s releases %p\n",
+                     inet_ntoa(retaddr.sin_addr),
                      (void*) ntohl(rp->page_addr));
                break;
 
