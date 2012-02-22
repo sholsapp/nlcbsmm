@@ -255,7 +255,15 @@ extern "C" int pthread_create (pthread_t *thread,
    timeout = 5;
 
    thr_stack_sz = 4096 * 8;
-   thr_stack    = malloc(thr_stack_sz);
+
+   // Map this memory into our address space
+   if((thr_stack = mmap(NULL,
+               thr_stack_sz,
+               PROT_NONE,
+               MAP_SHARED | MAP_ANONYMOUS,
+               -1, 0)) == MAP_FAILED) {
+      fprintf(stderr, "> pthread stack map failed\n");
+   }
 
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
@@ -265,7 +273,7 @@ extern "C" int pthread_create (pthread_t *thread,
          );
 
    fprintf(stderr, "> pthread got a %x back\n", p->get_flag());
-   
+
    node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
    // TODO: adjust if error condition is returned
