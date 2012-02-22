@@ -365,7 +365,7 @@ namespace NLCBSMM {
                syncp = reinterpret_cast<SyncPage*>(buffer);
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
                // Sync the page (assume page table is already locked)
-               memcpy((void*) ntohl(syncp->page_offset), 
+               memcpy((void*) ntohl(syncp->page_offset),
                      syncp->get_payload_ptr(),
                      PAGE_SZ);
                break;
@@ -437,12 +437,15 @@ namespace NLCBSMM {
                // IF we are the pt_owner
                if(pt_owner == local_addr.s_addr) {
 
-                  fprintf(stderr, "> Active sync to %s:%d\n", 
-                        inet_ntoa((struct in_addr&) retaddr.sin_addr), 
+                  fprintf(stderr, "> Active sync to %s:%d\n",
+                        inet_ntoa((struct in_addr&) retaddr.sin_addr),
                         ntohs(awl->ret_port));
 
+                  // Respond to the specified sync port (already in network order)
+                  retaddr.sin_port = awl->ret_port;
+
                   // Sync page table region
-                  //active_pt_sync(retaddr);
+                  active_pt_sync(retaddr);
 
                   // OK to give ownership of the pt away
                   pt_owner =  retaddr.sin_addr.s_addr;
@@ -810,6 +813,7 @@ namespace NLCBSMM {
              *
              */
             Packet*                p              = NULL;
+            Packet*                rec            = NULL;
             GenericPacket*         gp             = NULL;
             SyncPage*              syncp          = NULL;
             WorkTupleType*         work           = NULL;
@@ -822,6 +826,12 @@ namespace NLCBSMM {
             uint32_t               page_addr      = 0;
             uint32_t               timeout        = 0;
             uint32_t               i              = 0;
+
+            uint32_t               sk             = 0;
+            struct sockaddr_in*    addr           = {0};
+
+            sk      = new_comm();
+            timeout = 5;
 
             region_sz = PAGE_TABLE_MACH_LIST_SZ
                + PAGE_TABLE_OBJ_SZ
@@ -840,24 +850,27 @@ namespace NLCBSMM {
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
 
-                  fprintf(stderr, "> Active sync (%p) to %s:%d\n", 
-                        page_data, 
+                  fprintf(stderr, "> Active sync (%p) to %s:%d\n",
+                        page_data,
                         inet_ntoa((struct in_addr&) retaddr.sin_addr),
                         ntohs(retaddr.sin_port));
 
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                  syncp = new (packet_memory) SyncPage(page_addr, page_data);
-                  direct_comm(retaddr, syncp);
+                  syncp         = new (packet_memory) SyncPage(page_addr, page_data);
+
+                  // Wait for a SYNC_PAGE_ACK_F
+                  rec = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr, syncp, timeout);
+                  if (rec->get_flag() != SYNC_PAGE_ACK_F) {
+                     fprintf(stderr, "> Weird response (%x)\n", rec->get_flag());
+                  }
                }
             }
 
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-            timeout       = 5;
+            gp            = new (packet_memory) GenericPacket(SYNC_DONE_F);
 
-            gp = new (packet_memory) GenericPacket(SYNC_DONE_F);
             // Wait for a SYNC_DONE_ACK_F response
-            p = blocking_comm(retaddr.sin_addr.s_addr, gp, timeout);
-
+            rec = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr, gp, timeout);
             if (p->get_flag() != SYNC_DONE_ACK_F) {
                fprintf(stderr, "> Weird (and bad): %x.\n", p->get_flag());
             }
@@ -1007,6 +1020,56 @@ namespace NLCBSMM {
          }
 
 
+         static Packet* persistent_blocking_comm(uint32_t sk, struct sockaddr* to, Packet* packet, uint32_t timeout) {
+            /**
+             *
+             */
+            uint8_t* rec_buffer       = NULL;
+            uint32_t nbytes           =  0;
+            uint32_t addrlen          =  0;
+            uint32_t selflen          =  0;
+            uint32_t ret              =  0;
+
+            addrlen = sizeof(to);
+
+            // Send packet
+            if (sendto(sk,
+                     packet,
+                     MAX_PACKET_SZ,
+                     0,
+                     (struct sockaddr *) to,
+                     addrlen) < 0) {
+               perror("cluster.h, 659, sendto");
+               exit(EXIT_FAILURE);
+            }
+
+            rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+            if ((ret = select_call(sk, timeout, 0)) > 0) {
+               // Wait for response
+               if ((nbytes = recvfrom(sk,
+                           rec_buffer,
+                           MAX_PACKET_SZ,
+                           0,
+                           (struct sockaddr *) to,
+                           &addrlen)) < 0) {
+                  perror("recvfrom");
+                  exit(EXIT_FAILURE);
+               }
+            }
+            else {
+               // TODO: handle failure intelligently
+               fprintf(stderr, "> Persistent blocking communication timed out\n");
+            }
+
+            // Release memory (NOTE: we're returning the rec_buffer (don't free))
+            clone_heap.free(packet);
+
+            return reinterpret_cast<Packet*>(rec_buffer);
+
+         }
+
+
          static Packet* blocking_comm(uint32_t rec_ip, Packet* send, uint32_t timeout) {
             /**
              *
@@ -1086,6 +1149,8 @@ namespace NLCBSMM {
             Packet*            rec    = NULL;
             AcquireWriteLock*  acq    = NULL;
             ReleaseWriteLock*  rel    = NULL;
+            GenericPacket*     gen    = NULL;
+            SyncPage*          syncp  = NULL;
 
             selflen = sizeof(self);
 
@@ -1097,9 +1162,8 @@ namespace NLCBSMM {
                // Start a new listener
                sk = new_comm();
 
+               // We care about the name of this socket
                getsockname(sk, (struct sockaddr*) &self, &selflen);
-
-               fprintf(stderr, "Sk port = %d\n", self.sin_port);
 
                // Lock the page table
                //mutex_lock(&pt_lock);
@@ -1115,8 +1179,33 @@ namespace NLCBSMM {
                      inet_ntoa((struct in_addr&) pt_owner),
                      ntohs(acq->ret_port));
 
+               addr.sin_family        = AF_INET;
+               addr.sin_addr.s_addr   = pt_owner;
+               addr.sin_port          = htons(self.sin_port);
+
                // Send packet, wait for response
-               rec = blocking_comm(pt_owner, acq, timeout);
+               rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout);
+
+               while (rec->get_flag() != RELEASE_WRITE_LOCK_F) {
+
+                  if (rec->get_flag() == SYNC_PAGE_F) {
+                     syncp = reinterpret_cast<SyncPage*>(rec);
+                     fprintf(stderr, "> directly received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
+                     // Sync the page (assume page table is already locked)
+                     memcpy((void*) ntohl(syncp->page_offset),
+                           syncp->get_payload_ptr(),
+                           PAGE_SZ);
+                     // Ack receipt
+                     gen = new (send_buffer) GenericPacket(SYNC_PAGE_ACK_F);
+                  }
+                  else if (rec->get_flag() == SYNC_DONE_F) {
+                     // Ack receipt
+                     gen = new (send_buffer) GenericPacket(SYNC_DONE_ACK_F);
+                  }
+
+                  // Send packet, wait for response
+                  rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout);
+               }
 
                if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
                   rel = reinterpret_cast<ReleaseWriteLock*>(rec);
@@ -1127,9 +1216,6 @@ namespace NLCBSMM {
                   next_addr = ntohl(rel->next_addr);
                   // Take ownership of write lock
                   pt_owner = local_addr.s_addr;
-               }
-               else {
-                  fprintf(stderr, "> Unknown packet response\n");
                }
 
                // TODO: need to re-route packets to new owner sometimes
