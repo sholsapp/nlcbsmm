@@ -410,6 +410,8 @@ namespace NLCBSMM {
                thr_stack_sz  = ntohl(tc->stack_sz);
                thr_stack_ptr = (void*) ((uint8_t*) thr_stack + thr_stack_sz);
 
+               fprintf(stderr, "> thr_stack = %p | thr_stack_sz = %d | thr_stack_ptr = %p\n", thr_stack, thr_stack_sz, thr_stack_ptr);
+
                // Map this memory into our address space
                if((test = mmap((void*) thr_stack,
                            thr_stack_sz,

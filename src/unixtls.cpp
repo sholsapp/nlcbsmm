@@ -255,7 +255,7 @@ extern "C" int pthread_create (pthread_t *thread,
    timeout = 5;
 
    thr_stack_sz = 4096 * 8;
-   thr_stack = malloc(thr_stack_sz);
+   thr_stack    = malloc(thr_stack_sz);
 
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
