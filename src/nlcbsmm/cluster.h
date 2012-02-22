@@ -1309,7 +1309,10 @@ namespace NLCBSMM {
             // This was returned to us, we're done with it
             clone_heap.free(p);
 
+            // We're done with the pt
+            mutex_unlock(&pt_lock);
 
+            return -1;
          }
 
 
