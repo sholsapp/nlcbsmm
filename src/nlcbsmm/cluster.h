@@ -1097,6 +1097,8 @@ namespace NLCBSMM {
 
                getsockname(sk, (struct sockaddr*) &self, &selflen);
 
+               fprintf(stderr, "Sk port = %d\n", self.sin_port);
+
                // Lock the page table
                //mutex_lock(&pt_lock);
                // Owner will sync before releasing lock, so erase local pt
