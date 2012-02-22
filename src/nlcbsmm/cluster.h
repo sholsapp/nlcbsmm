@@ -823,9 +823,6 @@ namespace NLCBSMM {
             uint32_t               timeout        = 0;
             uint32_t               i              = 0;
 
-            // Respond to the other server's listener
-            retaddr.sin_port = htons(UNICAST_PORT);
-
             region_sz = PAGE_TABLE_MACH_LIST_SZ
                + PAGE_TABLE_OBJ_SZ
                + PAGE_TABLE_SZ
@@ -842,10 +839,12 @@ namespace NLCBSMM {
 
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
+
                   fprintf(stderr, "> Active sync (%p) to %s:%d\n", 
                         page_data, 
                         inet_ntoa((struct in_addr&) retaddr.sin_addr),
                         ntohs(retaddr.sin_port));
+
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   syncp = new (packet_memory) SyncPage(page_addr, page_data);
                   direct_comm(retaddr, syncp);
@@ -962,6 +961,10 @@ namespace NLCBSMM {
                perror("cluster.h, bind");
                exit(EXIT_FAILURE);
             }
+
+            getsockname(sk, (struct sockaddr*) &self, &selflen);
+
+            fprintf(stderr, ">> new listener on %d\n", self.sin_port);
 
             return sk;
          }
@@ -1091,8 +1094,6 @@ namespace NLCBSMM {
 
                // Start a new listener
                sk = new_comm();
-
-               getsockname(sk, (struct sockaddr*) &self, &selflen);
 
                // Lock the page table
                //mutex_lock(&pt_lock);
