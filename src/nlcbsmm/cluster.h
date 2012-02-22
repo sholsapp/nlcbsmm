@@ -872,7 +872,7 @@ namespace NLCBSMM {
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
             // Lock page while we're sending it
-            mutex_lock(&pt_lock);
+            //mutex_lock(&pt_lock);
 
             timeout = 5;
             // Send a SYNC_DONE_F and wait for ack
@@ -913,8 +913,6 @@ namespace NLCBSMM {
                   timeout);
 
             // TODO: verify response is SYNC_DONE_ACK_F
-
-            mutex_unlock(&pt_lock);
 
             return;
          }
