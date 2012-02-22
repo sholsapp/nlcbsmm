@@ -443,7 +443,7 @@ namespace NLCBSMM {
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               direct_comm(retaddr, 
+               direct_comm(retaddr,
                      new (packet_memory) ThreadCreateAck(thr_id));
 
                break;
@@ -462,10 +462,7 @@ namespace NLCBSMM {
                   // Respond to the specified sync port (already in network order)
                   retaddr.sin_port = awl->ret_port;
 
-                  // Lock the pt while we transfer it
-                  mutex_lock(&pt_lock);
-
-                  // Sync page table region
+                  // Sync page table region (locks pt_lock)
                   active_pt_sync(retaddr);
 
                   // OK to give ownership of the pt away
@@ -861,7 +858,7 @@ namespace NLCBSMM {
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
             // Lock page while we're sending it
-            mutex_lock(&pt_lock);
+            //mutex_lock(&pt_lock);
 
             // Queue work to send page table
             for (i = 0; i < region_sz; i += PAGE_SZ) {
@@ -887,10 +884,13 @@ namespace NLCBSMM {
                }
             }
 
-            // TODO: fix me
-            p = blocking_comm(retaddr.sin_addr.s_addr, 
+            timeout = 5;
+            // Send a SYNC_DONE_F and wait for ack
+            p = blocking_comm(retaddr.sin_addr.s_addr,
                   new (packet_memory) GenericPacket(SYNC_DONE_F),
-                  10);
+                  timeout);
+
+            // TODO: verify response is SYNC_DONE_ACK_F
 
             return;
          }
@@ -1250,7 +1250,74 @@ namespace NLCBSMM {
          }
 
 
-         static int select_call(int socket, int seconds, int useconds) {
+         static uint32_t net_pthread_create(threadFunctionType start_routine, void* arg) {
+            /**
+             *
+             */
+            void*               packet_memory  = NULL;
+            void*               work_memory    = NULL;
+            void*               raw            = NULL;
+            void*               thr_stack      = NULL;
+            uint32_t            thr_stack_sz   = 0;
+            uint32_t            remote_ip      = 0;
+            uint32_t            timeout        = 0;
+            struct sockaddr_in  remote_addr    = {0};
+
+            Packet*          p   = NULL;
+            ThreadCreate*    tc  = NULL;
+            ThreadCreateAck* tca = NULL;
+
+            fprintf(stderr, ">>>> pthread_create(%s) func(%p) arg(%p)\n", local_ip, start_routine, arg);
+
+            remote_ip = get_available_worker();
+
+            remote_addr.sin_family      = AF_INET;
+            remote_addr.sin_addr.s_addr = remote_ip;
+            remote_addr.sin_port        = htons(UNICAST_PORT);
+
+            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+            timeout = 5;
+
+            // Map this memory into our address space
+            // TODO: make this position agnostic (could fail when mapped into other address space)
+            // TODO: insert this memory into the page table
+            if((thr_stack = mmap(NULL,
+                        PTHREAD_STACK_SZ,
+                        PROT_NONE,
+                        MAP_SHARED | MAP_ANONYMOUS,
+                        -1, 0)) == MAP_FAILED) {
+               fprintf(stderr, "> pthread stack map failed\n");
+            }
+
+            // Sync page table with available worker
+            mutex_lock(&pt_lock);
+            active_pt_sync(remote_addr);
+
+            // Notify available worker to start thread
+            p = ClusterCoordinator::blocking_comm(
+                  remote_ip,
+                  reinterpret_cast<Packet*>(
+                     new (packet_memory) ThreadCreate((void*) thr_stack, (void*) start_routine, (void*) arg)),
+                  timeout
+                  );
+
+            fprintf(stderr, "> pthread got a %x back\n", p->get_flag());
+
+            node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
+
+            // This was returned to us, we're done with it
+            clone_heap.free(p);
+
+            // We're done with the pt
+            mutex_unlock(&pt_lock);
+
+            return -1;
+         }
+
+
+         static uint32_t select_call(int socket, int seconds, int useconds) {
             /**
              *
              */

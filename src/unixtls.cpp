@@ -206,18 +206,6 @@ extern "C" int pthread_create (pthread_t *thread,
    /**
     *
     */
-   void*               packet_memory  = NULL;
-   void*               work_memory    = NULL;
-   void*               raw            = NULL;
-   void*               thr_stack      = NULL;
-   uint32_t            thr_stack_sz   = 0;
-   uint32_t            remote_ip      = 0;
-   uint32_t            timeout        = 0;
-   struct sockaddr_in  remote_addr    = {0};
-
-   Packet*          p   = NULL;
-   ThreadCreate*    tc  = NULL;
-   ThreadCreateAck* tca = NULL;
 
    // Force initialization of the TLAB before our first thread is created.
    volatile static TheCustomHeapType * t = getCustomHeap();
@@ -241,47 +229,7 @@ extern "C" int pthread_create (pthread_t *thread,
       new
       pair<threadFunctionType, void *> (start_routine, arg);
 
-   fprintf(stderr, ">>>> pthread_create(%s) func(%p) arg(%p)\n", local_ip, start_routine, arg);
-
-   remote_ip = get_available_worker();
-
-   remote_addr.sin_family      = AF_INET;
-   remote_addr.sin_addr.s_addr = remote_ip;
-   remote_addr.sin_port        = htons(UNICAST_PORT);
-
-   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-   timeout = 5;
-
-   // Map this memory into our address space
-   // TODO: make this position agnostic (could fail when mapped into other address space)
-   // TODO: insert this memory into the page table
-   if((thr_stack = mmap(NULL,
-               PTHREAD_STACK_SZ,
-               PROT_NONE,
-               MAP_SHARED | MAP_ANONYMOUS,
-               -1, 0)) == MAP_FAILED) {
-      fprintf(stderr, "> pthread stack map failed\n");
-   }
-
-   // TODO: Sync page table with available worker
-   ClusterCoordinator::active_pt_sync(remote_addr);
-
-   // Notify available worker to start thread
-   p = ClusterCoordinator::blocking_comm(
-         remote_ip,
-         reinterpret_cast<Packet*>(
-            new (packet_memory) ThreadCreate((void*) thr_stack, (void*) start_routine, (void*) arg)),
-         timeout
-         );
-
-   fprintf(stderr, "> pthread got a %x back\n", p->get_flag());
-
-   node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
-
-   // This was returned to us, we're done with it
-   clone_heap.free(p);
+   ClusterCoordinator::net_pthread_create(start_routine, arg);
 
    // TODO: return a valid nlcbsmm thread id (so the caller can wait for it later)
    return -1;
