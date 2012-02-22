@@ -207,13 +207,18 @@ class ThreadCreate : public Packet {
       uint32_t payload_sz;
       uint8_t  flag;
 
+      uint32_t stack_ptr;
+      uint32_t stack_sz;
+
       uint32_t func_ptr;
       uint32_t arg;
 
-      ThreadCreate(void* _func_ptr, void* _arg) {
+      ThreadCreate(void* _stack_ptr, uint32_t _stack_sz, void* _func_ptr, void* _arg) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = THREAD_CREATE_F;
+         stack_ptr  = htonl(reinterpret_cast<uint32_t>(_stack_ptr));
+         stack_sz   = htonl(_stack_sz);
          func_ptr   = htonl(reinterpret_cast<uint32_t>(_func_ptr));
          arg        = htonl(reinterpret_cast<uint32_t>(_arg));
       }

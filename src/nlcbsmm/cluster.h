@@ -297,11 +297,13 @@ namespace NLCBSMM {
             void*                  thr_stack_ptr  = NULL;
             void*                  func           = NULL;
             void*                  arg            = NULL;
+            void*                  test           = NULL;
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
             uint32_t               page_addr      = 0;
             uint32_t               thr_id         = 0;
+            uint32_t               thr_stack_sz   = 0;
 
 
             // Generic packet data (type/payload size/payload)
@@ -403,13 +405,30 @@ namespace NLCBSMM {
                // Received work, we're now active
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
+               // Get where caller put thread stack
+               thr_stack     = (void*) ntohl(tc->stack_ptr);
+               thr_stack_sz  = ntohl(tc->stack_sz);
+               thr_stack_ptr = (void*) ((uint8_t*) thr_stack + thr_stack_sz);
+
+               // Map this memory into our address space
+               if((test = mmap((void*) thr_stack,
+                           thr_stack_sz,
+                           PROT_READ | PROT_WRITE | PROT_EXEC,
+                           MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+                           -1, 0)) == MAP_FAILED) {
+                  fprintf(stderr, "> map failed\n");
+               }
+               else {
+                  fprintf(stderr, "> mapped thread stack!\n");
+               }
+
                // Get address of function
-               func = (void*) ntohl(tc->func_ptr);
-               arg  = (void*) ntohl(tc->arg);
+               func          = (void*) ntohl(tc->func_ptr);
+               arg           = (void*) ntohl(tc->arg);
 
                // Allocate a stack for the thread in the application heap
-               thr_stack     = malloc(4096 * 8);
-               thr_stack_ptr = (void*) ((uint8_t*) thr_stack + 4096 * 8);
+               //thr_stack     = malloc(4096 * 8);
+               //thr_stack_ptr = (void*) ((uint8_t*) thr_stack + 4096 * 8);
 
                // Create the thread
                if((thr_id =
@@ -425,8 +444,7 @@ namespace NLCBSMM {
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               direct_comm(retaddr,
-                     new (packet_memory) ThreadCreateAck(thr_id));
+               direct_comm(retaddr, new (packet_memory) ThreadCreateAck(thr_id));
 
                break;
 

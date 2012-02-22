@@ -209,6 +209,8 @@ extern "C" int pthread_create (pthread_t *thread,
    void*               packet_memory  = NULL;
    void*               work_memory    = NULL;
    void*               raw            = NULL;
+   void*               thr_stack      = NULL;
+   uint32_t            thr_stack_sz   = 0;
    uint32_t            remote_ip      = 0;
    uint32_t            timeout        = 0;
    struct sockaddr_in  remote_addr    = {0};
@@ -252,10 +254,13 @@ extern "C" int pthread_create (pthread_t *thread,
 
    timeout = 5;
 
+   thr_stack_sz = 4096 * 8;
+   thr_stack = malloc(thr_stack_sz);
+
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
          reinterpret_cast<Packet*>(
-            new (packet_memory) ThreadCreate((void*) start_routine, (void*) arg)),
+            new (packet_memory) ThreadCreate((void*) thr_stack, thr_stack_sz, (void*) start_routine, (void*) arg)),
          timeout
          );
 
