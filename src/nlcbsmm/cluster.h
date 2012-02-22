@@ -839,13 +839,10 @@ namespace NLCBSMM {
 
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
-
+                  fprintf(stderr, "> Active sync (%p) to %s\n", page_data, inet_ntoa((struct in_addr&) retaddr));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
                   syncp = new (packet_memory) SyncPage(page_addr, page_data);
-
                   direct_comm(retaddr, syncp);
-
                }
             }
 
@@ -857,7 +854,7 @@ namespace NLCBSMM {
             p = blocking_comm(retaddr.sin_addr.s_addr, gp, timeout);
 
             if (p->get_flag() != SYNC_DONE_ACK_F) {
-               fprintf(stderr, "> Weird (and bad).\n");
+               fprintf(stderr, "> Weird (and bad): %x.\n", p->get_flag());
             }
 
             fprintf(stderr, "> active_pt_sync done\n");
