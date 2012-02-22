@@ -13,8 +13,10 @@
 #define UNICAST_JOIN_ACCEPT_ACK_F 0x1B
 
 #define SYNC_PAGE_F               0x2A
-#define SYNC_DONE_F               0x2B
-#define SYNC_RESERVE_F            0x2C
+#define SYNC_PAGE_ACK_F           0x2B
+#define SYNC_DONE_F               0x2C
+#define SYNC_DONE_ACK_F           0x2D
+#define SYNC_RESERVE_F            0x2E
 
 #define THREAD_CREATE_F           0x3A
 #define THREAD_CREATE_ACK_F       0x3B

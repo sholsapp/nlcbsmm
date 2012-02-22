@@ -47,6 +47,29 @@ namespace NLCBSMM {
          }
 
 
+         static void zero_pt() {
+            /**
+             *
+             */
+            uint32_t region_sz = 0;
+            void*    page_ptr  = NULL;
+
+            // How big is the region we're sync'ing?
+            region_sz = PAGE_TABLE_MACH_LIST_SZ
+               + PAGE_TABLE_OBJ_SZ
+               + PAGE_TABLE_SZ
+               + PAGE_TABLE_ALLOC_HEAP_SZ
+               + PAGE_TABLE_HEAP_SZ;
+
+            // Where does the region start?
+            page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
+
+            // Zero out local page table
+            memset(page_ptr, 0, region_sz);
+            return;
+         }
+
+
          void start_comms() {
             /**
              * Spawns the speaker and listener threads.
@@ -299,16 +322,6 @@ namespace NLCBSMM {
                // record the current pt_owner
                pt_owner = ntohl(uja->pt_owner);
 
-               // How big is the region we're sync'ing?
-               region_sz = PAGE_TABLE_MACH_LIST_SZ
-                  + PAGE_TABLE_OBJ_SZ
-                  + PAGE_TABLE_SZ
-                  + PAGE_TABLE_ALLOC_HEAP_SZ
-                  + PAGE_TABLE_HEAP_SZ;
-
-               // Where does the region start?
-               page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
-
                // TODO: get our current entry in the page table, and set all pages
                // allocated to PROT_NONE
 
@@ -316,7 +329,7 @@ namespace NLCBSMM {
                mutex_lock(&pt_lock);
 
                // Zero out local page table
-               memset(page_ptr, 0, region_sz);
+               zero_pt();
 
                // Respond to the other server's listener
                retaddr.sin_port = htons(UNICAST_PORT);
@@ -349,25 +362,32 @@ namespace NLCBSMM {
 
             case SYNC_PAGE_F:
                syncp = reinterpret_cast<SyncPage*>(buffer);
-
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
                // Sync the page (assume page table is already locked)
-               memcpy((void*) ntohl(syncp->page_offset), syncp->get_payload_ptr(), PAGE_SZ);
-
+               memcpy((void*) ntohl(syncp->page_offset), 
+                     syncp->get_payload_ptr(),
+                     PAGE_SZ);
                break;
 
             case SYNC_DONE_F:
                fprintf(stderr, "> sync done\n");
 
-               print_page_table();
-
                // TODO: error checking
                node_list->find(local_addr.s_addr)->second->status = MACHINE_IDLE;
+
                // Map any new pages and set permissions
+
                // TODO: fix this call to use new data types
-
-
                //reserve_pages();
+
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                     new (work_memory) WorkTupleType(retaddr,
+                        new (packet_memory) GenericPacket(SYNC_DONE_ACK_F))
+                     );
+               cond_signal(&uni_speaker_cond);
 
                // Page table can now be accessed/modified by other worker threads
                mutex_unlock(&pt_lock);
@@ -418,13 +438,16 @@ namespace NLCBSMM {
                // IF we are the pt_owner
                if(pt_owner == local_addr.s_addr) {
 
+                  // Sync page table region
+                  active_pt_sync(retaddr);
+
                   // OK to give ownership of the pt away
                   pt_owner =  retaddr.sin_addr.s_addr;
 
                   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-                  fprintf(std:err, " > Release ownership of the page table\n");
+                  fprintf(stderr, " > Release ownership of the page table\n");
                   // Inform the sender that it now has ownership of the pt
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                         // A new work tuple
@@ -447,9 +470,9 @@ namespace NLCBSMM {
                break;
 
             case RELEASE_WRITE_LOCK_F:
-               // The lock is always released to a client/server connection (never to the
-               // global listeners).  See cluster.h for an example.
-               fprintf(stderr, "ERROR> global listener heard a RELEASE_WRITE_LOCK_F\n");
+            case SYNC_DONE_ACK_F:
+               // These types of packets are handled directly
+               fprintf(stderr, "ERROR> ignored packet type(%x)\n", p->get_flag());
                break;
 
             default:
@@ -783,11 +806,62 @@ namespace NLCBSMM {
             /**
              *
              */
-            // TODO: lock pt_lock
-            // TODO: check pt_owner_lock?
-            // TODO: for non-zero pages in page table region, send SyncPage
-            return;
+            Packet*                p              = NULL;
+            GenericPacket*         gp             = NULL;
+            SyncPage*              syncp          = NULL;
+            WorkTupleType*         work           = NULL;
 
+            uint8_t*               page_ptr       = NULL;
+            void*                  packet_memory  = NULL;
+            void*                  work_memory    = NULL;
+            void*                  page_data      = NULL;
+            uint32_t               region_sz      = 0;
+            uint32_t               page_addr      = 0;
+            uint32_t               timeout        = 0;
+            uint32_t               i              = 0;
+
+            // Respond to the other server's listener
+            retaddr.sin_port = htons(UNICAST_PORT);
+
+            region_sz = PAGE_TABLE_MACH_LIST_SZ
+               + PAGE_TABLE_OBJ_SZ
+               + PAGE_TABLE_SZ
+               + PAGE_TABLE_ALLOC_HEAP_SZ
+               + PAGE_TABLE_HEAP_SZ;
+
+            // Where does the region start?
+            page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
+
+            for (i = 0; i < region_sz; i += PAGE_SZ) {
+
+               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+               page_data = reinterpret_cast<void*>(page_ptr + i);
+
+               // If this page has non-zero contents
+               if (!isPageZeros(page_data)) {
+
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+                  syncp = new (packet_memory) SyncPage(page_addr, page_data);
+
+                  direct_comm(retaddr, syncp);
+
+               }
+            }
+
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            timeout       = 5;
+
+            gp = new (packet_memory) GenericPacket(SYNC_DONE_F);
+            // Wait for a SYNC_DONE_ACK_F response
+            p = blocking_comm(retaddr.sin_addr.s_addr, gp, timeout);
+
+            if (p->get_flag() != SYNC_DONE_ACK_F) {
+               fprintf(stderr, "> Weird (and bad).\n");
+            }
+
+            fprintf(stderr, "> active_pt_sync done\n");
+            return;
          }
 
 
@@ -796,6 +870,7 @@ namespace NLCBSMM {
              *
              */
             Packet*                p              = NULL;
+            GenericPacket*         gp             = NULL;
             SyncPage*              syncp          = NULL;
             WorkTupleType*         work           = NULL;
 
@@ -991,7 +1066,7 @@ namespace NLCBSMM {
          }
 
 
-         static void acquire_allocation_lock() {
+         static void acquire_pt_lock() {
             /**
              *
              */
@@ -1014,6 +1089,11 @@ namespace NLCBSMM {
             if (pt_owner != -1
                   // And we do not own write lock on page table
                   && local_addr.s_addr != pt_owner) {
+
+               // Lock the page table
+               mutex_lock(&pt_lock);
+               // Owner will sync before releasing lock, so erase local pt
+               zero_pt();
 
                fprintf(stderr, "> Asking %s for lock.\n",
                      inet_ntoa((struct in_addr&) pt_owner));

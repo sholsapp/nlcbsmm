@@ -32,21 +32,7 @@ namespace HL {
             /**
              *
              */
-            void*    ptr              = NULL;
-            uint8_t* send_buffer      = NULL;
-            uint8_t* rec_buffer       = NULL;
-            uint32_t sk               =  0;
-            uint32_t nbytes           =  0;
-            uint32_t addrlen          =  0;
-            uint32_t selflen          =  0;
-            uint32_t timeout          =  0;
-            struct   sockaddr_in addr = {0};
-            struct   sockaddr_in self = {0};
-
-            Packet*            p      = NULL;
-            Packet*            rec    = NULL;
-            AcquireWriteLock*  acq    = NULL;
-            ReleaseWriteLock*  rel    = NULL;
+            void* ptr = NULL;
 
             if (sz == 0) {
                return NULL;
@@ -55,7 +41,7 @@ namespace HL {
             mutex_lock(&pt_owner_lock);
 
             // Acquire page table owner lock (so we can allocate)
-            ClusterCoordinator::acquire_allocation_lock();
+            ClusterCoordinator::acquire_pt_lock();
 
             // Allocate memory
             if ((ptr = mmap ((void*) next_addr,
