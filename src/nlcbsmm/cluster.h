@@ -311,7 +311,7 @@ namespace NLCBSMM {
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<uint8_t*>(p->get_payload_ptr());
 
-            fprintf(stderr, "> received a packet (%x)\n", p->get_flag());
+            //fprintf(stderr, "> received a packet (%x)\n", p->get_flag());
 
             switch (p->get_flag()) {
 
@@ -363,6 +363,8 @@ namespace NLCBSMM {
                break;
 
             case SYNC_START_F:
+               fprintf(stderr, "> received a sync start\n");
+
                mutex_lock(&pt_lock);
                zero_pt();
 
