@@ -1030,7 +1030,7 @@ namespace NLCBSMM {
             uint32_t selflen          =  0;
             uint32_t ret              =  0;
 
-            addrlen = sizeof(to);
+            addrlen = sizeof(struct sockaddr);
 
             // Send packet
             if (sendto(sk,
