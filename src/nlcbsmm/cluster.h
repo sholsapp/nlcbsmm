@@ -885,8 +885,9 @@ namespace NLCBSMM {
                }
             }
 
+            // TODO: fix me
             p = blocking_comm(retaddr.sin_addr.s_addr, 
-                  new (packet_memory) GenericPacket(SYNC_DONE_ACK_F),
+                  new (packet_memory) GenericPacket(SYNC_DONE_F),
                   10);
 
             return;
