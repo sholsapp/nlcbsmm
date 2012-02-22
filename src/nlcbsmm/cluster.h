@@ -374,10 +374,10 @@ namespace NLCBSMM {
                      inet_ntoa(retaddr.sin_addr),
                      page_data);
 
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               //packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               direct_comm(retaddr,
-                     new (packet_memory) ReleasePage((uint32_t) page_data));
+               //direct_comm(retaddr,
+               //      new (packet_memory) ReleasePage((uint32_t) page_data));
 
                break;
 
