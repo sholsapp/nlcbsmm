@@ -979,7 +979,20 @@ namespace NLCBSMM {
             Packet*  p                = NULL;
 
             // Setup client/server to block until lock is acquired
-            sk = new_listener();
+            //sk = new_listener();
+            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+               perror("cluster.h, 1, socket");
+               exit(EXIT_FAILURE);
+            }
+
+            self.sin_family      = AF_INET;
+            self.sin_port        = 0; // Any
+            selflen              = sizeof(self);
+
+            if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
+               perror("cluster.h, bind");
+               exit(EXIT_FAILURE);
+            }
 
             //fprintf(stderr, "> Direct communication to %s:%d\n", inet_ntoa(retaddr.sin_addr), retaddr.sin_port);
 
