@@ -416,8 +416,6 @@ namespace NLCBSMM {
                thr_stack_sz  = ntohl(tc->stack_sz);
                thr_stack_ptr = (void*) ((uint8_t*) thr_stack + thr_stack_sz);
 
-               fprintf(stderr, "> thr_stack = %p | thr_stack_sz = %d | thr_stack_ptr = %p\n", thr_stack, thr_stack_sz, thr_stack_ptr);
-
                // Map this memory into our address space
                if((test = mmap((void*) thr_stack,
                            thr_stack_sz,
@@ -434,10 +432,6 @@ namespace NLCBSMM {
                func          = (void*) ntohl(tc->func_ptr);
                arg           = (void*) ntohl(tc->arg);
 
-               // Allocate a stack for the thread in the application heap
-               //thr_stack     = malloc(4096 * 8);
-               //thr_stack_ptr = (void*) ((uint8_t*) thr_stack + 4096 * 8);
-
                // Create the thread
                if((thr_id =
                         clone((int (*)(void*)) func,
@@ -452,7 +446,8 @@ namespace NLCBSMM {
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               direct_comm(retaddr, new (packet_memory) ThreadCreateAck(thr_id));
+               direct_comm(retaddr, 
+                     new (packet_memory) ThreadCreateAck(thr_id));
 
                break;
 
@@ -836,10 +831,9 @@ namespace NLCBSMM {
 
          static void active_pt_sync(struct sockaddr_in retaddr) {
             /**
-             *
+             * TODO: implement this
              */
             Packet*                p              = NULL;
-            Packet*                rec            = NULL;
             GenericPacket*         gp             = NULL;
             SyncPage*              syncp          = NULL;
             WorkTupleType*         work           = NULL;
@@ -850,11 +844,7 @@ namespace NLCBSMM {
             void*                  page_data      = NULL;
             uint32_t               region_sz      = 0;
             uint32_t               page_addr      = 0;
-            uint32_t               timeout        = 0;
             uint32_t               i              = 0;
-
-            uint32_t               sk             = 0;
-            struct sockaddr_in*    addr           = {0};
 
             // Respond to the other server's listener
             retaddr.sin_port = htons(UNICAST_PORT);
@@ -895,16 +885,10 @@ namespace NLCBSMM {
                }
             }
 
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-            gp            = new (packet_memory) GenericPacket(SYNC_DONE_F);
+            p = blocking_comm(retaddr.sin_addr.s_addr, 
+                  new (packet_memory) GenericPacket(SYNC_DONE_ACK_F),
+                  5);
 
-            // Wait for a SYNC_DONE_ACK_F response
-            rec = blocking_comm(retaddr.sin_addr.s_addr, gp, timeout);
-            if (p->get_flag() == SYNC_DONE_ACK_F) {
-               fprintf(stderr, "> pt actively synced!\n", p->get_flag());
-            }
-
-            fprintf(stderr, "> active_pt_sync done\n");
             return;
          }
 
