@@ -907,7 +907,7 @@ namespace NLCBSMM {
                   //         new (packet_memory) SyncPage(page_addr, page_data))
                   //      );
                   // Signal unicast speaker there is queued work
-                  cond_signal(&uni_speaker_cond);
+                  //cond_signal(&uni_speaker_cond);
 
                   p = blocking_comm(retaddr.sin_addr.s_addr,
                         new (packet_memory) SyncPage(page_addr, page_data),
