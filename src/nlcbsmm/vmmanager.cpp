@@ -140,82 +140,73 @@ namespace NLCBSMM {
          fprintf(stderr,"> SEGFAULT: %p\n", aligned_addr);
          exit(EXIT_FAILURE);
       }
-      else {
-         tuple = (*pt_itr).second;
-         // First element is the Page
-         page  = tuple.first;
-         perm  = page->protection;
-         // Second element is the Machine
-         node  = tuple.second;
 
-         fprintf(stderr, "> Handler: %s has %p\n",
-               inet_ntoa((struct in_addr&) node->ip_address),
-               (void*) page->address);
+      tuple = (*pt_itr).second;
+      page  = tuple.first;
+      perm  = page->protection;
+      node  = tuple.second;
 
-         //Mprotect the region, so we can memcpy the real page
-         //IMPORTANT: at this point this page should already be mmaped into the address space!
-         if(mprotect(p, PAGE_SZ, perm) < 0) {
-            fprintf(stderr, "ERROR> can't mprotect %p to %d\n", aligned_addr, perm);
-         }
+      fprintf(stderr, "> Handler: %s has %p\n",
+            inet_ntoa((struct in_addr&) node->ip_address),
+            (void*) page->address);
 
-         remote_ip                   = node->ip_address;
-         remote_addr.sin_family      = AF_INET;
-         remote_addr.sin_addr.s_addr = remote_ip;
-         remote_addr.sin_port        = htons(UNICAST_PORT);
+      remote_ip                   = node->ip_address;
+      remote_addr.sin_family      = AF_INET;
+      remote_addr.sin_addr.s_addr = remote_ip;
+      remote_addr.sin_port        = htons(UNICAST_PORT);
 
 
-         work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-         packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+      packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-         timeout = 5;
+      timeout = 5;
 
-         p = ClusterCoordinator::blocking_comm(
-               remote_ip,
-               reinterpret_cast<Packet*>(
-                  new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
-               timeout
-               );
+      p = ClusterCoordinator::blocking_comm(
+            remote_ip,
+            reinterpret_cast<Packet*>(
+               new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
+            timeout
+            );
 
-         if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
-            rp = reinterpret_cast<ReleasePage*>(p);
-            fprintf(stderr, "> release packet rec'd\n");
+      if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
+         rp = reinterpret_cast<ReleasePage*>(p);
+         fprintf(stderr, "> release packet rec'd\n");
 
-            rel_page = (void*) ntohl(rp->page_addr);
+         rel_page = (void*) ntohl(rp->page_addr);
 
-            // Try to map this memory into our address space
-            /*
-               if((test = mmap(rel_page,
-               PAGE_SZ,
-               PROT_READ | PROT_WRITE,
-               MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-               -1, 0)) == MAP_FAILED) {
+         // Try to map this memory into our address space
+         /*
+            if((test = mmap(rel_page,
+            PAGE_SZ,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+            -1, 0)) == MAP_FAILED) {
 
-               fprintf(stderr, "> %p already mapped\n", rel_page);
-
-               mprotect(rel_page,
-               PAGE_SZ,
-               PROT_READ | PROT_WRITE);
-               }
-               else {
-               fprintf(stderr, "> Map success, reserved %p (%d)\n",
-               rel_page,
-               PAGE_SZ);
-               }
-             */
+            fprintf(stderr, "> %p already mapped\n", rel_page);
 
             mprotect(rel_page,
-                  PAGE_SZ,
-                  PROT_READ | PROT_WRITE);
+            PAGE_SZ,
+            PROT_READ | PROT_WRITE);
+            }
+            else {
+            fprintf(stderr, "> Map success, reserved %p (%d)\n",
+            rel_page,
+            PAGE_SZ);
+            }
+          */
 
-            // Copy page data
-            memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
+         mprotect(rel_page,
+               PAGE_SZ,
+               PROT_READ | PROT_WRITE);
 
-         }
-         // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
+         // Copy page data
+         memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
 
-         // Free packet
-         clone_heap.free(p);
       }
+      // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
+
+      // Free packet
+      clone_heap.free(p);
 
       // TODO: increment the version of the page?
 

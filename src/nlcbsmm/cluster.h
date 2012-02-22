@@ -191,7 +191,7 @@ namespace NLCBSMM {
 
             while(1) {
 
-               fprintf(stderr, "> unicast waiting for work\n", safe_size(&uni_speaker_work_deque, &uni_speaker_lock));
+               //fprintf(stderr, "> unicast waiting for work\n");
 
                // If there is no work in the queue
                if (safe_size(&uni_speaker_work_deque, &uni_speaker_lock) == 0) {
@@ -813,45 +813,47 @@ namespace NLCBSMM {
                break;
 
             case SYNC_RESERVE_F:
-               sr = reinterpret_cast<SyncReserve*>(buffer);
+               /*
+                  sr = reinterpret_cast<SyncReserve*>(buffer);
 
-               ip             = ntohl(sr->ip);
-               start_addr     = ntohl(sr->start_addr);
-               memory_sz      = ntohl(sr->sz);
+                  ip             = ntohl(sr->ip);
+                  start_addr     = ntohl(sr->start_addr);
+                  memory_sz      = ntohl(sr->sz);
 
                // Convert to in_addr struct
                addr.s_addr = ip;
 
                // If message is from someone in page table
                if (node_list->count(ip) > 0
-                     // And we didn't send this packet
-                     && ip != local_addr.s_addr) {
+               // And we didn't send this packet
+               && ip != local_addr.s_addr) {
 
-                  fprintf(stderr, "> %s reserving %p(%d)\n",
-                        inet_ntoa(addr),
-                        (void*) start_addr,
-                        memory_sz);
+               fprintf(stderr, "> %s reserving %p(%d)\n",
+               inet_ntoa(addr),
+               (void*) start_addr,
+               memory_sz);
 
-                  // Map this memory into our address space
-                  if((test = mmap((void*) start_addr,
-                              memory_sz,
-                              PROT_NONE,
-                              MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-                              -1, 0)) == MAP_FAILED) {
-                     fprintf(stderr, "> map failed, setting protections\n");
-                     mprotect((void*) start_addr, memory_sz, PROT_NONE);
-                  }
-                  else {
-                     fprintf(stderr, "> Reserved %p (%d) for %s\n",
-                           (void*) start_addr,
-                           memory_sz,
-                           inet_ntoa(addr));
-                  }
-                  // TODO: insert this mapping into the page table (i think)
+               // Map this memory into our address space
+               if((test = mmap((void*) start_addr,
+               memory_sz,
+               PROT_NONE,
+               MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+               -1, 0)) == MAP_FAILED) {
+               fprintf(stderr, "> map failed, setting protections\n");
+               mprotect((void*) start_addr, memory_sz, PROT_NONE);
                }
                else {
-                  fprintf(stderr, "> Reserve request from non-cluster member %s\n", inet_ntoa(addr));
+               fprintf(stderr, "> Reserved %p (%d) for %s\n",
+               (void*) start_addr,
+               memory_sz,
+               inet_ntoa(addr));
                }
+               // TODO: insert this mapping into the page table (i think)
+               }
+               else {
+               fprintf(stderr, "> Reserve request from non-cluster member %s\n", inet_ntoa(addr));
+               }
+                */
                break;
 
             case MULTICAST_HEARTBEAT_F:
