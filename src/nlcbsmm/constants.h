@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-#define MAX_JOIN_ATTEMPTS 5
+#define MAX_JOIN_ATTEMPTS 3
 
 #define CLONE_ATTRS (CLONE_VM | CLONE_FILES | CLONE_SIGHAND | CLONE_PTRACE)
 #define CLONE_MMAP_PROT_FLAGS (PROT_READ | PROT_WRITE)

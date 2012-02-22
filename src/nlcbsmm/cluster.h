@@ -839,7 +839,7 @@ namespace NLCBSMM {
 
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
-                  fprintf(stderr, "> Active sync (%p) to %s\n", page_data, inet_ntoa((struct in_addr&) retaddr));
+                  fprintf(stderr, "> Active sync (%p) to %s\n", page_data, inet_ntoa((struct in_addr&) retaddr.sin_addr));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   syncp = new (packet_memory) SyncPage(page_addr, page_data);
                   direct_comm(retaddr, syncp);
