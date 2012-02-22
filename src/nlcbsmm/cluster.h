@@ -979,7 +979,6 @@ namespace NLCBSMM {
             Packet*  p                = NULL;
 
             // Setup client/server to block until lock is acquired
-            //sk = new_listener();
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("cluster.h, 1, socket");
                exit(EXIT_FAILURE);
@@ -1118,9 +1117,9 @@ namespace NLCBSMM {
                   && local_addr.s_addr != pt_owner) {
 
                // Lock the page table
-               mutex_lock(&pt_lock);
+               //mutex_lock(&pt_lock);
                // Owner will sync before releasing lock, so erase local pt
-               zero_pt();
+               //zero_pt();
 
                fprintf(stderr, "> Asking %s for lock.\n",
                      inet_ntoa((struct in_addr&) pt_owner));
