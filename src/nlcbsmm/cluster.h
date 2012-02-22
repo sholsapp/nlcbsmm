@@ -871,14 +871,11 @@ namespace NLCBSMM {
             // Where does the region start?
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
-            // Lock page while we're sending it
-            //mutex_lock(&pt_lock);
-
             timeout = 5;
             // Send a SYNC_DONE_F and wait for ack
-            p = blocking_comm(retaddr.sin_addr.s_addr,
-                  new (packet_memory) GenericPacket(SYNC_START_F),
-                  timeout);
+            //p = blocking_comm(retaddr.sin_addr.s_addr,
+            //      new (packet_memory) GenericPacket(SYNC_START_F),
+            //      timeout);
 
             // TODO: verify response is SYNC_START_ACK_F
 
