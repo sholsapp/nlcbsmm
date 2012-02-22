@@ -563,7 +563,7 @@ namespace NLCBSMM {
             for (cnt = 0; cnt < MAX_JOIN_ATTEMPTS && _uuid == -1; cnt++) {
                // Send join request
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-                  perror("cluster.h, 2, sendto");
+                  perror("cluster.h, join, sendto");
                   exit(EXIT_FAILURE);
                }
                sleep(1);
@@ -613,7 +613,7 @@ namespace NLCBSMM {
 
                // Send whatever we just built
                if (sendto(sk, p, psz, 0, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-                  perror("cluster.h, 2, sendto");
+                  perror("cluster.h, speaker, sendto");
                   exit(EXIT_FAILURE);
                }
 
@@ -1137,7 +1137,7 @@ namespace NLCBSMM {
                      0,
                      (struct sockaddr *) &addr,
                      addrlen) < 0) {
-               perror("cluster.h, 2, sendto");
+               perror("cluster.h, blocking, sendto");
                exit(EXIT_FAILURE);
             }
 
