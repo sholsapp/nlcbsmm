@@ -842,7 +842,7 @@ namespace NLCBSMM {
                   fprintf(stderr, "> Active sync (%p) to %s:%d\n", 
                         page_data, 
                         inet_ntoa((struct in_addr&) retaddr.sin_addr),
-                        inet_ntohs(retaddr.sin_port));
+                        ntohs(retaddr.sin_port));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   syncp = new (packet_memory) SyncPage(page_addr, page_data);
                   direct_comm(retaddr, syncp);
