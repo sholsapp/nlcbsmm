@@ -143,7 +143,9 @@ namespace NLCBSMM {
          // Second element is the Machine
          node  = tuple.second;
 
-         fprintf(stderr, "> Handler: %s has %p\n", inet_ntoa(remote_addr.sin_addr), (void*) page->address);
+         fprintf(stderr, "> Handler: %s has %p\n", 
+               inet_ntoa((struct in_addr&) node->ip_address), 
+               (void*) page->address);
 
          //Mprotect the region, so we can memcpy the real page
          //IMPORTANT: at this point this page should already be mmaped into the address space!
