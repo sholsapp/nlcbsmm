@@ -858,7 +858,7 @@ namespace NLCBSMM {
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
             // Lock page while we're sending it
-            mutex_lock(&pt_lock);
+            //mutex_lock(&pt_lock);
 
             // Queue work to send page table
             for (i = 0; i < region_sz; i += PAGE_SZ) {
@@ -1292,6 +1292,7 @@ namespace NLCBSMM {
             }
 
             // Sync page table with available worker
+            mutex_lock(&pt_lock);
             active_pt_sync(remote_addr);
 
             // Notify available worker to start thread
