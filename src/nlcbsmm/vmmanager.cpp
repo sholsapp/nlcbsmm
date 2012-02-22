@@ -105,7 +105,7 @@ namespace NLCBSMM {
       void*                 rel_page       = NULL;
       uint8_t*              faulting_addr  = NULL;
       uint8_t*              aligned_addr   = NULL;
-      
+
       uint32_t              remote_ip      = 0;
       uint32_t              timeout        = 0;
       uint32_t              perm           = 0;
@@ -183,23 +183,29 @@ namespace NLCBSMM {
             rel_page = (void*) ntohl(rp->page_addr);
 
             // Try to map this memory into our address space
-            if((test = mmap(rel_page,
-                        PAGE_SZ,
-                        PROT_READ | PROT_WRITE, 
-                        MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-                        -1, 0)) == MAP_FAILED) {
+            /*
+               if((test = mmap(rel_page,
+               PAGE_SZ,
+               PROT_READ | PROT_WRITE,
+               MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
+               -1, 0)) == MAP_FAILED) {
 
                fprintf(stderr, "> %p already mapped\n", rel_page);
 
-               mprotect(rel_page, 
-                     PAGE_SZ, 
-                     PROT_READ | PROT_WRITE);
-            }
-            else {
+               mprotect(rel_page,
+               PAGE_SZ,
+               PROT_READ | PROT_WRITE);
+               }
+               else {
                fprintf(stderr, "> Map success, reserved %p (%d)\n",
-                     rel_page,
-                     PAGE_SZ);
-            }
+               rel_page,
+               PAGE_SZ);
+               }
+             */
+
+            mprotect(rel_page,
+                  PAGE_SZ,
+                  PROT_READ | PROT_WRITE);
 
             // Copy page data
             memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
