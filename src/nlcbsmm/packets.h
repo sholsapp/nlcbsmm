@@ -251,10 +251,13 @@ class AcquireWriteLock : public Packet {
       uint32_t payload_sz;
       uint8_t  flag;
 
-      AcquireWriteLock() {
+      uint16_t ret_port;
+
+      AcquireWriteLock(uint16_t _ret_port) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = ACQUIRE_WRITE_LOCK_F;
+         ret_port   = htons(_ret_port);
       }
 
 }__attribute__((packed));

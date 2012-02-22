@@ -285,6 +285,7 @@ namespace NLCBSMM {
             SyncPage*              syncp          = NULL;
             ThreadCreate*          tc             = NULL;
             ThreadCreateAck*       tca            = NULL;
+            AcquireWriteLock*      awl            = NULL;
             WorkTupleType*         work           = NULL;
 
             uint8_t*               payload_buf    = NULL;
@@ -430,13 +431,15 @@ namespace NLCBSMM {
                break;
 
             case ACQUIRE_WRITE_LOCK_F:
-               // TODO: when is it "ideal" to release lock?  How do we know we won't need it soon?
-               // Lock the pt_owner_lock, this ensures that we are not currently inserting into the pt
-               // when someone else wants to aquire the lock
                fprintf(stderr, " > Recieved a request to acquire ownership of the pt\n");
+               awl = reinterpret_cast<AcquireWriteLock*>(buffer);
                mutex_lock(&pt_owner_lock);
                // IF we are the pt_owner
                if(pt_owner == local_addr.s_addr) {
+
+                  fprintf(stderr, "> Active sync to %s:%d\n", 
+                        inet_ntoa((struct in_addr&) retaddr.sin_addr), 
+                        ntohs(awl->ret_port));
 
                   // Sync page table region
                   //active_pt_sync(retaddr);
@@ -1016,28 +1019,12 @@ namespace NLCBSMM {
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
 
-            // Setup client/server to block until lock is acquired
-            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-               perror("cluster.h, socket");
-               exit(EXIT_FAILURE);
-            }
-
-            self.sin_family      = AF_INET;
-            self.sin_port        = 0; // Any
-            selflen              = sizeof(self);
+            sk = new_comm();
 
             addr.sin_family      = AF_INET;
             addr.sin_addr.s_addr = rec_ip;
             addr.sin_port        = htons(UNICAST_PORT);
             addrlen              = sizeof(addr);
-
-            if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
-               perror("cluster.h, bind");
-               exit(EXIT_FAILURE);
-            }
-
-            //getsockname(sk, (struct sockaddr*) &self, &selflen);
-            //fprintf(stderr, "> Established blocking communication on %d\n", self.sin_port);
 
             // Send packet
             if (sendto(sk,
@@ -1052,10 +1039,8 @@ namespace NLCBSMM {
 
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            // TODO: select for lock, handle errors or timeout
-
             if ((ret = select_call(sk, timeout, 0)) > 0) {
-               // Wait (block) for response
+               // Wait for response
                if ((nbytes = recvfrom(sk,
                            rec_buffer,
                            MAX_PACKET_SZ,
@@ -1104,6 +1089,11 @@ namespace NLCBSMM {
                   // And we do not own write lock on page table
                   && local_addr.s_addr != pt_owner) {
 
+               // Start a new listener
+               sk = new_comm();
+
+               getsockname(sk, (struct sockaddr*) &self, &selflen);
+
                // Lock the page table
                //mutex_lock(&pt_lock);
                // Owner will sync before releasing lock, so erase local pt
@@ -1114,7 +1104,7 @@ namespace NLCBSMM {
 
                // Build acquire lock packet
                send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-               acq         = new (send_buffer) AcquireWriteLock();
+               acq         = new (send_buffer) AcquireWriteLock(self.sin_port);
                timeout     = 5; // seconds
 
                // Send packet, wait for response
