@@ -360,6 +360,20 @@ namespace NLCBSMM {
 
                // TODO: error checking
                node_list->find(retaddr.sin_addr.s_addr)->second->status = MACHINE_IDLE;
+               break;
+
+            case SYNC_START_F:
+               mutex_lock(&pt_lock);
+               zero_pt();
+
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                     new (work_memory) WorkTupleType(retaddr,
+                        new (packet_memory) GenericPacket(SYNC_START_ACK_F))
+                     );
+               cond_signal(&uni_speaker_cond);
 
                break;
 
@@ -858,7 +872,14 @@ namespace NLCBSMM {
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
             // Lock page while we're sending it
-            //mutex_lock(&pt_lock);
+            mutex_lock(&pt_lock);
+
+            // Send a SYNC_DONE_F and wait for ack
+            p = blocking_comm(retaddr.sin_addr.s_addr,
+                  new (packet_memory) GenericPacket(SYNC_START_F),
+                  timeout);
+
+            // TODO: verify response is SYNC_START_ACK_F
 
             // Queue work to send page table
             for (i = 0; i < region_sz; i += PAGE_SZ) {
@@ -891,6 +912,8 @@ namespace NLCBSMM {
                   timeout);
 
             // TODO: verify response is SYNC_DONE_ACK_F
+
+            mutex_unlock(&pt_lock);
 
             return;
          }

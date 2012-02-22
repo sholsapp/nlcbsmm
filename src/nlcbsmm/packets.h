@@ -12,6 +12,8 @@
 #define UNICAST_JOIN_ACCEPT_F     0x1A
 #define UNICAST_JOIN_ACCEPT_ACK_F 0x1B
 
+#define SYNC_START_F              0x20
+#define SYNC_START_ACK_F          0x21
 #define SYNC_PAGE_F               0x2A
 #define SYNC_PAGE_ACK_F           0x2B
 #define SYNC_DONE_F               0x2C
