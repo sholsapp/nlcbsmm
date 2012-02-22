@@ -331,7 +331,7 @@ class ReleasePage : public Packet {
          flag       = SYNC_RELEASE_PAGE_F;
          page_addr  = htonl(_page_addr);
          // Copy payload into packet
-         memcpy(this->get_payload_ptr(), (void*) page_addr, PAGE_SZ);
+         memcpy(this->get_payload_ptr(), (void*) _page_addr, PAGE_SZ);
       }
 
 }__attribute__((packed));
