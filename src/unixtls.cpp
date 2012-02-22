@@ -254,11 +254,13 @@ extern "C" int pthread_create (pthread_t *thread,
 
    timeout = 5;
 
-   thr_stack_sz = 4096 * 8;
+   ClusterCoordinator::active_pt_sync(remote_addr);
 
    // Map this memory into our address space
+   // TODO: make this position agnostic (could fail when mapped into other address space)
+   // TODO: insert this memory into the page table
    if((thr_stack = mmap(NULL,
-               thr_stack_sz,
+               PTHREAD_STACK_SZ,
                PROT_NONE,
                MAP_SHARED | MAP_ANONYMOUS,
                -1, 0)) == MAP_FAILED) {
@@ -268,7 +270,7 @@ extern "C" int pthread_create (pthread_t *thread,
    p = ClusterCoordinator::blocking_comm(
          remote_ip,
          reinterpret_cast<Packet*>(
-            new (packet_memory) ThreadCreate((void*) thr_stack, thr_stack_sz, (void*) start_routine, (void*) arg)),
+            new (packet_memory) ThreadCreate((void*) thr_stack, (void*) start_routine, (void*) arg)),
          timeout
          );
 
@@ -276,7 +278,6 @@ extern "C" int pthread_create (pthread_t *thread,
 
    node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
-   // TODO: adjust if error condition is returned
    // This was returned to us, we're done with it
    clone_heap.free(p);
 

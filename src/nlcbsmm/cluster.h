@@ -865,7 +865,7 @@ namespace NLCBSMM {
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
                page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
-               page_data = reinterpret_cast<void*>(page_ptr + i);
+               page_data = reinterpret_cast<void*>   (page_ptr + i);
 
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
