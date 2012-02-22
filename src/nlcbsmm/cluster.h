@@ -377,13 +377,13 @@ namespace NLCBSMM {
                      inet_ntoa(retaddr.sin_addr),
                      (void*) page_addr);
 
-               // TODO: set page table ownership/permissions properly
-               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-               mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
-
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
                direct_comm(retaddr, rp);
+
+               // TODO: set page table ownership/permissions properly
+               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+               mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
 
                break;
 
