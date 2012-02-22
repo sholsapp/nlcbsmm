@@ -82,6 +82,9 @@ namespace NLCBSMM {
    typedef
       void (*pthread_exit_function) (void *arg);
 
+   typedef int (*pthread_join_function) (pthread_t thread,
+         void** value_ptr);
+
 }
 
 namespace NLCBSMM {

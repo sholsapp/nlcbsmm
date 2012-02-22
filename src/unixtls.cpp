@@ -235,4 +235,28 @@ extern "C" int pthread_create (pthread_t *thread,
    return -1;
 }
 
+
+extern "C" int pthread_join (pthread_t thread, 
+      void** value_ptr) {
+   /**
+    *
+    */
+
+#if defined(linux) || defined(__APPLE__)
+   char fname[] = "pthread_join";
+#else
+   char fname[] = "_pthread_join";
+#endif
+
+   // A pointer to the library version of pthread_create.
+   static pthread_join_function real_pthread_join =
+      reinterpret_cast<pthread_join_function>
+      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+
+   fprintf(stderr, "> pthread_join called\n");
+
+   return -1;
+
+}
+
 #endif
