@@ -439,7 +439,7 @@ namespace NLCBSMM {
                if(pt_owner == local_addr.s_addr) {
 
                   // Sync page table region
-                  active_pt_sync(retaddr);
+                  //active_pt_sync(retaddr);
 
                   // OK to give ownership of the pt away
                   pt_owner =  retaddr.sin_addr.s_addr;
@@ -938,6 +938,32 @@ namespace NLCBSMM {
          }
 
 
+         static uint32_t new_listener() {
+            /**
+             *
+             */
+            uint32_t sk               =  0;
+            uint32_t selflen          =  0;
+            struct   sockaddr_in self = {0};
+
+            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+               perror("cluster.h, 1, socket");
+               exit(EXIT_FAILURE);
+            }
+
+            self.sin_family      = AF_INET;
+            self.sin_port        = 0; // Any
+            selflen              = sizeof(self);
+
+            if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
+               perror("cluster.h, bind");
+               exit(EXIT_FAILURE);
+            }
+
+            return sk;
+         }
+
+
          static void direct_comm(struct sockaddr_in retaddr, Packet* send) {
             /**
              *
@@ -953,19 +979,7 @@ namespace NLCBSMM {
             Packet*  p                = NULL;
 
             // Setup client/server to block until lock is acquired
-            if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-               perror("cluster.h, 1, socket");
-               exit(EXIT_FAILURE);
-            }
-
-            self.sin_family      = AF_INET;
-            self.sin_port        = 0; // Any
-            selflen              = sizeof(self);
-
-            if (bind(sk, (struct sockaddr *) &self, selflen) < 0) {
-               perror("cluster.h, bind");
-               exit(EXIT_FAILURE);
-            }
+            sk = new_listener();
 
             //fprintf(stderr, "> Direct communication to %s:%d\n", inet_ntoa(retaddr.sin_addr), retaddr.sin_port);
 
