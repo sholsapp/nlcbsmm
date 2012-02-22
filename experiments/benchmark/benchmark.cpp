@@ -18,6 +18,7 @@ void* incer(void *arg) {
    for (i = 0; i < ((subarray *)arg)->n; i++) {
       ((subarray *)arg)->ar[i]++;
    }
+   fprintf(stderr, "<target-app> test data: %d\n", ((subarray *)arg)->ar[0]);
    fprintf(stderr, "<target-app> thread worker done!\n");
 }
 

@@ -191,7 +191,7 @@ namespace NLCBSMM {
 
                fprintf(stderr, "> %p already mapped\n", rel_page);
 
-               mprotect((void*) ntohl(rp->page_addr), 
+               mprotect(rel_page, 
                      PAGE_SZ, 
                      PROT_READ | PROT_WRITE);
             }
@@ -201,7 +201,8 @@ namespace NLCBSMM {
                      PAGE_SZ);
             }
 
-            
+            // Copy page data
+            memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
 
          }
 
