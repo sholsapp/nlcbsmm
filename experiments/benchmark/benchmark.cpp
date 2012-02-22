@@ -69,7 +69,7 @@ int main(void) {
     *
     */
    fprintf(stdout, "<target-app> waiting for pthread...");
-   //(void) pthread_join(th1, NULL);
+   (void) pthread_join(th1, NULL);
    fprintf(stdout, "done.\n");
 
    fprintf(stderr, "<target-app> result (addr = %p): %d.\n", ((int*) ar + (ARR_SZ / 2)), ar[ARR_SZ / 2]);

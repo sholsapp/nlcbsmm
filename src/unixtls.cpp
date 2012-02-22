@@ -248,7 +248,7 @@ extern "C" int pthread_join (pthread_t thread,
    char fname[] = "_pthread_join";
 #endif
 
-   // A pointer to the library version of pthread_create.
+   // A pointer to the library version of pthread_join.
    static pthread_join_function real_pthread_join =
       reinterpret_cast<pthread_join_function>
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
