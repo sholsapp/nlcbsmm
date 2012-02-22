@@ -110,6 +110,8 @@ namespace NLCBSMM {
       Packet*               p              = NULL;
       ThreadCreate*         tc             = NULL;
       ThreadCreateAck*      tca            = NULL;
+      AcquirePage*          ap             = NULL;
+      ReleasePage*          rp             = NULL;
       Machine*              node           = NULL;
       Page*                 page           = NULL;
       PageTableItr          pt_itr;
@@ -143,8 +145,8 @@ namespace NLCBSMM {
          // Second element is the Machine
          node  = tuple.second;
 
-         fprintf(stderr, "> Handler: %s has %p\n", 
-               inet_ntoa((struct in_addr&) node->ip_address), 
+         fprintf(stderr, "> Handler: %s has %p\n",
+               inet_ntoa((struct in_addr&) node->ip_address),
                (void*) page->address);
 
          //Mprotect the region, so we can memcpy the real page
@@ -170,6 +172,12 @@ namespace NLCBSMM {
                   new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
                timeout
                );
+
+         if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
+            rp = reinterpret_cast<ReleasePage*>(p);
+            fprintf(stderr, "> release packet rec'd\n");
+
+         }
 
          fprintf(stderr, "> Signal handler resolved fault via network \n");
          fprintf(stderr, "> LOLZ, just kidding.\n");
