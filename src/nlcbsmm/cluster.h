@@ -366,6 +366,9 @@ namespace NLCBSMM {
                fprintf(stderr, "> received a sync start\n");
 
                mutex_lock(&pt_lock);
+
+               fprintf(stderr, "> acquired pt_lock, zeroing page.\n");
+
                zero_pt();
 
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
@@ -879,9 +882,9 @@ namespace NLCBSMM {
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
-            //p = blocking_comm(retaddr.sin_addr.s_addr,
-            //      new (packet_memory) GenericPacket(SYNC_START_F),
-            //      timeout);
+            p = blocking_comm(retaddr.sin_addr.s_addr,
+                  new (packet_memory) GenericPacket(SYNC_START_F),
+                  timeout);
             // TODO: verify response is SYNC_START_ACK_F
 
             // Queue work to send page table
