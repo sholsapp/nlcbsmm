@@ -151,6 +151,28 @@ namespace NLCBSMM {
    }
 
 
+   Machine* get_worker(uint32_t ip) {
+      /**
+       *
+       */
+      MachineTableItr node_itr;
+      node_itr = node_list->find(ip);
+      if (node_itr != node_list->end()) {
+         return (*node_itr).second;
+      }
+      return NULL;
+   }
+
+
+   void set_new_owner(uint32_t page_addr, uint32_t ip) {
+      /**
+       *
+       */
+      (*page_table)[page_addr].second = get_worker(ip);
+      return;
+   }
+
+
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
       /**
        *

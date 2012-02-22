@@ -307,6 +307,9 @@ namespace NLCBSMM {
             uint32_t               thr_id         = 0;
             uint32_t               thr_stack_sz   = 0;
 
+            Machine*               node           = NULL;
+            Page*                  page           = NULL;
+
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
@@ -368,16 +371,19 @@ namespace NLCBSMM {
             case SYNC_ACQUIRE_PAGE_F:
                ap = reinterpret_cast<AcquirePage*>(buffer);
 
-               page_data = (void*) ntohl(ap->page_addr);
+               page_addr = ntohl(ap->page_addr);
 
                fprintf(stderr, "> %s wants %p\n",
                      inet_ntoa(retaddr.sin_addr),
-                     page_data);
+                     (void*) page_addr);
+
+               // TODO: set page table ownership/permissions properly
+               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+               mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-               direct_comm(retaddr,
-                     new (packet_memory) ReleasePage((uint32_t) page_data));
+               rp            = new (packet_memory) ReleasePage(page_addr);
+               direct_comm(retaddr, rp);
 
                break;
 
@@ -937,6 +943,7 @@ namespace NLCBSMM {
             // TODO: get rid of this
             // This ensures that the pt is actually sync'd.  Need logic in SYNC_START/SYNC_DONE to
             // fix this.
+            // TODO: FUCKKKK FIX THIS
             sleep(1);
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
@@ -1048,7 +1055,7 @@ namespace NLCBSMM {
 
             getsockname(sk, (struct sockaddr*) &self, &selflen);
 
-            fprintf(stderr, ">> new listener on %d\n", self.sin_port);
+            //fprintf(stderr, ">> new listener on %d\n", self.sin_port);
 
             return sk;
          }

@@ -170,37 +170,20 @@ namespace NLCBSMM {
 
       if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
          rp = reinterpret_cast<ReleasePage*>(p);
-         fprintf(stderr, "> release packet rec'd\n");
 
          rel_page = (void*) ntohl(rp->page_addr);
 
-         // Try to map this memory into our address space
-         /*
-            if((test = mmap(rel_page,
-            PAGE_SZ,
-            PROT_READ | PROT_WRITE,
-            MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
-            -1, 0)) == MAP_FAILED) {
-
-            fprintf(stderr, "> %p already mapped\n", rel_page);
-
-            mprotect(rel_page,
-            PAGE_SZ,
-            PROT_READ | PROT_WRITE);
-            }
-            else {
-            fprintf(stderr, "> Map success, reserved %p (%d)\n",
-            rel_page,
-            PAGE_SZ);
-            }
-          */
-
+         // Memory should be mapped, set permissions
          mprotect(rel_page,
                PAGE_SZ,
                PROT_READ | PROT_WRITE);
 
          // Copy page data
          memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
+
+         set_new_owner((uint32_t) rel_page, local_addr.s_addr);
+
+         fprintf(stderr, "> %p resolved\n", rel_page);
 
       }
       // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
