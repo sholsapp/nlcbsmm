@@ -192,11 +192,43 @@ namespace NLCBSMM {
       mutex_lock(m);
       queue->push_back(work);
       mutex_unlock(m);
-      //TODO: tell the associated (unicast|multicast) work deque that there is work
       return;
    }
 
    int safe_size(PacketQueueType* queue, mutex* m) {
+      /**
+       *
+       */
+      int s = 0;
+      mutex_lock(m);
+      s = queue->size();
+      mutex_unlock(m);
+      return s;
+   }
+
+   ThreadWorkType* safe_thread_pop(ThreadQueueType* queue, mutex* m) {
+      /**
+       *
+       */
+      ThreadWorkType* work = NULL;
+      mutex_lock(m);
+      work = queue->front();
+      queue->pop_front();
+      mutex_unlock(m);
+      return work;
+   }
+
+   void safe_thread_push(ThreadQueueType* queue, mutex* m, ThreadWorkType* work) {
+      /**
+       *
+       */
+      mutex_lock(m);
+      queue->push_back(work);
+      mutex_unlock(m);
+      return;
+   }
+
+   int safe_thread_size(ThreadQueueType* queue, mutex* m) {
       /**
        *
        */

@@ -17,6 +17,7 @@
 #include "page.h"
 #include "machine.h"
 #include "packets.h"
+#include "pthread_work.h"
 
 #include "cln_allocator.h"
 #include "pt_allocator.h"
@@ -66,6 +67,13 @@ namespace NLCBSMM {
       std::deque<WorkTupleType*,
       CloneAllocator<WorkTupleType* > > PacketQueueType;
 
+   typedef
+      std::pair<struct sockaddr_in, PthreadWork> ThreadWorkType;
+
+   typedef
+      std::deque<ThreadWorkType*,
+      CloneAllocator<ThreadWorkType* > > ThreadQueueType;
+
 
    //
    // The pthread library function signatures
@@ -103,11 +111,16 @@ namespace NLCBSMM {
    extern PacketQueueType uni_speaker_work_deque;
    extern PacketQueueType multi_speaker_work_deque;
 
+   extern ThreadQueueType thread_deque;
+
    // The locks
    extern cv    uni_speaker_cond;
+   extern cv    thread_cond;
    extern mutex uni_speaker_cond_lock;
    extern mutex uni_speaker_lock;
    extern mutex multi_speaker_lock;
+   extern mutex thread_cond_lock;
+   extern mutex thread_deque_lock;
 
    // This forces threads to wait on each other in case someone is reading/writing the
    // page table.
@@ -136,6 +149,12 @@ namespace NLCBSMM {
    WorkTupleType*     safe_pop(PacketQueueType* queue, mutex* m);
    void               safe_push(PacketQueueType* queue, mutex* m, WorkTupleType* work);
    int                safe_size(PacketQueueType* queue, mutex* m);
+
+   ThreadWorkType*    safe_thread_pop(ThreadQueueType* queue, mutex* m);
+   void               safe_thread_push(ThreadQueueType* queue, mutex* m, ThreadWorkType* work);
+   int                safe_thread_size(ThreadQueueType* queue, mutex* m);
+
+
    PageTableHeapType* get_pt_heap(mutex* m);
    uint32_t           get_available_worker();
    unsigned char*     pageAlign(unsigned char* p);

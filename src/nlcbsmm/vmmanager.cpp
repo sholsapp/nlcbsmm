@@ -41,19 +41,23 @@ namespace NLCBSMM {
    // TODO: replace all instances of local_ip with local_addr (binary form ip)
    struct in_addr local_addr = {0};
 
+
+   ThreadQueueType  thread_deque;
+   cv               thread_cond;
+   mutex            thread_cond_lock;
+   mutex            thread_deque_lock;
+
    // This set of condition variables and mutex allows us to shut down the unicasts speaker
    // while there is no work for it to perform in its work queue.
    PacketQueueType uni_speaker_work_deque;
    cv              uni_speaker_cond;
    mutex           uni_speaker_cond_lock;
-   // This locks the queue during push/pop/size ops
    mutex           uni_speaker_lock;
 
    // This set of condition variables adn mutex allows us to shut down the multicast speaker
    // while there is no work for it to perform in its work queue.
    //TODO: make this look like unicast speaker (above)
    PacketQueueType multi_speaker_work_deque;
-   // This locks the queue during push/pop/size ops
    mutex           multi_speaker_lock;
 
    // This (binary form IP address) identifies who currently has the page table lock.
@@ -244,6 +248,33 @@ namespace NLCBSMM {
       return;
    }
 
+   
+   void nlcbsmm_init_locks() {
+      /**
+       * Setup mutex and cond vars
+       */
+      cond_init(&uni_speaker_cond,       NULL);
+      cond_init(&thread_cond,            NULL);
+      mutex_init(&uni_speaker_cond_lock, NULL);
+      mutex_init(&uni_speaker_lock,      NULL);
+      mutex_init(&multi_speaker_lock,    NULL);
+      mutex_init(&pt_owner_lock,         NULL);
+      mutex_init(&pt_lock,               NULL);
+      mutex_init(&thread_cond_lock,      NULL);
+      mutex_init(&thread_deque_lock,     NULL);
+      return;
+   }
+
+
+   void nlcbsmm_init_heaps() {
+      /**
+       * Cheap hack, but forces heaps to initialize memory pools.
+       */
+      pt_heap->free(pt_heap->malloc(8));
+      clone_heap.free(clone_heap.malloc(8));
+      return;
+   }
+
 
    void nlcbsmm_init() {
       /**
@@ -263,9 +294,8 @@ namespace NLCBSMM {
       }
       pt_heap = new (raw) PageTableHeapType();
 
-      // Force initialization of NLCBSMM memory regions
-      pt_heap->free(pt_heap->malloc(8));
-      clone_heap.free(clone_heap.malloc(8));
+      // Force init (must follow init of pt_heap)
+      nlcbsmm_init_heaps();
 
       // Dedicated memory for maintaining the machine list
       if ((raw = (void*) mmap((void*) global_page_table_mach_list(),
@@ -291,23 +321,16 @@ namespace NLCBSMM {
       _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
       _uuid             = (uint32_t) -1;
       pt_owner          = (uint32_t) -1;
-
-      // Obtain the IP address of the local ethernet interface
       local_ip          = get_local_interface();
       local_addr.s_addr = inet_addr(local_ip);
 
-      // Setup condition and mutex variables
-      cond_init(&uni_speaker_cond,       NULL);
-      mutex_init(&uni_speaker_cond_lock, NULL);
-      mutex_init(&uni_speaker_lock,      NULL);
-      mutex_init(&multi_speaker_lock,    NULL);
-      mutex_init(&pt_owner_lock,         NULL);
-      mutex_init(&pt_lock,               NULL);
-
-      print_init_message();
+      nlcbsmm_init_locks();
 
       // Register SIGSEGV handler
       register_signal_handlers();
+
+      // Debug
+      print_init_message();
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();

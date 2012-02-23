@@ -117,13 +117,36 @@ namespace NLCBSMM {
 
          static int worker_func(void* arg) {
             /**
-             * TODO: implement me.
-             *
              * Workers perform work that may block (wait for networked pthread_join) when it
              * is unacceptable to block the main speakers/listeners.
              */
+            ThreadWorkType* work = NULL;
+
 
             fprintf(stderr, "\t>Worker func\n");
+
+            while(1) {
+
+               fprintf(stderr, "> pthread worker waiting for work\n");
+
+               // If there is no work in the queue
+               if (safe_thread_size(&thread_deque, &thread_deque_lock) == 0) {
+                  // Wait for work (blocks until signal from other thread)
+                  cond_wait(&thread_cond, &thread_cond_lock);
+                  // The cond_wait specifies that it returns with second param in a locked state
+                  mutex_unlock(&thread_cond_lock);
+               }
+
+               // Pop work from work queue
+               work = safe_thread_pop(&thread_deque, &thread_deque_lock);
+
+               if (work != NULL) {
+
+                  // Do something
+                  fprintf(stderr, "> Have work, yo\n");
+
+               }
+            }
 
             return 0;
          }
@@ -364,6 +387,7 @@ namespace NLCBSMM {
             uint8_t*               page_ptr       = NULL;
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
+            void*                  thread_work_memory = NULL;
             void*                  page_data      = NULL;
             void*                  thr_stack      = NULL;
             void*                  thr_stack_ptr  = NULL;
@@ -517,6 +541,16 @@ namespace NLCBSMM {
                break;
 
             case THREAD_CREATE_F:
+               
+
+
+
+
+
+
+
+
+
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
@@ -543,6 +577,13 @@ namespace NLCBSMM {
                // Get address of function
                func = (void*) ntohl(tc->func_ptr);
                arg  = (void*) ntohl(tc->arg);
+
+               // Queue pthread work
+               thread_work_memory = clone_heap.malloc(sizeof(ThreadWorkType));
+               safe_thread_push(&thread_deque, &thread_deque_lock,
+                     new (thread_work_memory) ThreadWorkType(retaddr, PthreadWork((uint32_t) func, (uint32_t) arg)));
+               // Signal unicast speaker there is queued work
+               cond_signal(&thread_cond);
 
                // Create the thread
                if((thr_id =
