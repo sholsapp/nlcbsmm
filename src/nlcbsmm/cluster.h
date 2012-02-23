@@ -128,7 +128,6 @@ namespace NLCBSMM {
             void* packet_memory = NULL;
 
             uint32_t sk               =  0;
-            uint32_t nbytes           =  0;
             uint32_t addrlen          =  0;
             uint32_t selflen          =  0;
             uint32_t timeout          =  0;
@@ -1066,7 +1065,8 @@ namespace NLCBSMM {
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
-            p = blocking_comm(retaddr.sin_addr.s_addr,
+            p = blocking_comm(
+                  (struct sockaddr*) &retaddr,
                   new (packet_memory) GenericPacket(SYNC_START_F),
                   timeout);
             // TODO: verify response is SYNC_START_ACK_F
@@ -1082,6 +1082,9 @@ namespace NLCBSMM {
 
                   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+                  // Respond to the public listener
+                  retaddr.sin_port = UNICAST_PORT;
 
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -1104,7 +1107,8 @@ namespace NLCBSMM {
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
-            p = blocking_comm(retaddr.sin_addr.s_addr,
+            p = blocking_comm(
+                  (struct sockaddr*) &retaddr,
                   new (packet_memory) GenericPacket(SYNC_DONE_F),
                   timeout);
             // TODO: verify response is SYNC_DONE_ACK_F
@@ -1303,7 +1307,7 @@ namespace NLCBSMM {
          }
 
 
-         static Packet* blocking_comm(uint32_t rec_ip, Packet* send, uint32_t timeout) {
+         static Packet* blocking_comm(struct sockaddr* addr, Packet* send, uint32_t timeout) {
             /**
              *
              */
@@ -1314,15 +1318,15 @@ namespace NLCBSMM {
             uint32_t addrlen          =  0;
             uint32_t selflen          =  0;
             uint32_t ret              =  0;
-            struct   sockaddr_in addr = {0};
+            //struct   sockaddr_in addr = {0};
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
 
             sk = new_comm();
 
-            addr.sin_family      = AF_INET;
-            addr.sin_addr.s_addr = rec_ip;
-            addr.sin_port        = htons(UNICAST_PORT);
+            //addr.sin_family      = AF_INET;
+            //addr.sin_addr.s_addr = rec_ip;
+            //addr.sin_port        = htons(UNICAST_PORT);
             addrlen              = sizeof(addr);
 
             // Send packet
@@ -1330,7 +1334,7 @@ namespace NLCBSMM {
                      send,
                      MAX_PACKET_SZ,
                      0,
-                     (struct sockaddr *) &addr,
+                     addr,
                      addrlen) < 0) {
                perror("cluster.h, blocking, sendto");
                exit(EXIT_FAILURE);
@@ -1344,7 +1348,7 @@ namespace NLCBSMM {
                            rec_buffer,
                            MAX_PACKET_SZ,
                            0,
-                           (struct sockaddr *) &addr,
+                           addr,
                            &addrlen)) < 0) {
                   perror("recvfrom");
                   exit(EXIT_FAILURE);
@@ -1522,7 +1526,7 @@ namespace NLCBSMM {
 
             // Notify available worker to start thread
             p = ClusterCoordinator::blocking_comm(
-                  remote_ip,
+                  (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
                      new (packet_memory) ThreadCreate((void*) thr_stack, (void*) start_routine, (void*) arg)),
                   timeout
