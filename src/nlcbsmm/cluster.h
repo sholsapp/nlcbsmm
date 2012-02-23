@@ -1084,7 +1084,7 @@ namespace NLCBSMM {
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                   // Respond to the public listener
-                  retaddr.sin_port = UNICAST_PORT;
+                  //retaddr.sin_port = UNICAST_PORT;
 
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
