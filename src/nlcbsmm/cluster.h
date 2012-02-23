@@ -1054,6 +1054,7 @@ namespace NLCBSMM {
             // Respond to the other server's listener
             retaddr.sin_port = htons(UNICAST_PORT);
 
+            // Don't want to modify retaddr in-place
             addr = retaddr;
 
             // How big is the region we're sync'ing?
@@ -1215,7 +1216,7 @@ namespace NLCBSMM {
 
             getsockname(sk, (struct sockaddr*) &self, &selflen);
 
-            //fprintf(stderr, ">> new listener on %d\n", self.sin_port);
+            fprintf(stderr, ">> new listener on %d\n", self.sin_port);
 
             return sk;
          }
@@ -1542,6 +1543,9 @@ namespace NLCBSMM {
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
                // Save (retaddr -> thr_id) for joining later
+               fprintf(stderr, "> Send pthread_join to %s:%d\n",
+                     inet_ntoa(remote_addr.sin_addr),
+                     ntohs(remote_addr.sin_port));
 
 
             }
