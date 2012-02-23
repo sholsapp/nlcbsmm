@@ -1521,7 +1521,8 @@ namespace NLCBSMM {
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
                // TODO: Save (retaddr -> thr_id) for joining later
-               fprintf(stderr, "> Send pthread_join to %s:%d\n",
+               fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
+                     ntohl(tca->thread_id),
                      inet_ntoa(remote_addr.sin_addr),
                      ntohs(remote_addr.sin_port));
             }
@@ -1536,7 +1537,7 @@ namespace NLCBSMM {
             // We're done with the pt
             mutex_unlock(&pt_lock);
 
-            return -1;
+            return ntohl(tca->thread_id);
          }
 
 

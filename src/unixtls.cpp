@@ -229,10 +229,7 @@ extern "C" int pthread_create (pthread_t *thread,
       new
       pair<threadFunctionType, void *> (start_routine, arg);
 
-   ClusterCoordinator::net_pthread_create(start_routine, arg);
-
-   // TODO: return a valid nlcbsmm thread id (so the caller can wait for it later)
-   return -1;
+   return ClusterCoordinator::net_pthread_create(start_routine, arg);
 }
 
 
@@ -253,7 +250,7 @@ extern "C" int pthread_join (pthread_t thread,
       reinterpret_cast<pthread_join_function>
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   fprintf(stderr, "> pthread_join called\n");
+   fprintf(stderr, "> pthread_join called (%lu)\n", thread);
 
    return -1;
 
