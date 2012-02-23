@@ -147,10 +147,10 @@ namespace NLCBSMM {
             void* uni_speaker_fixed_addr    = NULL;
             void* uni_listener_fixed_addr   = NULL;
 
-            uni_listener_fixed_addr   = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 0);
-            uni_speaker_fixed_addr    = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 1);
-            multi_listener_fixed_addr = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 2);
-            multi_speaker_fixed_addr  = ((uint8_t*) global_base()) + (CLONE_STACK_SZ * 3);
+            uni_listener_fixed_addr   = ((uint8_t*) get_clonebase_fixed_addr()) + (CLONE_STACK_SZ * 0);
+            uni_speaker_fixed_addr    = ((uint8_t*) get_clonebase_fixed_addr()) + (CLONE_STACK_SZ * 1);
+            multi_listener_fixed_addr = ((uint8_t*) get_clonebase_fixed_addr()) + (CLONE_STACK_SZ * 2);
+            multi_speaker_fixed_addr  = ((uint8_t*) get_clonebase_fixed_addr()) + (CLONE_STACK_SZ * 3);
 
             argument       = (void*) 1337; // Not used
 

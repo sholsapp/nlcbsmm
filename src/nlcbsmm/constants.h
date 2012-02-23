@@ -77,3 +77,4 @@ extern uint32_t& global_application_heap();
 extern uint32_t& global_pt_start_addr();
 
 extern uint32_t& get_workers_fixed_addr();
+extern uint32_t& get_clonebase_fixed_addr();

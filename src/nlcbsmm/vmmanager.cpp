@@ -208,7 +208,7 @@ namespace NLCBSMM {
       act.sa_flags     = SA_SIGINFO;
       sigemptyset(&act.sa_mask);
       sigaction(SIGSEGV, &act, 0);
-      //fprintf(stderr, "done\n");
+      fprintf(stderr, "done\n");
       return;
    }
 
