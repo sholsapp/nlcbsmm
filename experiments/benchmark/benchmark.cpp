@@ -63,7 +63,7 @@ int main(void) {
    sb1->ar = &ar[0];
    sb1->n  = ARR_SZ;
    (void) pthread_create(&th1, NULL, incer, sb1);
-   fprintf(stdout, "done.\n");
+   fprintf(stdout, "pid = %lu... done.\n", thr1);
 
    /**
     *
