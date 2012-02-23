@@ -24,6 +24,8 @@
 
 #define THREAD_CREATE_F           0x3A
 #define THREAD_CREATE_ACK_F       0x3B
+#define THREAD_JOIN_F             0x3C
+#define THREAD_JOIN_ACK_F         0x3D
 
 #define ACQUIRE_WRITE_LOCK_F      0x4A
 #define RELEASE_WRITE_LOCK_F      0x4B
@@ -246,6 +248,24 @@ class ThreadCreateAck : public Packet {
          payload_sz = htonl(0);
          flag       = THREAD_CREATE_ACK_F;
          thread_id  = htonl(_thread_id);
+      }
+
+}__attribute__((packed));
+
+
+class ThreadJoin : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      ThreadJoin() {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = THREAD_JOIN_F;
       }
 
 }__attribute__((packed));

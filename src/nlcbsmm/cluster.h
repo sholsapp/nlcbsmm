@@ -120,10 +120,22 @@ namespace NLCBSMM {
              * Workers perform work that may block (wait for networked pthread_join) when it
              * is unacceptable to block the main speakers/listeners.
              */
-            ThreadWorkType*    work = NULL;
-            PthreadWork*        pthread_work;
-            struct sockaddr_in retaddr   = {0};
+            ThreadWorkType* work = NULL;
+            PthreadWork* pthread_work = NULL;
+            Packet* p = NULL;
+            struct sockaddr_in retaddr = {0};
+            uint32_t thr_id = 0;
+            void* packet_memory = NULL;
 
+            uint32_t sk               =  0;
+            uint32_t nbytes           =  0;
+            uint32_t addrlen          =  0;
+            uint32_t selflen          =  0;
+            uint32_t timeout          =  0;
+            struct   sockaddr_in self = {0};
+
+            selflen = sizeof(struct sockaddr_in);
+            addrlen = sizeof(struct sockaddr_in);
 
             fprintf(stderr, "\t>Worker func\n");
 
@@ -144,40 +156,46 @@ namespace NLCBSMM {
 
                if (work != NULL) {
 
+                  // Set up client/server
+                  sk = new_comm();
+                  getsockname(sk, (struct sockaddr*) &self, &selflen);
+
+                  // Get work info
                   retaddr      = work->first;
                   pthread_work = &work->second;
 
-                  // Do something
-                  fprintf(stderr, "> Have work, yo: func = %p\n", (void*) pthread_work->func);
-
-                  // Start server/client
                   // Start thread, get thread_id
-                  // Send thread_id to caller
-                  // Listen for ThreadJoin packet
-                  // // Wait for thread_id
-                  // // Sync pages this node owns with caller
-
-
-                  // Create the thread
-                  /*
-                     if((thr_id =
-                     clone((int (*)(void*)) func,
-                     thr_stack_ptr,
-                     CLONE_ATTRS,
-                     arg)) == -1) {
+                  if((thr_id =
+                           clone((int (*)(void*)) pthread_work->func,
+                              (void*) pthread_work->stack_ptr,
+                              CLONE_ATTRS,
+                              (void*) pthread_work->arg)) == -1) {
                      perror("app-thread creation failed");
                      exit(EXIT_FAILURE);
-                     }
+                  }
 
-                     fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
-                  // Send the thread id and our uuid back to master
+                  fprintf(stderr, "> app-thread (%p) id: %d\n", 
+                        (void*) pthread_work->stack_ptr, 
+                        thr_id);
+
+                  // Don't timeout
+                  timeout = 10000000;
+
+                  // Send thread_id to caller, wait for ThreadJoin
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                  direct_comm(retaddr,
-                  new (packet_memory) ThreadCreateAck(thr_id));
-                   */
+                  p = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr,
+                        new (packet_memory) ThreadCreateAck(thr_id),
+                        timeout);
 
+                  // Check if received a ThreadJoin
+                  if (p->get_flag() == 0) {
+                     // Wait for thr_id
+                     // Sync pages with retaddr
+                  }
 
+                  clone_heap.free(p);
                }
+
             }
 
             return 0;
@@ -600,18 +618,22 @@ namespace NLCBSMM {
                // Queue pthread work
                thread_work_memory = clone_heap.malloc(sizeof(ThreadWorkType));
                safe_thread_push(&thread_deque, &thread_deque_lock,
-                     new (thread_work_memory) ThreadWorkType(retaddr, PthreadWork((uint32_t) func, (uint32_t) arg)));
+                     new (thread_work_memory) ThreadWorkType(retaddr,
+                        PthreadWork((uint32_t) func,
+                           (uint32_t) arg,
+                           (uint32_t) thr_stack_ptr)));
                // Signal unicast speaker there is queued work
                cond_signal(&thread_cond);
 
+               /*
                // Create the thread
                if((thr_id =
-                        clone((int (*)(void*)) func,
-                           thr_stack_ptr,
-                           CLONE_ATTRS,
-                           arg)) == -1) {
-                  perror("app-thread creation failed");
-                  exit(EXIT_FAILURE);
+               clone((int (*)(void*)) func,
+               thr_stack_ptr,
+               CLONE_ATTRS,
+               arg)) == -1) {
+               perror("app-thread creation failed");
+               exit(EXIT_FAILURE);
                }
                // Send the thread id and our uuid back to master
                fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
@@ -621,7 +643,8 @@ namespace NLCBSMM {
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                direct_comm(retaddr,
-                     new (packet_memory) ThreadCreateAck(thr_id));
+               new (packet_memory) ThreadCreateAck(thr_id));
+                */
 
                break;
 
@@ -1444,6 +1467,14 @@ namespace NLCBSMM {
          }
 
 
+         static uint32_t net_pthread_join() {
+            /**
+             * TODO: implement me
+             */
+
+         }
+
+
          static uint32_t net_pthread_create(threadFunctionType start_routine, void* arg) {
             /**
              *
@@ -1497,9 +1528,22 @@ namespace NLCBSMM {
                   timeout
                   );
 
-            fprintf(stderr, "> pthread got a %x back\n", p->get_flag());
+            if (p->get_flag() == THREAD_CREATE_ACK_F) {
+               tca = reinterpret_cast<ThreadCreateAck*>(p);
+               fprintf(stderr, "> remote pthread id: %d\n",
+                     ntohl(tca->thread_id));
 
-            node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
+               // Set node state to ACTIVE
+               node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
+
+               // Save (retaddr -> thr_id) for joining later
+
+
+            }
+            else {
+               fprintf(stderr, "> Weird response (%x)\n", p->get_flag());
+            }
+
 
             // This was returned to us, we're done with it
             clone_heap.free(p);
