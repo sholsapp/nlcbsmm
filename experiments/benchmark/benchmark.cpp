@@ -39,10 +39,10 @@ int main(void) {
 
    blocking_entry();
 
-   int*        ar;
-   int          i;
-   pthread_t  th1;
-   subarray*  sb1;
+   int*        ar = NULL;
+   int          i = 0;
+   pthread_t  th1 = 0;
+   subarray*  sb1 = NULL;
 
 
    sb1 = (subarray*) malloc (sizeof(sb1));
