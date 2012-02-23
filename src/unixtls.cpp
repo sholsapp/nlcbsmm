@@ -235,7 +235,7 @@ extern "C" int pthread_create (pthread_t *thread,
    fprintf(stderr, "Thread id = %d\n", thr_id);
    fprintf(stderr, "Thread id (long) = %lu\n", (pthread_t) thr_id);
 
-   return thr_id;
+   return (pthread_t) thr_id;
 }
 
 
