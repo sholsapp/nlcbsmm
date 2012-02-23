@@ -120,7 +120,9 @@ namespace NLCBSMM {
              * Workers perform work that may block (wait for networked pthread_join) when it
              * is unacceptable to block the main speakers/listeners.
              */
-            ThreadWorkType* work = NULL;
+            ThreadWorkType*    work = NULL;
+            PthreadWork*        pthread_work;
+            struct sockaddr_in retaddr   = {0};
 
 
             fprintf(stderr, "\t>Worker func\n");
@@ -142,8 +144,38 @@ namespace NLCBSMM {
 
                if (work != NULL) {
 
+                  retaddr      = work->first;
+                  pthread_work = &work->second;
+
                   // Do something
-                  fprintf(stderr, "> Have work, yo\n");
+                  fprintf(stderr, "> Have work, yo: func = %p\n", (void*) pthread_work->func);
+
+                  // Start server/client
+                  // Start thread, get thread_id
+                  // Send thread_id to caller
+                  // Listen for ThreadJoin packet
+                  // // Wait for thread_id
+                  // // Sync pages this node owns with caller
+
+
+                  // Create the thread
+                  /*
+                     if((thr_id =
+                     clone((int (*)(void*)) func,
+                     thr_stack_ptr,
+                     CLONE_ATTRS,
+                     arg)) == -1) {
+                     perror("app-thread creation failed");
+                     exit(EXIT_FAILURE);
+                     }
+
+                     fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
+                  // Send the thread id and our uuid back to master
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  direct_comm(retaddr,
+                  new (packet_memory) ThreadCreateAck(thr_id));
+                   */
+
 
                }
             }
@@ -541,16 +573,6 @@ namespace NLCBSMM {
                break;
 
             case THREAD_CREATE_F:
-               
-
-
-
-
-
-
-
-
-
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
@@ -569,9 +591,6 @@ namespace NLCBSMM {
                            MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
                            -1, 0)) == MAP_FAILED) {
                   fprintf(stderr, "> map failed\n");
-               }
-               else {
-                  fprintf(stderr, "> mapped thread stack!\n");
                }
 
                // Get address of function
