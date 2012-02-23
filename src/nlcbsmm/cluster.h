@@ -1327,7 +1327,7 @@ namespace NLCBSMM {
             //addr.sin_family      = AF_INET;
             //addr.sin_addr.s_addr = rec_ip;
             //addr.sin_port        = htons(UNICAST_PORT);
-            addrlen              = sizeof(addr);
+            addrlen              = sizeof(struct sockaddr);
 
             // Send packet
             if (sendto(sk,
