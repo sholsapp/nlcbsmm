@@ -1216,7 +1216,7 @@ namespace NLCBSMM {
 
             getsockname(sk, (struct sockaddr*) &self, &selflen);
 
-            fprintf(stderr, ">> new listener on %d\n", self.sin_port);
+            fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
 
             return sk;
          }
