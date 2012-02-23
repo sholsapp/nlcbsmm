@@ -1470,6 +1470,7 @@ namespace NLCBSMM {
             uint32_t            thr_stack_sz   = 0;
             uint32_t            remote_ip      = 0;
             uint32_t            timeout        = 0;
+            uint32_t            thr_id         = 0;
             struct sockaddr_in  remote_addr    = {0};
 
             Packet*          p   = NULL;
@@ -1514,15 +1515,17 @@ namespace NLCBSMM {
 
             if (p->get_flag() == THREAD_CREATE_ACK_F) {
                tca = reinterpret_cast<ThreadCreateAck*>(p);
-               fprintf(stderr, "> remote pthread id: %d\n",
-                     ntohl(tca->thread_id));
+
+               thr_id = ntohl(tca->thread_id);
+
+               fprintf(stderr, "> remote pthread id: %d\n", thr_id);
 
                // Set node state to ACTIVE
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
                // TODO: Save (retaddr -> thr_id) for joining later
                fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
-                     ntohl(tca->thread_id),
+                     thr_id,
                      inet_ntoa(remote_addr.sin_addr),
                      ntohs(remote_addr.sin_port));
             }
@@ -1537,7 +1540,7 @@ namespace NLCBSMM {
             // We're done with the pt
             mutex_unlock(&pt_lock);
 
-            return ntohl(tca->thread_id);
+            return thr_id;
          }
 
 
