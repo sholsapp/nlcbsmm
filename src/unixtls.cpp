@@ -233,6 +233,7 @@ extern "C" int pthread_create (pthread_t *thread,
    thr_id = ClusterCoordinator::net_pthread_create(start_routine, arg);
 
    fprintf(stderr, "Thread id = %d\n", thr_id);
+   fprintf(stderr, "Thread id (long) = %lu\n", (pthread_t) thr_id);
 
    return thr_id;
 }
