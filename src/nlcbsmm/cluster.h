@@ -120,18 +120,17 @@ namespace NLCBSMM {
              * Workers perform work that may block (wait for networked pthread_join) when it
              * is unacceptable to block the main speakers/listeners.
              */
-            ThreadWorkType* work = NULL;
-            PthreadWork* pthread_work = NULL;
-            Packet* p = NULL;
-            struct sockaddr_in retaddr = {0};
-            uint32_t thr_id = 0;
-            void* packet_memory = NULL;
-
-            uint32_t sk               =  0;
-            uint32_t addrlen          =  0;
-            uint32_t selflen          =  0;
-            uint32_t timeout          =  0;
-            struct   sockaddr_in self = {0};
+            ThreadWorkType* work                = NULL;
+            PthreadWork*    pthread_work        = NULL;
+            Packet*         p                   = NULL;
+            void*           packet_memory       = NULL;
+            uint32_t        sk                  =  0;
+            uint32_t        thr_id              =  0;
+            uint32_t        addrlen             =  0;
+            uint32_t        selflen             =  0;
+            uint32_t        timeout             =  0;
+            struct          sockaddr_in self    = {0};
+            struct          sockaddr_in retaddr = {0};
 
             selflen = sizeof(struct sockaddr_in);
             addrlen = sizeof(struct sockaddr_in);
@@ -623,27 +622,6 @@ namespace NLCBSMM {
                            (uint32_t) thr_stack_ptr)));
                // Signal unicast speaker there is queued work
                cond_signal(&thread_cond);
-
-               /*
-               // Create the thread
-               if((thr_id =
-               clone((int (*)(void*)) func,
-               thr_stack_ptr,
-               CLONE_ATTRS,
-               arg)) == -1) {
-               perror("app-thread creation failed");
-               exit(EXIT_FAILURE);
-               }
-               // Send the thread id and our uuid back to master
-               fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
-
-               // TODO: create another clone thread to "wait" for this thread, so that
-               // we can report when it has finished to caller (who is blocked on pthread_join).
-
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-               direct_comm(retaddr,
-               new (packet_memory) ThreadCreateAck(thr_id));
-                */
 
                break;
 
@@ -1216,7 +1194,7 @@ namespace NLCBSMM {
 
             getsockname(sk, (struct sockaddr*) &self, &selflen);
 
-            fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
+            //fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
 
             return sk;
          }
@@ -1542,12 +1520,10 @@ namespace NLCBSMM {
                // Set node state to ACTIVE
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
-               // Save (retaddr -> thr_id) for joining later
+               // TODO: Save (retaddr -> thr_id) for joining later
                fprintf(stderr, "> Send pthread_join to %s:%d\n",
                      inet_ntoa(remote_addr.sin_addr),
                      ntohs(remote_addr.sin_port));
-
-
             }
             else {
                fprintf(stderr, "> Weird response (%x)\n", p->get_flag());
