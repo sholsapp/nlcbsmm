@@ -1046,11 +1046,15 @@ namespace NLCBSMM {
             uint32_t               i              = 0;
             uint32_t               timeout        = 0;
 
+            struct sockaddr_in     addr           = {0};
+
             // Set timeout to 5 seconds
             timeout = 5;
 
             // Respond to the other server's listener
             retaddr.sin_port = htons(UNICAST_PORT);
+
+            addr = retaddr;
 
             // How big is the region we're sync'ing?
             region_sz = PAGE_TABLE_MACH_LIST_SZ
@@ -1066,7 +1070,7 @@ namespace NLCBSMM {
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
             p = blocking_comm(
-                  (struct sockaddr*) &retaddr,
+                  (struct sockaddr*) &addr,
                   new (packet_memory) GenericPacket(SYNC_START_F),
                   timeout);
             // TODO: verify response is SYNC_START_ACK_F
@@ -1082,9 +1086,6 @@ namespace NLCBSMM {
 
                   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-                  // Respond to the public listener
-                  //retaddr.sin_port = UNICAST_PORT;
 
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
