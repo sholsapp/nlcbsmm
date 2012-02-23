@@ -70,7 +70,61 @@ namespace NLCBSMM {
          }
 
 
-         void start_comms() {
+         void start_workers() {
+            /**
+             *
+             */
+            void* argument           = NULL;
+            void* worker0_ptr        = NULL;
+            void* worker1_ptr        = NULL;
+            void* worker2_ptr        = NULL;
+            void* worker3_ptr        = NULL;
+            void* worker0_stack      = NULL;
+            void* worker1_stack      = NULL;
+            void* worker2_stack      = NULL;
+            void* worker3_stack      = NULL;
+            void* worker0_fixed_addr = NULL;
+            void* worker1_fixed_addr = NULL;
+            void* worker2_fixed_addr = NULL;
+            void* worker3_fixed_addr = NULL;
+
+            worker0_fixed_addr = ((uint8_t*) get_workers_fixed_addr()) + (WORKER_STACK_SZ * 0);
+
+            worker0_stack = (void*) mmap(worker0_fixed_addr,
+                  WORKER_STACK_SZ,
+                  CLONE_MMAP_PROT_FLAGS,
+                  CLONE_MMAP_FLAGS, -1, 0);
+
+            worker0_ptr      = (void*) (((uint8_t*) worker0_stack)    + WORKER_STACK_SZ);
+
+            if((worker0_thread_id =
+                     clone(&worker_func,
+                        worker0_ptr,
+                        CLONE_ATTRS,
+                        argument)) == -1) {
+               perror("vmmanager.cpp, clone, worker0");
+               exit(EXIT_FAILURE);
+            }
+
+            return;
+         }
+
+
+         static int worker_func(void* arg) {
+            /**
+             * TODO: implement me.
+             *
+             * Workers perform work that may block (wait for networked pthread_join) when it
+             * is unacceptable to block the main speakers/listeners.
+             */
+
+            fprintf(stderr, "\t>Worker func\n");
+
+            return 0;
+         }
+
+
+         void start_arbiters() {
             /**
              * Spawns the speaker and listener threads.
              */
@@ -169,8 +223,19 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
+
+         }
+
+
+         void start_comms() {
+            /**
+             *
+             */
+            start_workers();
+            start_arbiters();
             return;
          }
+
 
          static int uni_speaker(void* t) {
             /**
@@ -471,8 +536,8 @@ namespace NLCBSMM {
                }
 
                // Get address of function
-               func          = (void*) ntohl(tc->func_ptr);
-               arg           = (void*) ntohl(tc->arg);
+               func = (void*) ntohl(tc->func_ptr);
+               arg  = (void*) ntohl(tc->arg);
 
                // Create the thread
                if((thr_id =
@@ -486,8 +551,10 @@ namespace NLCBSMM {
                // Send the thread id and our uuid back to master
                fprintf(stderr, "> app-thread (%p) id: %d\n", thr_stack_ptr, thr_id);
 
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               // TODO: create another clone thread to "wait" for this thread, so that
+               // we can report when it has finished to caller (who is blocked on pthread_join).
 
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                direct_comm(retaddr,
                      new (packet_memory) ThreadCreateAck(thr_id));
 
@@ -1397,6 +1464,8 @@ namespace NLCBSMM {
          uint32_t multi_listener_thread_id;
          uint32_t uni_speaker_thread_id;
          uint32_t uni_listener_thread_id;
+
+         uint32_t worker0_thread_id;
    };
 }
 
