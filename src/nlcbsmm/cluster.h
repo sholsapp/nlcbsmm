@@ -88,12 +88,17 @@ namespace NLCBSMM {
             void* worker2_fixed_addr = NULL;
             void* worker3_fixed_addr = NULL;
 
+            fprintf(stderr, "Starting workers...\n");
+
             worker0_fixed_addr = ((uint8_t*) get_workers_fixed_addr()) + (WORKER_STACK_SZ * 0);
 
             worker0_stack = (void*) mmap(worker0_fixed_addr,
                   WORKER_STACK_SZ,
                   CLONE_MMAP_PROT_FLAGS,
                   CLONE_MMAP_FLAGS, -1, 0);
+
+            if (worker0_stack == MAP_FAILED)
+               perror("!> mmap failed to allocate worker stack");
 
             worker0_ptr      = (void*) (((uint8_t*) worker0_stack)    + WORKER_STACK_SZ);
 
