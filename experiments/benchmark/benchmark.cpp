@@ -68,7 +68,7 @@ int main(void) {
    /**
     *
     */
-   fprintf(stdout, "<target-app> waiting for pthread...");
+   fprintf(stdout, "<target-app> waiting for pthread (%lu)...", th1);
    (void) pthread_join(th1, NULL);
    fprintf(stdout, "done.\n");
 

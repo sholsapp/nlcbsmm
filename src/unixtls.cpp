@@ -206,6 +206,7 @@ extern "C" int pthread_create (pthread_t *thread,
    /**
     *
     */
+   uint32_t thr_id = 0;
 
    // Force initialization of the TLAB before our first thread is created.
    volatile static TheCustomHeapType * t = getCustomHeap();
@@ -229,7 +230,11 @@ extern "C" int pthread_create (pthread_t *thread,
       new
       pair<threadFunctionType, void *> (start_routine, arg);
 
-   return ClusterCoordinator::net_pthread_create(start_routine, arg);
+   thr_id = ClusterCoordinator::net_pthread_create(start_routine, arg);
+
+   fprintf(stderr, "Thread id = %d\n", thr_id);
+
+   return thr_id;
 }
 
 
@@ -250,7 +255,7 @@ extern "C" int pthread_join (pthread_t thread,
       reinterpret_cast<pthread_join_function>
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   fprintf(stderr, "> pthread_join called (%lu)\n", thread);
+   fprintf(stderr, "> pthread_join called (%d)\n", (uint32_t) thread);
 
    return -1;
 
