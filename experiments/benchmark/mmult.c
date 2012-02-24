@@ -20,7 +20,7 @@ typedef struct
    int             id;
    int             noproc;
    int             dim;
-   double  (***a),(***b),(***c);
+   double  (**a),(**b),(**c);
 } parm;
 
 void init_matrix(double*** m) {
@@ -49,7 +49,7 @@ void mm(int me_no, int noproc, int n, double** a, double** b, double** c) {
 
 void* worker(void *arg) {
    parm* p = (parm*) arg;
-   mm(p->id, p->noproc, p->dim, *(p->a), *(p->b), *(p->c));
+   mm(p->id, p->noproc, p->dim, (p->a), (p->b), (p->c));
    return NULL;
 }
 
@@ -127,36 +127,35 @@ int main(int argc, char *argv[]) {
          b[i][j] = i + j;
       }
 
-   if (argc != 2)
-   {
+   if (argc != 2) {
       printf("Usage: %s n\n  where n is no. of thread\n", argv[0]);
       exit(1);
    }
+
    n = atoi(argv[1]);
 
-   if ((n < 1) || (n > MAX_THREAD))
-   {
+   if ((n < 1) || (n > MAX_THREAD)) {
       printf("The no of thread should between 1 and %d.\n", MAX_THREAD);
       exit(1);
    }
-   threads = (pthread_t *) malloc(n * sizeof(pthread_t));
+
+   threads = (pthread_t*) malloc(n * sizeof(pthread_t));
    pthread_attr_init(&pthread_custom_attr);
 
-   arg=(parm *)malloc(sizeof(parm)*n);
+   arg = (parm*) malloc(sizeof(parm) * n);
    /* setup barrier */
 
    /* Start up thread */
 
    /* Spawn thread */
-   for (i = 0; i < n; i++)
-   {
+   for (i = 0; i < n; i++) {
       arg[i].id = i;
       arg[i].noproc = n;
       arg[i].dim = NDIM;
-      arg[i].a = &a;
-      arg[i].b = &b;
-      arg[i].c = &c;
-      pthread_create(&threads[i], &pthread_custom_attr, worker, (void *)(arg+i));
+      arg[i].a = a;
+      arg[i].b = b;
+      arg[i].c = c;
+      pthread_create(&threads[i], &pthread_custom_attr, worker, (void*) (arg+i));
    }
 
    for (i = 0; i < n; i++)
