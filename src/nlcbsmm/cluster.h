@@ -187,6 +187,8 @@ namespace NLCBSMM {
                         new (packet_memory) ThreadCreateAck(thr_id),
                         timeout);
 
+                  fprintf(stderr, "> thread worker got packet!\n");
+
                   // Check if received a ThreadJoin
                   if (p->get_flag() == THREAD_JOIN_F) {
                      fprintf(stderr, " > Wait for thread %d\n", thr_id);
@@ -195,6 +197,8 @@ namespace NLCBSMM {
                      if((thr_ret = waitpid(thr_id, NULL,  __WCLONE)) == -1) {
                         perror("wait error");
                      }
+
+                     fprintf(stderr, "> Thread waited for\n");
 
                      // Sync pages with retaddr
 
@@ -1208,7 +1212,7 @@ namespace NLCBSMM {
 
             getsockname(sk, (struct sockaddr*) &self, &selflen);
 
-            //fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
+            fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
 
             return sk;
          }
@@ -1481,7 +1485,7 @@ namespace NLCBSMM {
             fprintf(stderr, "> pthead join: contact %s:%d for thread\n",
                   inet_ntoa((struct in_addr&) owner->sin_addr),
                   ntohs(owner->sin_port));
-
+/
             timeout = 1000000;
 
             p = ClusterCoordinator::blocking_comm(
