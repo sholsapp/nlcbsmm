@@ -57,6 +57,13 @@ namespace NLCBSMM {
    typedef
       PageTableType::iterator PageTableItr;
 
+   typedef
+      std::map<uint32_t,
+      struct sockaddr,
+      std::less<uint32_t>,
+      CloneAllocator<std::pair<uint32_t, struct sockaddr> > >
+         ThreadTableType;
+
    //
    // Work queue types
    //
@@ -105,6 +112,7 @@ namespace NLCBSMM {
    // The page table
    extern PageTableType* page_table;
    extern MachineTableType* node_list;
+   extern ThreadTableType thread_map;
 
 
    // The work queues

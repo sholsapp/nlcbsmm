@@ -30,17 +30,17 @@ namespace NLCBSMM {
    // If a network thread needs memory, it must use this private
    // heap.  This memory is lost from the DSM system.
    FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> > clone_heap;
-
+   
    // If the shared page table needs memory, it must use this
    // private heap.  This memory is kept in a fixed location in
    // memory in all instances of the application.
    PageTableHeapType* pt_heap;
 
-   // This node's ip address
-   const char* local_ip = NULL;
-   // TODO: replace all instances of local_ip with local_addr (binary form ip)
+   const char*    local_ip   = NULL;
    struct in_addr local_addr = {0};
 
+   ThreadTableType  thread_map;
+   mutex            thread_map_lock;
 
    ThreadQueueType  thread_deque;
    cv               thread_cond;
@@ -262,6 +262,7 @@ namespace NLCBSMM {
       mutex_init(&pt_lock,               NULL);
       mutex_init(&thread_cond_lock,      NULL);
       mutex_init(&thread_deque_lock,     NULL);
+      mutex_init(&thread_map_lock,       NULL);
       return;
    }
 

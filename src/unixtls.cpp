@@ -256,9 +256,9 @@ extern "C" int pthread_join (pthread_t thread,
       reinterpret_cast<pthread_join_function>
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   fprintf(stderr, "> pthread_join called (%lu)\n", thread);
+   ClusterCoordinator::net_pthread_join(thread);
 
-   return -1;
+   return 0;
 
 }
 

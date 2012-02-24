@@ -172,8 +172,8 @@ namespace NLCBSMM {
                      exit(EXIT_FAILURE);
                   }
 
-                  fprintf(stderr, "> app-thread (%p) id: %d\n", 
-                        (void*) pthread_work->stack_ptr, 
+                  fprintf(stderr, "> app-thread (%p) id: %d\n",
+                        (void*) pthread_work->stack_ptr,
                         thr_id);
 
                   // Don't timeout
@@ -1451,11 +1451,22 @@ namespace NLCBSMM {
          }
 
 
-         static uint32_t net_pthread_join() {
+         static uint32_t net_pthread_join(pthread_t thread_id) {
             /**
              * TODO: implement me
              */
+            struct sockaddr_in* owner = NULL;
 
+            fprintf(stderr, "> pthread_join called (%lu)\n", thread_id);
+
+
+            owner = reinterpret_cast<struct sockaddr_in*>(&thread_map[thread_id]);
+
+            fprintf(stderr, "> contact %s:%d for thread\n",
+                  inet_ntoa((struct in_addr&) owner->sin_addr),
+                  ntohs(owner->sin_port));
+
+            return 0;
          }
 
 
@@ -1523,11 +1534,14 @@ namespace NLCBSMM {
                // Set node state to ACTIVE
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
-               // TODO: Save (retaddr -> thr_id) for joining later
                fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
                      thr_id,
                      inet_ntoa(remote_addr.sin_addr),
                      ntohs(remote_addr.sin_port));
+
+               // TODO: Save (retaddr -> thr_id) for joining later
+               thread_map.insert(std::pair<uint32_t, struct sockaddr>(thr_id, *((struct sockaddr*) &remote_addr)));
+
             }
             else {
                fprintf(stderr, "> Weird response (%x)\n", p->get_flag());
