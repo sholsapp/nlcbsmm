@@ -1485,7 +1485,7 @@ namespace NLCBSMM {
             fprintf(stderr, "> pthead join: contact %s:%d for thread\n",
                   inet_ntoa((struct in_addr&) owner->sin_addr),
                   ntohs(owner->sin_port));
-/
+
             timeout = 1000000;
 
             p = ClusterCoordinator::blocking_comm(

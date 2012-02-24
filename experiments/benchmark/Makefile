@@ -11,18 +11,26 @@ CFLAGS=-g
 LDFLAGS=-lpthread 
 HOARD_LDFLAGS=-Wl,--no-as-needed -lrt -L. -lhoard
 
-ALL=benchmark-malloc benchmark-hoard
+ALL=benchmark-malloc benchmark-hoard mmult-malloc mmult-hoard
 
 all:	$(ALL)
 
 benchmark-malloc: benchmark.o
 	$(CPP) -o $@ $^ $(LDFLAGS)
 
-# Order that we include the libraries matters?! WTF
 benchmark-hoard: benchmark.o
 	$(CPP) -o $@ $^ $(HOARD_LDFLAGS) $(LDFLAGS)
 
 benchmark.o: benchmark.cpp
+	$(CPP) $(CFLAGS) -c $<
+
+mmult-malloc: mmult.o
+	$(CPP) -o $@ $^ $(LDFLAGS)
+
+mmult-hoard: mmult.o
+	$(CPP) -o $@ $^ $(HOARD_LDFLAGS) $(LDFLAGS)
+
+mmult.o: mmult.c
 	$(CPP) $(CFLAGS) -c $<
 
 clean:
