@@ -186,7 +186,8 @@ namespace NLCBSMM {
                         timeout);
 
                   // Check if received a ThreadJoin
-                  if (p->get_flag() == 0) {
+                  if (p->get_flag() == THREAD_JOIN_F) {
+                     fprintf(stderr, "Wait for thread!!!!\n");
                      // Wait for thr_id
                      // Sync pages with retaddr
                   }
@@ -1455,16 +1456,29 @@ namespace NLCBSMM {
             /**
              * TODO: implement me
              */
-            struct sockaddr_in* owner = NULL;
-
-            fprintf(stderr, "> pthread_join called (%lu)\n", thread_id);
-
+            void*               packet_memory  = NULL;
+            void*               work_memory    = NULL;
+            uint32_t            timeout        = 0;
+            struct sockaddr_in* owner          = NULL;
+            Packet*             p              = NULL;
 
             owner = reinterpret_cast<struct sockaddr_in*>(&thread_map[thread_id]);
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            fprintf(stderr, "> contact %s:%d for thread\n",
+            fprintf(stderr, "> pthead join: contact %s:%d for thread\n",
                   inet_ntoa((struct in_addr&) owner->sin_addr),
                   ntohs(owner->sin_port));
+
+            // Never
+            timeout = 1000000;
+
+            // Notify available worker to start thread
+            p = ClusterCoordinator::blocking_comm(
+                  (struct sockaddr*) owner,
+                  reinterpret_cast<Packet*>(
+                     new (packet_memory) ThreadJoin()),
+                  timeout
+                  );
 
             return 0;
          }
@@ -1539,7 +1553,7 @@ namespace NLCBSMM {
                      inet_ntoa(remote_addr.sin_addr),
                      ntohs(remote_addr.sin_port));
 
-               // TODO: Save (retaddr -> thr_id) for joining later
+               // Save (retaddr -> thr_id) for joining later
                thread_map.insert(std::pair<uint32_t, struct sockaddr>(thr_id, *((struct sockaddr*) &remote_addr)));
 
             }
