@@ -9,7 +9,7 @@
 
 #define MAX_THREAD 20
 
-#define NDIM 200
+#define NDIM 100
 
 double** a;
 double** b;
