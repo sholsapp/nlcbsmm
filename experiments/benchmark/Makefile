@@ -11,7 +11,7 @@ CFLAGS=-g
 LDFLAGS=-lpthread 
 HOARD_LDFLAGS=-Wl,--no-as-needed -lrt -L. -lhoard
 
-ALL=benchmark-malloc benchmark-hoard mmult-malloc mmult-hoard
+ALL=benchmark-malloc benchmark-hoard mmult-malloc mmult-hoard counter-malloc counter-hoard
 
 all:	$(ALL)
 
@@ -31,6 +31,15 @@ mmult-hoard: mmult.o
 	$(CPP) -o $@ $^ $(HOARD_LDFLAGS) $(LDFLAGS)
 
 mmult.o: mmult.c
+	$(CPP) $(CFLAGS) -c $<
+
+counter-malloc: counter.o
+	$(CPP) -o $@ $^ $(LDFLAGS)
+
+counter-hoard: counter.o
+	$(CPP) -o $@ $^ $(HOARD_LDFLAGS) $(LDFLAGS)
+
+counter.o: counter.cpp
 	$(CPP) $(CFLAGS) -c $<
 
 clean:
