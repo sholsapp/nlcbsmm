@@ -123,9 +123,11 @@ namespace NLCBSMM {
             ThreadWorkType* work                = NULL;
             PthreadWork*    pthread_work        = NULL;
             Packet*         p                   = NULL;
+            GenericPacket*  g                   = NULL;
             void*           packet_memory       = NULL;
             uint32_t        sk                  =  0;
             uint32_t        thr_id              =  0;
+            uint32_t        thr_ret             =  0;
             uint32_t        addrlen             =  0;
             uint32_t        selflen             =  0;
             uint32_t        timeout             =  0;
@@ -187,9 +189,20 @@ namespace NLCBSMM {
 
                   // Check if received a ThreadJoin
                   if (p->get_flag() == THREAD_JOIN_F) {
-                     fprintf(stderr, "Wait for thread!!!!\n");
+                     fprintf(stderr, " > Wait for thread %d\n", thr_id);
+
                      // Wait for thr_id
+                     if((thr_ret = waitpid(thr_id, NULL,  __WCLONE)) == -1) {
+                        perror("wait error");
+                     }
+
                      // Sync pages with retaddr
+
+                     // Indicate finished
+                     direct_comm(retaddr,
+                           new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
+                           GenericPacket(THREAD_JOIN_F));
+
                   }
 
                   clone_heap.free(p);
@@ -1469,10 +1482,8 @@ namespace NLCBSMM {
                   inet_ntoa((struct in_addr&) owner->sin_addr),
                   ntohs(owner->sin_port));
 
-            // Never
             timeout = 1000000;
 
-            // Notify available worker to start thread
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) owner,
                   reinterpret_cast<Packet*>(
