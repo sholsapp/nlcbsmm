@@ -139,13 +139,23 @@ namespace NLCBSMM {
        * TODO: implement this correctly (returns first non-master IP address)
        */
       MachineTableItr node_itr;
-      uint32_t s_addr;
+      Machine*        machine;
+      uint32_t        machine_status;
+      uint32_t        ip;
 
-      for(node_itr = node_list->begin(); node_itr != node_list->end(); node_itr++) {
-         s_addr = (*node_itr).first;
-         if (s_addr != local_addr.s_addr) {
-            return s_addr;
+      for(node_itr = node_list->begin(); 
+            node_itr != node_list->end(); 
+            node_itr++) {
+
+         ip      = (*node_itr).first;
+         machine = (*node_itr).second;
+
+         // If this isn't us
+         if (ip != local_addr.s_addr 
+               && machine->status != MACHINE_ACTIVE) {
+            return ip;
          }
+
       }
       return -1;
    }
