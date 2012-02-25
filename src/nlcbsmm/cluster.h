@@ -1521,6 +1521,8 @@ namespace NLCBSMM {
 
             remote_ip = get_available_worker();
 
+            fprintf(stderr, ">>>> send work to %s\n", inet_ntoa((struct in_addr&) remote_ip));
+
             remote_addr.sin_family      = AF_INET;
             remote_addr.sin_addr.s_addr = remote_ip;
             remote_addr.sin_port        = htons(UNICAST_PORT);
