@@ -203,7 +203,7 @@ namespace NLCBSMM {
       fprintf(stderr, "> Fault: %p from %s in %0.2f (s).\n",
             rel_page,
             inet_ntoa((struct in_addr&) node->ip_address),
-            ((double) end.tv_sec - start.tv_sec));
+            ((double) end.tv_sec - start.tv_sec) / CLOCKS_PER_SEC);
 
       return;
    }
