@@ -153,6 +153,8 @@ namespace NLCBSMM {
          // If this isn't us
          if (ip != local_addr.s_addr 
                && machine->status != MACHINE_ACTIVE) {
+            fprintf(stderr, "> Available worker: %s\n",
+                  inet_ntoa((struct in_addr&) ip));
             return ip;
          }
 
