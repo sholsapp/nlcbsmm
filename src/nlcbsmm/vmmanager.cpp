@@ -126,6 +126,8 @@ namespace NLCBSMM {
 
       clock_t               start          = clock();
 
+      fprintf(stderr, "start = %f, %ld\n", (double) start, CLOCKS_PER_SEC);
+
       // Block SIGSEGV while executing this
       sigemptyset(&set);
       sigaddset(&set, SIGSEGV);
@@ -133,9 +135,6 @@ namespace NLCBSMM {
 
       faulting_addr = reinterpret_cast<uint8_t*>(info->si_addr);
       aligned_addr  = pageAlign(faulting_addr);
-
-
-      //fprintf(stderr, "> Handler: Illegal access at %p in page %p\n", faulting_addr, aligned_addr);
 
       pt_itr = page_table->find((uint32_t) aligned_addr);
 
@@ -150,10 +149,6 @@ namespace NLCBSMM {
       page  = tuple.first;
       perm  = page->protection;
       node  = tuple.second;
-
-      //fprintf(stderr, "> Handler: %s has %p\n",
-      //      inet_ntoa((struct in_addr&) node->ip_address),
-      //      (void*) page->address);
 
       remote_ip                   = node->ip_address;
       remote_addr.sin_family      = AF_INET;
