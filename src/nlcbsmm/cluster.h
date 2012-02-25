@@ -1563,7 +1563,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> remote pthread id: %d\n", thr_id);
 
                // Set node state to ACTIVE
-               node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
+               node_list->find(remote_addr.sin_addr.s_addr)->second->status = MACHINE_ACTIVE;
 
                fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
                      thr_id,
@@ -1571,7 +1571,9 @@ namespace NLCBSMM {
                      ntohs(remote_addr.sin_port));
 
                // Save (retaddr -> thr_id) for joining later
-               thread_map.insert(std::pair<uint32_t, struct sockaddr>(thr_id, *((struct sockaddr*) &remote_addr)));
+               thread_map.insert(
+                     std::pair<uint32_t, struct sockaddr>
+                     (thr_id, *((struct sockaddr*) &remote_addr)));
 
             }
             else {
