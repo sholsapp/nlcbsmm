@@ -136,7 +136,8 @@ namespace NLCBSMM {
        * Return the IP address (binary form) of the next worker capable of running a
        * new thread.
        *
-       * TODO: implement this correctly (returns first non-master IP address)
+       * TODO: introduce new state to allow same node with extra physical cores to run
+       * more than one worker at a time.
        */
       MachineTableItr node_itr;
       Machine*        machine;

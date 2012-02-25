@@ -124,8 +124,9 @@ namespace NLCBSMM {
       PageTableItr          pt_itr;
       PageTableElementType  tuple;
 
+      clock_t               start          = clock();
 
-      //block SIGSEGV
+      // Block SIGSEGV while executing this
       sigemptyset(&set);
       sigaddset(&set, SIGSEGV);
       sigprocmask(SIG_BLOCK, &set, &oset);
@@ -134,7 +135,7 @@ namespace NLCBSMM {
       aligned_addr  = pageAlign(faulting_addr);
 
 
-      fprintf(stderr, "> Handler: Illegal access at %p in page %p\n", faulting_addr, aligned_addr);
+      //fprintf(stderr, "> Handler: Illegal access at %p in page %p\n", faulting_addr, aligned_addr);
 
       pt_itr = page_table->find((uint32_t) aligned_addr);
 
@@ -150,9 +151,9 @@ namespace NLCBSMM {
       perm  = page->protection;
       node  = tuple.second;
 
-      fprintf(stderr, "> Handler: %s has %p\n",
-            inet_ntoa((struct in_addr&) node->ip_address),
-            (void*) page->address);
+      //fprintf(stderr, "> Handler: %s has %p\n",
+      //      inet_ntoa((struct in_addr&) node->ip_address),
+      //      (void*) page->address);
 
       remote_ip                   = node->ip_address;
       remote_addr.sin_family      = AF_INET;
@@ -185,20 +186,27 @@ namespace NLCBSMM {
          // Copy page data
          memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
 
+         // Set new owner (us)
          set_new_owner((uint32_t) rel_page, local_addr.s_addr);
-
-         fprintf(stderr, "> %p resolved\n", rel_page);
-
       }
-      // TODO: Add a multicat packet to inform the other hosts that I am the new owner of the page p
 
-      // Free packet
+      // TODO: Add a multicat packet to inform the other hosts 
+      // that I am the new owner of the page p (or let loser do this?)
+
       clone_heap.free(p);
 
       // TODO: increment the version of the page?
 
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
+
+      // Print summary
+      fprintf(stderr, "> Fault: %p from %s in %f(s).\n",
+            rel_page,
+            inet_ntoa((struct in_addr&) node->ip_address),
+            ((double) clock() - start) / CLOCKS_PER_SEC);
+
+      return;
    }
 
 

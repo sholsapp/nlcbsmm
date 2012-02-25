@@ -333,7 +333,7 @@ namespace NLCBSMM {
 
          static int uni_speaker(void* t) {
             /**
-             * TODO: this class is incomplete... it can only handle one type of work.
+             *
              */
             fprintf(stderr, "> uni-speaker\n");
 
@@ -541,7 +541,7 @@ namespace NLCBSMM {
                rp            = new (packet_memory) ReleasePage(page_addr);
                direct_comm(retaddr, rp);
 
-               // TODO: set page table ownership/permissions properly
+               // Set page table ownership/permissions
                set_new_owner(page_addr, retaddr.sin_addr.s_addr);
                mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
 
