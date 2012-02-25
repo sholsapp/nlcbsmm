@@ -124,9 +124,10 @@ namespace NLCBSMM {
       PageTableItr          pt_itr;
       PageTableElementType  tuple;
 
-      clock_t               start          = clock();
+      struct timespec start = {0};
+      struct timespec end   = {0};
 
-      fprintf(stderr, "start = %f, %ld\n", (double) start, CLOCKS_PER_SEC);
+      clock_gettime(CLOCK_REALTIME, &start);
 
       // Block SIGSEGV while executing this
       sigemptyset(&set);
@@ -195,11 +196,14 @@ namespace NLCBSMM {
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
 
+
+      clock_gettime(CLOCK_REALTIME, &end);
+
       // Print summary
-      fprintf(stderr, "> Fault: %p from %s in %f(s).\n",
+      fprintf(stderr, "> Fault: %p from %s in %f(ns).\n",
             rel_page,
             inet_ntoa((struct in_addr&) node->ip_address),
-            ((double) clock() - start) / CLOCKS_PER_SEC);
+            ((double) end.tv_nsec - start.tv_nsec));
 
       return;
    }
