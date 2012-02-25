@@ -200,10 +200,10 @@ namespace NLCBSMM {
       clock_gettime(CLOCK_REALTIME, &end);
 
       // Print summary
-      fprintf(stderr, "> Fault: %p from %s in %0.2f (s).\n",
+      fprintf(stderr, "> Fault: %p from %s in %0.6f (s).\n",
             rel_page,
             inet_ntoa((struct in_addr&) node->ip_address),
-            ((double) end.tv_sec - start.tv_sec) / CLOCKS_PER_SEC);
+            ((double) end.tv_sec - start.tv_sec) / (double) CLOCKS_PER_SEC);
 
       return;
    }
