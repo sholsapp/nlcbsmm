@@ -1462,7 +1462,7 @@ namespace NLCBSMM {
                close(sk);
             }
             else {
-               fprintf(stderr, "> Already own lock\n");
+               //fprintf(stderr, "> Already own lock\n");
             }
 
             return;

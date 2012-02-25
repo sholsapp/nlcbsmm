@@ -157,8 +157,8 @@ namespace NLCBSMM {
                   inet_ntoa((struct in_addr&) ip));
             return ip;
          }
-
       }
+      fprintf(stderr, "> No available workers\n");
       return -1;
    }
 
