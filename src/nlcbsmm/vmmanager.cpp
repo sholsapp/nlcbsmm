@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 
 #include "vmmanager.h"
 #include "constants.h"

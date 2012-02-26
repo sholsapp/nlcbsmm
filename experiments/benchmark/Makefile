@@ -9,7 +9,7 @@ CPP=g++
 CFLAGS=-g
 
 LDFLAGS=-lpthread 
-HOARD_LDFLAGS=-Wl,--no-as-needed -lrt -L. -lhoard
+HOARD_LDFLAGS=-Wall -Wl,--no-as-needed -lrt -L. -lhoard
 
 ALL=benchmark-malloc benchmark-hoard mmult-malloc mmult-hoard counter-malloc counter-hoard
 
