@@ -178,7 +178,7 @@ namespace HL {
                 */
                void * ptr = NlcbsmmChunkHeap<heap_identifier>::malloc (sz);
                MyMapLock.lock();
-               //fprintf(stderr, "nlcbsmm-heap >> inserting %p(%d)\n", ptr, sz);
+               fprintf(stderr, "nlcbsmm-heap >> inserting %p(%d)\n", ptr, sz);
                MyMap.set (ptr, sz);
                MyMapLock.unlock();
                assert (reinterpret_cast<size_t>(ptr) % Alignment == 0);
