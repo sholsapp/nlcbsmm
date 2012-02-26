@@ -277,8 +277,10 @@ namespace NLCBSMM {
       /**
        * Cheap hack, but forces heaps to initialize memory pools.
        */
+      fprintf(stderr, "> Init heaps\n");
       pt_heap->free(pt_heap->malloc(8));
       clone_heap.free(clone_heap.malloc(8));
+      fprintf(stderr, "> done\n");
       return;
    }
 
@@ -287,8 +289,6 @@ namespace NLCBSMM {
       /**
        * Hook entry.
        */
-
-      sleep(1);
 
       void* raw = NULL;
 
