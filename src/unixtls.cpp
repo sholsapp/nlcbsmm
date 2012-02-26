@@ -292,7 +292,7 @@ extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
 #endif
 
    // A pointer to the library version of pthread_join.
-   static pthread_mutex_destroy_function real_pthread_mutex_destory =
+   static pthread_mutex_destroy_function real_pthread_mutex_destroy =
       reinterpret_cast<pthread_mutex_destroy_function>
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
@@ -301,6 +301,8 @@ extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
    return 0;
 
 }
+
+/*
 
 extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
 
@@ -358,6 +360,8 @@ extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
    return 0;
 
 }
+
+*/
 
 
 #endif
