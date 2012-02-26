@@ -126,7 +126,7 @@ namespace NLCBSMM {
 
       uint64_t start, end;
 
-      start = get_clock_milli();
+      start = get_micro_clock();
 
       // Block SIGSEGV while executing this
       sigemptyset(&set);
@@ -195,11 +195,10 @@ namespace NLCBSMM {
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
 
-
-      end = get_clock_milli();
+      end = get_micro_clock();
 
       // Print summary
-      fprintf(stderr, "> Fault: %p from %s in %lld (ms).\n",
+      fprintf(stderr, "> Fault: %p from %s in %lld mcs.\n",
             rel_page,
             inet_ntoa((struct in_addr&) node->ip_address),
             (end - start));

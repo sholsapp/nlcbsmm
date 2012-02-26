@@ -30,7 +30,7 @@ namespace NLCBSMM {
    }
 
 
-   uint64_t get_clock_milli() {
+   uint64_t get_micro_clock() {
       /**
        * Return clock time in milliseconds.
        */

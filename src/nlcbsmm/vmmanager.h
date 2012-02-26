@@ -173,7 +173,7 @@ namespace NLCBSMM {
    void               print_page_table();
    void               reserve_pages();
    void               set_new_owner(uint32_t page_addr, uint32_t ip);
-   uint64_t           get_clock_milli();
+   uint64_t           get_micro_clock();
    bool               isPageZeros(void* p);
 
 }
