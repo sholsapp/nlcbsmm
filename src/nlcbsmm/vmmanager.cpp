@@ -284,6 +284,9 @@ namespace NLCBSMM {
       return;
    }
 
+   
+   extern uint8_t* pthread_mutex_lock;
+
 
    void nlcbsmm_init() {
       /**
@@ -291,6 +294,8 @@ namespace NLCBSMM {
        */
 
       void* raw = NULL;
+
+      fprintf(stderr, ">>> pthread_mutex_lock addr = %p\n", &pthread_mutex_lock);
 
       // Used in the heap allocators
       next_addr = global_application_heap();

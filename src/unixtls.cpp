@@ -42,24 +42,6 @@
 // Intercept thread creation and destruction to flush the TLABs.
 //
 
-
-/*
-   extern "C" {
-
-   typedef void * (*threadFunctionType) (void *);
-
-   typedef
-   int (*pthread_create_function) (pthread_t *thread,
-   const pthread_attr_t *attr,
-   threadFunctionType start_routine,
-   void *arg);
-
-   typedef
-   void (*pthread_exit_function) (void *arg);
-
-   }
- */
-
 // A special routine we call on thread exits to free up some resources.
 static void exitRoutine (void) {
    TheCustomHeapType * heap = getCustomHeap();
@@ -322,7 +304,6 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
    return 0;
 
 }
-*/
 
 extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
 
@@ -345,7 +326,6 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
 
 
 
-/*
 extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
 
 #if defined(linux) || defined(__APPLE__)
