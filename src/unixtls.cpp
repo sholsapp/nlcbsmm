@@ -263,7 +263,6 @@ extern "C" int pthread_join (pthread_t thread,
 }
 
 
-/*
 extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
       const pthread_mutexattr_t *addr) {
 
@@ -302,8 +301,9 @@ extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
    return 0;
 
 }
-*/
 
+
+/*
 extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
 
 #if defined(linux) || defined(__APPLE__)
@@ -322,8 +322,8 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
    return 0;
 
 }
+*/
 
-/*
 extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
 
 #if defined(linux) || defined(__APPLE__)
@@ -345,6 +345,7 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
 
 
 
+/*
 extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
 
 #if defined(linux) || defined(__APPLE__)
