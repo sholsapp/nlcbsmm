@@ -25,6 +25,8 @@
 #include "constants.h"
 //#include "mutex.h"
 
+#undef __GXX_WEAK__ 
+
 
 namespace NLCBSMM {
 
