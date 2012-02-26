@@ -30,6 +30,16 @@ namespace NLCBSMM {
    }
 
 
+   uint64_t get_clock_milli() {
+      /**
+       * Return clock time in milliseconds.
+       */
+      timespec ts;
+      clock_gettime(CLOCK_REALTIME, &ts);
+      return (uint64_t) ts.tv_sec * 1000000LL + (uint64_t) ts.tv_nsec / 1000LL;
+   }
+
+
    const char* get_local_interface() {
       /**
        * Used to initialize the static variable local_ip with an IP address other nodes can
@@ -144,15 +154,15 @@ namespace NLCBSMM {
       uint32_t        machine_status;
       uint32_t        ip;
 
-      for(node_itr = node_list->begin(); 
-            node_itr != node_list->end(); 
+      for(node_itr = node_list->begin();
+            node_itr != node_list->end();
             node_itr++) {
 
          ip      = (*node_itr).first;
          machine = (*node_itr).second;
 
          // If this isn't us
-         if (ip != local_addr.s_addr 
+         if (ip != local_addr.s_addr
                && machine->status != MACHINE_ACTIVE) {
             fprintf(stderr, "> Available worker: %s\n",
                   inet_ntoa((struct in_addr&) ip));
