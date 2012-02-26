@@ -263,7 +263,6 @@ extern "C" int pthread_join (pthread_t thread,
 }
 
 
-/*
 extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
       const pthread_mutexattr_t *addr) {
 
@@ -359,7 +358,6 @@ extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
    return 0;
 
 }
-*/
 
 
 #endif
