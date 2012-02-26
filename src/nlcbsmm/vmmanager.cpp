@@ -287,6 +287,9 @@ namespace NLCBSMM {
       /**
        * Hook entry.
        */
+
+      sleep(1);
+
       void* raw = NULL;
 
       // Used in the heap allocators

@@ -184,8 +184,6 @@ namespace NLCBSMM {
 
    PageTableHeapType* get_pt_heap(mutex* m);
    uint32_t           get_available_worker();
-   unsigned char*     pageAlign(unsigned char* p);
-   unsigned int       pageIndex(unsigned char* p, unsigned char* base);
    void               signal_handler(int signo, siginfo_t* info, void* contex);
    void               register_signal_handlers();
    void               nlcbsmm_init();
@@ -193,6 +191,9 @@ namespace NLCBSMM {
    void               reserve_pages();
    void               set_new_owner(uint32_t page_addr, uint32_t ip);
    uint64_t           get_micro_clock();
+   // TODO: Fix naming convention
+   unsigned int       pageIndex(unsigned char* p, unsigned char* base);
+   unsigned char*     pageAlign(unsigned char* p);
    bool               isPageZeros(void* p);
 
 }

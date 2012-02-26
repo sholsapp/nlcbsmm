@@ -50,7 +50,7 @@ class Packet {
          return ((uint8_t*) this)[8];
       }
 
-      uint8_t set_flag(uint8_t new_flag) {
+      void set_flag(uint8_t new_flag) {
          uint8_t old_flag = get_flag();
          ((uint8_t*) this)[8] = new_flag;
       }
