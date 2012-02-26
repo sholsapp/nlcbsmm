@@ -324,6 +324,7 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
 
 }
 
+*/
 
 
 extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
@@ -345,7 +346,6 @@ extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
 
 }
 
-*/
 
 
 #endif
