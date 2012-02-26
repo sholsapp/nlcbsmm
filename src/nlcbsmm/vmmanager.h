@@ -101,6 +101,25 @@ namespace NLCBSMM {
       int (*pthread_join_function) (pthread_t thread,
             void** value_ptr);
 
+   typedef
+      int (*pthread_mutex_init_function) (pthread_mutex_t *mutex,
+            const pthread_mutexattr_t *attr);
+
+   typedef
+      int (*pthread_mutex_destroy_function) (pthread_mutex_t *mutex);
+
+   // TODO: what is this?
+   // pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+   typedef
+      int (*pthread_mutex_lock_function) (pthread_mutex_t *mutex);
+
+   typedef
+      int (*pthread_mutex_unlock_function) (pthread_mutex_t *mutex);
+
+   typedef
+      int (*pthread_mutex_trylock_function) (pthread_mutex_t *mutex);
+
 }
 
 namespace NLCBSMM {

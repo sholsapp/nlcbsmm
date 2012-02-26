@@ -262,4 +262,117 @@ extern "C" int pthread_join (pthread_t thread,
 
 }
 
+
+extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
+      const pthread_mutexattr_t *addr) {
+   /**
+    *
+    */
+
+#if defined(linux) || defined(__APPLE__)
+   char fname[] = "pthread_mutex_init";
+#else
+   char fname[] = "_pthread_mutex_init";
+#endif
+
+   // A pointer to the library version of pthread_mutex_init.
+   static pthread_mutex_init_function real_pthread_mutex_init =
+      reinterpret_cast<pthread_mutex_init_function>
+      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+
+   fprintf(stderr, "> pthread_mutex_init\n");
+
+   return 0;
+}
+
+
+extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
+   /**
+    *
+    */
+
+#if defined(linux) || defined(__APPLE__)
+   char fname[] = "pthread_mutex_destroy";
+#else
+   char fname[] = "_pthread_mutex_destroy";
+#endif
+
+   // A pointer to the library version of pthread_join.
+   static pthread_mutex_destroy_function real_pthread_mutex_destory =
+      reinterpret_cast<pthread_mutex_destroy_function>
+      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+
+   fprintf(stderr, "> pthread_mutex_destory\n");
+
+   return 0;
+
+}
+
+extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
+   /**
+    *
+    */
+
+#if defined(linux) || defined(__APPLE__)
+   char fname[] = "pthread_mutex_lock";
+#else
+   char fname[] = "_pthread_mutex_lock";
+#endif
+
+   // A pointer to the library version of pthread_join.
+   static pthread_mutex_lock_function real_pthread_mutex_lock =
+      reinterpret_cast<pthread_mutex_lock_function>
+      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+
+   fprintf(stderr, "> pthread_mutex_lock\n");
+
+   return 0;
+
+}
+
+extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
+   /**
+    *
+    */
+
+#if defined(linux) || defined(__APPLE__)
+   char fname[] = "pthread_mutex_unlock";
+#else
+   char fname[] = "_pthread_mutex_unlock";
+#endif
+
+   // A pointer to the library version of pthread_join.
+   static pthread_mutex_unlock_function real_pthread_mutex_unlock =
+      reinterpret_cast<pthread_mutex_unlock_function>
+      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+
+   fprintf(stderr, "> pthread_mutex_unlock\n");
+
+   return 0;
+
+}
+
+extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
+   /**
+    *
+    */
+
+#if defined(linux) || defined(__APPLE__)
+   char fname[] = "pthread_mutex_trylock";
+#else
+   char fname[] = "_pthread_mutex_trylock";
+#endif
+
+   // A pointer to the library version of pthread_join.
+   static pthread_mutex_trylock_function real_pthread_mutex_trylock =
+      reinterpret_cast<pthread_mutex_trylock_function>
+      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+
+   fprintf(stderr, "> pthread_mutex_trylock\n");
+
+   return 0;
+
+}
+
+
 #endif
