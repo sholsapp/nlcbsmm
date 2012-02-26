@@ -25,13 +25,15 @@
 #include "constants.h"
 //#include "mutex.h"
 
+extern uint8_t* pthread_mutex_lock;
+
 
 namespace NLCBSMM {
 
    // If a network thread needs memory, it must use this private
    // heap.  This memory is lost from the DSM system.
    FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> > clone_heap;
-   
+
    // If the shared page table needs memory, it must use this
    // private heap.  This memory is kept in a fixed location in
    // memory in all instances of the application.
@@ -186,7 +188,7 @@ namespace NLCBSMM {
          set_new_owner((uint32_t) rel_page, local_addr.s_addr);
       }
 
-      // TODO: Add a multicat packet to inform the other hosts 
+      // TODO: Add a multicat packet to inform the other hosts
       // that I am the new owner of the page p (or let loser do this?)
 
       clone_heap.free(p);
@@ -254,7 +256,7 @@ namespace NLCBSMM {
       return;
    }
 
-   
+
    void nlcbsmm_init_locks() {
       /**
        * Setup mutex and cond vars
@@ -283,9 +285,6 @@ namespace NLCBSMM {
       fprintf(stderr, "> done\n");
       return;
    }
-
-   
-   extern uint8_t* pthread_mutex_lock;
 
 
    void nlcbsmm_init() {
