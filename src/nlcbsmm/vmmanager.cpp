@@ -277,13 +277,9 @@ namespace NLCBSMM {
       /**
        * Cheap hack, but forces heaps to initialize memory pools.
        */
-      void* t1;
-      void* t2
       fprintf(stderr, "> Init heaps\n");
-      t1 = pt_heap->malloc(8);
-      t2 = clone_heap->malloc(8);
-      pt_heap->free(t1);
-      clone_heap.free(t2);
+      pt_heap->free(pt_heap->malloc(8));
+      clone_heap.free(clone_heap.malloc(8));
       fprintf(stderr, "> done\n");
       return;
    }
