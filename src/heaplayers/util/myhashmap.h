@@ -3,6 +3,7 @@
 #ifndef _HL_MYHASHMAP_H_
 #define _HL_MYHASHMAP_H_
 
+#include <cstdio>
 #include <assert.h>
 #include "hash.h"
 
@@ -18,6 +19,7 @@ public:
   MyHashMap (int size = INITIAL_NUM_BINS)
     : num_bins (size)
   {
+     fprintf(stderr, "> MyHashMap construct\n");
     bins = new (alloc.malloc (sizeof(ListNodePtr) * num_bins)) ListNodePtr;
     for (int i = 0 ; i < num_bins; i++) {
       bins[i] = NULL;
