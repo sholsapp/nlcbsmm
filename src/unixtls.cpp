@@ -300,6 +300,8 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
 
    fprintf(stderr, "> pthread_mutex_lock\n");
 
+   real_pthread_mutex_lock(mutex);
+
    return 0;
 
 }
@@ -319,6 +321,8 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
    fprintf(stderr, "> pthread_mutex_unlock\n");
+
+   real_pthread_mutex_unlock(mutex);
 
    return 0;
 
