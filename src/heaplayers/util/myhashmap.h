@@ -25,7 +25,7 @@ public:
   }
 
   void set (Key k, Value v) {
-    int binIndex = (unsigned int) hash(k) % 511;
+    int binIndex = (unsigned int) hash(k) % num_bins;
     ListNode * l = bins[binIndex];
     while (l != NULL) {
       if (l->key == k) {
