@@ -5,10 +5,6 @@
 
 namespace NLCBSMM {
 
-   // Symbols defined by the end application.
-   extern uint8_t* main;
-   extern uint8_t* _end;
-
    class ClusterCoordinator {
 
       public:
