@@ -284,7 +284,6 @@ extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
 
 }
 
-/*
 
 extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
 
@@ -295,13 +294,13 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
 #endif
 
    // A pointer to the library version of pthread_join.
-   static pthread_mutex_lock_function real_pthread_mutex_lock =
-      reinterpret_cast<pthread_mutex_lock_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+   //static pthread_mutex_lock_function real_pthread_mutex_lock =
+   //   reinterpret_cast<pthread_mutex_lock_function>
+   //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
    fprintf(stderr, "> pthread_mutex_lock\n");
 
-   real_pthread_mutex_lock(mutex);
+   //real_pthread_mutex_lock(mutex);
 
    return 0;
 
@@ -317,13 +316,13 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
 #endif
 
    // A pointer to the library version of pthread_join.
-   static pthread_mutex_unlock_function real_pthread_mutex_unlock =
-      reinterpret_cast<pthread_mutex_unlock_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+   //static pthread_mutex_unlock_function real_pthread_mutex_unlock =
+   //   reinterpret_cast<pthread_mutex_unlock_function>
+   //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
    fprintf(stderr, "> pthread_mutex_unlock\n");
 
-   real_pthread_mutex_unlock(mutex);
+   //real_pthread_mutex_unlock(mutex);
 
    return 0;
 
@@ -349,6 +348,5 @@ extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
 
 }
 
-*/
 
 #endif
