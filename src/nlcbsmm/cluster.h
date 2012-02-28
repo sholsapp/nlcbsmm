@@ -133,11 +133,7 @@ namespace NLCBSMM {
             selflen = sizeof(struct sockaddr_in);
             addrlen = sizeof(struct sockaddr_in);
 
-            fprintf(stderr, "\t>Worker func\n");
-
             while(1) {
-
-               fprintf(stderr, "> pthread worker waiting for work\n");
 
                // If there is no work in the queue
                if (safe_thread_size(&thread_deque, &thread_deque_lock) == 0) {
