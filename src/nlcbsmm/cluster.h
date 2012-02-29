@@ -1066,7 +1066,8 @@ namespace NLCBSMM {
             p = blocking_comm(
                   (struct sockaddr*) &addr,
                   new (packet_memory) GenericPacket(SYNC_START_F),
-                  timeout);
+                  timeout,
+                  "sync start");
             // TODO: verify response is SYNC_START_ACK_F
 
             // Queue work to send page table
@@ -1105,7 +1106,8 @@ namespace NLCBSMM {
             p = blocking_comm(
                   (struct sockaddr*) &retaddr,
                   new (packet_memory) GenericPacket(SYNC_DONE_F),
-                  timeout);
+                  timeout,
+                  "sync done");
             // TODO: verify response is SYNC_DONE_ACK_F
 
             return;
@@ -1302,7 +1304,7 @@ namespace NLCBSMM {
          }
 
 
-         static Packet* blocking_comm(struct sockaddr* addr, Packet* send, uint32_t timeout) {
+         static Packet* blocking_comm(struct sockaddr* addr, Packet* send, uint32_t timeout, const char* id) {
             /**
              *
              */
@@ -1356,7 +1358,7 @@ namespace NLCBSMM {
                   return reinterpret_cast<Packet*>(rec_buffer);
                }
             }
-            fprintf(stderr, "> Persistent blocking communication timed out\n");
+            fprintf(stderr, "> Blocking comm timed out (%s)\n", id);
             clone_heap.free(send);
             // Close socket
             close(sk);
@@ -1491,7 +1493,8 @@ namespace NLCBSMM {
                   (struct sockaddr*) owner,
                   reinterpret_cast<Packet*>(
                      new (packet_memory) ThreadJoin()),
-                  timeout
+                  timeout,
+                  "thread join"
                   );
 
             return 0;
@@ -1551,7 +1554,8 @@ namespace NLCBSMM {
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
                      new (packet_memory) ThreadCreate((void*) thr_stack, (void*) start_routine, (void*) arg)),
-                  timeout
+                  timeout,
+                  "thread create"
                   );
 
             if (p->get_flag() == THREAD_CREATE_ACK_F) {
