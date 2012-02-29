@@ -1090,7 +1090,9 @@ namespace NLCBSMM {
                if (!isPageZeros(page_data)) {
 
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
                   // TODO: make this persistent to avoid socket create/destroy per packet
+                  addr = retaddr; // no modify in place
                   p = blocking_comm(
                         (struct sockaddr*) &addr,
                         new (packet_memory) SyncPage(page_addr, page_data),
@@ -1104,6 +1106,7 @@ namespace NLCBSMM {
 
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
+            addr = retaddr; // no modify in place
             p = blocking_comm(
                   (struct sockaddr*) &retaddr,
                   new (packet_memory) GenericPacket(SYNC_DONE_F),
@@ -1641,7 +1644,7 @@ namespace NLCBSMM {
 
             // Sync page table with available worker
             mutex_lock(&pt_lock);
-            active_pt_sync(remote_addr);
+            active_pt_sync_2(remote_addr);
             mutex_unlock(&pt_lock);
 
             // Notify available worker to start thread
