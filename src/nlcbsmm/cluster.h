@@ -1292,15 +1292,13 @@ namespace NLCBSMM {
 
          static uint32_t new_comm(uint32_t port=0, bool print=false) {
             /**
-             *
+             * Takes about 6 microseconds
              */
             uint32_t sk               =  0;
             uint32_t selflen          =  0;
             struct   sockaddr_in self = {0};
 
             uint64_t start, end;
-
-            start = get_micro_clock();
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("cluster.h, 1, socket");
@@ -1320,10 +1318,6 @@ namespace NLCBSMM {
 
             if (print)
                fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
-
-            end = get_micro_clock();
-
-            fprintf(stderr, "*** new_comm took %lld mcs\n", end - start);
 
             return sk;
          }
