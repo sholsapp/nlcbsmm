@@ -1283,19 +1283,15 @@ namespace NLCBSMM {
                      perror("recvfrom");
                      exit(EXIT_FAILURE);
                   }
-               }
-
-               if (c == timeout -1) {
-                  // TODO: handle failure intelligently
-                  fprintf(stderr, "> Persistent blocking communication timed out\n");
+                  // Release memory (NOTE: we're returning the rec_buffer (don't free))
+                  clone_heap.free(packet);
+                  return reinterpret_cast<Packet*>(rec_buffer);
                }
             }
-
+            fprintf(stderr, "> Persistent blocking communication timed out\n");
             // Release memory (NOTE: we're returning the rec_buffer (don't free))
             clone_heap.free(packet);
-
             return reinterpret_cast<Packet*>(rec_buffer);
-
          }
 
 
@@ -1347,20 +1343,18 @@ namespace NLCBSMM {
                      perror("recvfrom");
                      exit(EXIT_FAILURE);
                   }
-               }
-
-               if (c == timeout -1) {
-                  // TODO: handle failure intelligently
-                  fprintf(stderr, "> Persistent blocking communication timed out\n");
+                  // Release memory (NOTE: we're returning the rec_buffer (don't free))
+                  clone_heap.free(send);
+                  close(sk);
+                  return reinterpret_cast<Packet*>(rec_buffer);
                }
             }
-
-            // Release memory (NOTE: we're returning the rec_buffer (don't free))
+            fprintf(stderr, "> Persistent blocking communication timed out\n");
             clone_heap.free(send);
             // Close socket
             close(sk);
+            return NULL;
 
-            return reinterpret_cast<Packet*>(rec_buffer);
          }
 
 
