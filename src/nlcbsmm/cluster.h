@@ -1112,7 +1112,7 @@ namespace NLCBSMM {
                      fprintf(stderr, "> Bad sync page ack!\n");
 
                   // TODO: memory leak
-                  //clone_heap.free(p);
+                  clone_heap.free(p);
                }
             }
 
