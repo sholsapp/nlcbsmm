@@ -204,7 +204,7 @@ namespace NLCBSMM {
                      // Indicate finished
                      direct_comm(retaddr,
                            new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
-                           GenericPacket(THREAD_JOIN_F));
+                           GenericPacket(THREAD_JOIN_ACK_F));
 
                   }
 
