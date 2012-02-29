@@ -7,8 +7,8 @@
 #define CLONE_MMAP_PROT_FLAGS (PROT_READ | PROT_WRITE)
 #define CLONE_MMAP_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED)
 
-#define PAGE_SZ                      4096
-#define PTHREAD_STACK_SZ             (4096 * 8)
+#define PAGE_SZ                       4096
+#define PTHREAD_STACK_SZ             (4096 * 16)
 
 /**
  * Allocator flags to determine fixed region of memory to
