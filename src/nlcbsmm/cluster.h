@@ -1641,7 +1641,7 @@ namespace NLCBSMM {
 
             // Sync page table with available worker
             mutex_lock(&pt_lock);
-            active_pt_sync_2(remote_addr);
+            active_pt_sync(remote_addr);
             mutex_unlock(&pt_lock);
 
             // Notify available worker to start thread
