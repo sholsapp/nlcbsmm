@@ -7,15 +7,23 @@
 #include <sys/types.h>
 #include <pthread.h>
 
+#include <ctime>
+#include <time.h>
+#include <sys/time.h>
 long long int get_micro_clock() {
-   /**
-    *        * Return clock time in milliseconds.
-    *               */
    timespec ts;
    clock_gettime(CLOCK_REALTIME, &ts);
    return (long long int) ts.tv_sec * 1000000LL + (long long int) ts.tv_nsec / 1000LL;
 }
-
+#include <sys/types.h>
+#include <sys/stat.h>
+void blocking_entry(void) {
+   FILE* fp;
+   mkfifo("go-pipe", 0755);
+   fp = fopen("go-pipe", "r");
+   fprintf(stderr, "> Waiting for unblock signal\n");
+   fgetc(fp);
+}
 
 #define MAX_THREAD 20
 
@@ -97,19 +105,6 @@ void check_matrix(int dim)
       printf("%d elements error\n",error);
    else
       printf("success\n");
-}
-
-#include <sys/types.h>
-#include <sys/stat.h>
-void blocking_entry(void) {
-   /**
-    *     * Block until data read from named pipe.
-    *         */
-   FILE* fp;
-   mkfifo("go-pipe", 0755);
-   fp = fopen("go-pipe", "r");
-   fprintf(stderr, "> Waiting for unblock signal\n");
-   fgetc(fp);
 }
 
 int main(int argc, char *argv[]) {

@@ -8,8 +8,8 @@ CC=gcc
 CPP=g++
 CFLAGS=-g
 
-LDFLAGS=-lpthread 
-HOARD_LDFLAGS=-Wall -Wl,--no-as-needed -lrt -L. -lhoard
+LDFLAGS=-lpthread -lrt
+HOARD_LDFLAGS=-Wall -Wl,--no-as-needed -L. -lhoard
 
 ALL=benchmark-malloc benchmark-hoard mmult-malloc mmult-hoard counter-malloc counter-hoard
 
