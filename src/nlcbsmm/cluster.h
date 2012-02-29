@@ -60,8 +60,13 @@ namespace NLCBSMM {
             // Where does the region start?
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
-            // Zero out local page table
-            memset(page_ptr, 0, region_sz);
+            if(local_addr.s_addr != pt_owner) {
+               // Zero out local page table
+               memset(page_ptr, 0, region_sz);
+            }
+            else {
+               fprintf(stderr,"WARNING!!!!!!!!!!!!!!!!!!!!!! PT_OWNER attempting to zero pages table.\n");
+            }
             return;
          }
 
