@@ -1088,7 +1088,11 @@ namespace NLCBSMM {
                fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
 
             // TODO: memory leak
-            clone_heap.free(p);
+            // TODO: WTF
+            // Causes:
+            // my hash map >> fuck - didn't find 0x96ccdcc
+            // my hash map >> fuck - didn't find 0x1
+            //clone_heap.free(p);
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
