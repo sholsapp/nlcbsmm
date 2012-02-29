@@ -8,7 +8,7 @@
 #define CLONE_MMAP_FLAGS (MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED)
 
 #define PAGE_SZ                       4096
-#define PTHREAD_STACK_SZ             (4096 * 16)
+#define PTHREAD_STACK_SZ             (4096 * 32)
 
 /**
  * Allocator flags to determine fixed region of memory to
@@ -30,15 +30,15 @@
 #define PAGE_TABLE_HEAP_START        104
 #define PAGE_TABLE_ALLOC_HEAP_START  105
 
-#define WORKER_STACK_SZ              (4096 * 64 )
-#define CLONE_STACK_SZ               (4096 * 64 )
-#define CLONE_ALLOC_HEAP_SZ          (4096 * 64 )
+#define WORKER_STACK_SZ              (4096 * 128 )
+#define CLONE_STACK_SZ               (4096 * 128 )
+#define CLONE_ALLOC_HEAP_SZ          (4096 * 128 )
 #define CLONE_HEAP_SZ                (4096 * 1024)
 
-#define PAGE_TABLE_MACH_LIST_SZ      (4096 * 64 )
-#define PAGE_TABLE_OBJ_SZ            (4096 * 64 )
-#define PAGE_TABLE_SZ                (4096 * 64 )
-#define PAGE_TABLE_ALLOC_HEAP_SZ     (4096 * 64 )
+#define PAGE_TABLE_MACH_LIST_SZ      (4096 * 128 )
+#define PAGE_TABLE_OBJ_SZ            (4096 * 128 )
+#define PAGE_TABLE_SZ                (4096 * 128 )
+#define PAGE_TABLE_ALLOC_HEAP_SZ     (4096 * 128 )
 #define PAGE_TABLE_HEAP_SZ           (4096 * 1024)
 
 /**
