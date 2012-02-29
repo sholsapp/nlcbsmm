@@ -167,7 +167,8 @@ namespace NLCBSMM {
             (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(
                new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
-            timeout
+            timeout,
+            "acquire page"
             );
 
       if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
