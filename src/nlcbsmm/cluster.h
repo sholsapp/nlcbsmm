@@ -1087,8 +1087,6 @@ namespace NLCBSMM {
             if (p->get_flag() != SYNC_START_ACK_F)
                fprintf(stderr, "> Bad sync start ack!\n");
 
-            clone_heap.free(p);
-
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
                page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
@@ -1109,8 +1107,6 @@ namespace NLCBSMM {
 
                   if (p->get_flag() != SYNC_PAGE_ACK_F)
                      fprintf(stderr, "> Bad sync page ack!\n");
-
-                  clone_heap.free(p);
                }
             }
 
@@ -1125,8 +1121,6 @@ namespace NLCBSMM {
 
             if (p->get_flag() != SYNC_DONE_ACK_F)
                fprintf(stderr, "> Bad sync done ack!\n");
-
-            clone_heap.free(p);
 
             return;
          }
@@ -1611,8 +1605,6 @@ namespace NLCBSMM {
 
             if (p->get_flag() != THREAD_JOIN_ACK_F)
                fprintf(stderr, "> Bad thread join ack!\n");
-
-            clone_heap.free(p);
 
             return 0;
          }
