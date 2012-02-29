@@ -610,10 +610,13 @@ namespace NLCBSMM {
                fprintf(stderr, "done\n");
 
                // Get where caller put thread stack
+               fprintf(stderr, "> Parsing thread create packet...");
                thr_stack     = (void*) ntohl(tc->stack_ptr);
                thr_stack_sz  = ntohl(tc->stack_sz);
                thr_stack_ptr = (void*) ((uint8_t*) thr_stack + thr_stack_sz);
+               fprintf(stderr, "done\n");
 
+               fprintf(stderr, "> Mapping pthread stack memory\n");
                // Map this memory into our address space
                if((test = mmap((void*) thr_stack,
                            thr_stack_sz,
