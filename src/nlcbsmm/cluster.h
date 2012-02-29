@@ -1340,6 +1340,8 @@ namespace NLCBSMM {
 
             //fprintf(stderr, "> Direct communication to %s:%d\n", inet_ntoa(retaddr.sin_addr), retaddr.sin_port);
 
+            fprintf(stderr, "dc: %x\n", send->get_flag());
+
             // Send packet
             if (sendto(sk,
                      send,
@@ -1435,7 +1437,7 @@ namespace NLCBSMM {
 
             for (int c = 0; c < timeout; c++) {
 
-               fprintf(stderr, "> Sending (%x)\n", send->get_flag());
+               fprintf(stderr, "> bc (%s): (%x)\n", id, send->get_flag());
                // Send packet
                if (sendto(sk,
                         send,
