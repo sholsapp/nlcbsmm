@@ -33,13 +33,13 @@
 #define WORKER_STACK_SZ              (4096 * 64 )
 #define CLONE_STACK_SZ               (4096 * 64 )
 #define CLONE_ALLOC_HEAP_SZ          (4096 * 64 )
-#define CLONE_HEAP_SZ                (4096 * 512)
+#define CLONE_HEAP_SZ                (4096 * 1024)
 
 #define PAGE_TABLE_MACH_LIST_SZ      (4096 * 64 )
 #define PAGE_TABLE_OBJ_SZ            (4096 * 64 )
 #define PAGE_TABLE_SZ                (4096 * 64 )
 #define PAGE_TABLE_ALLOC_HEAP_SZ     (4096 * 64 )
-#define PAGE_TABLE_HEAP_SZ           (4096 * 512)
+#define PAGE_TABLE_HEAP_SZ           (4096 * 1024)
 
 /**
  * Networking constants
