@@ -19,7 +19,6 @@ public:
   MyHashMap (int size = INITIAL_NUM_BINS)
     : num_bins (size)
   {
-     fprintf(stderr, "> MyHashMap construct (num_bins = %d)\n", num_bins);
     bins = new (alloc.malloc (sizeof(ListNodePtr) * num_bins)) ListNodePtr;
     for (int i = 0 ; i < num_bins; i++) {
       bins[i] = NULL;
