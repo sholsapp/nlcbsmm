@@ -205,10 +205,10 @@ namespace NLCBSMM {
       // Print summary
       //log(stderr, buf);
 
-      fprintf(stderr, "> Fault: %p from %s in %lld mcs.\n",
-            rel_page,
-            inet_ntoa((struct in_addr&) node->ip_address),
-            (end - start));
+      //fprintf(stderr, "> Fault: %p from %s in %lld mcs.\n",
+      //      rel_page,
+      //      inet_ntoa((struct in_addr&) node->ip_address),
+      //      (end - start));
 
       return;
    }
