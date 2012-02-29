@@ -1326,20 +1326,20 @@ namespace NLCBSMM {
             //addr.sin_port        = htons(UNICAST_PORT);
             addrlen              = sizeof(struct sockaddr);
 
-            // Send packet
-            if (sendto(sk,
-                     send,
-                     MAX_PACKET_SZ,
-                     0,
-                     addr,
-                     addrlen) < 0) {
-               perror("cluster.h, blocking, sendto");
-               exit(EXIT_FAILURE);
-            }
-
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             for (int c = 0; c < timeout; c++) {
+
+               // Send packet
+               if (sendto(sk,
+                        send,
+                        MAX_PACKET_SZ,
+                        0,
+                        addr,
+                        addrlen) < 0) {
+                  perror("cluster.h, blocking, sendto");
+                  exit(EXIT_FAILURE);
+               }
 
                if ((ret = select_call(sk, 1, 0)) > 0) {
 
