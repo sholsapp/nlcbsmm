@@ -604,8 +604,10 @@ namespace NLCBSMM {
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
 
+               fprintf(stderr, "> Looking up machine...");
                // Received work, we're now active
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
+               fprintf(stderr, "done\n");
 
                // Get where caller put thread stack
                thr_stack     = (void*) ntohl(tc->stack_ptr);
