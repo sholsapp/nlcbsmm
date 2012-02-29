@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
    free(arg);
 
    end = get_micro_clock();
-   fprintf(stderr, "> application runtime: %lld milliseconds\n", end - start);
+   fprintf(stderr, "> application runtime: %lld microseconds\n", end - start);
 
    return 0;
 }
