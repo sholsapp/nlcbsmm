@@ -39,19 +39,6 @@ namespace NLCBSMM {
       return (uint64_t) ts.tv_sec * 1000000LL + (uint64_t) ts.tv_nsec / 1000LL;
    }
 
-   void log(FILE* f, char* message) {
-      struct timeval tv;
-      struct tm* ptm;
-      char   time_string[40];
-      long   milliseconds;
-      gettimeofday (&tv, NULL);
-      ptm = localtime (&tv.tv_sec);
-      strftime (time_string, sizeof (time_string), "%H:%M:%S", ptm);
-      milliseconds = tv.tv_usec / 1000;
-      fprintf(f, "%s.%03ld - %s\n", time_string, milliseconds, message);
-      return;
-   }
-
 
    const char* get_local_interface() {
       /**

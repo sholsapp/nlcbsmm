@@ -7,6 +7,16 @@
 #include <sys/types.h>
 #include <pthread.h>
 
+long long int get_micro_clock() {
+   /**
+    *        * Return clock time in milliseconds.
+    *               */
+   timespec ts;
+   clock_gettime(CLOCK_REALTIME, &ts);
+   return (long long int) ts.tv_sec * 1000000LL + (long long int) ts.tv_nsec / 1000LL;
+}
+
+
 #define MAX_THREAD 20
 
 #define NDIM 100
@@ -106,6 +116,11 @@ int main(int argc, char *argv[]) {
 
    blocking_entry();
 
+   long long int start;
+   long long int end;
+
+   start = get_micro_clock();
+
    int j, k, noproc, me_no;
    double sum;
    double t1, t2;
@@ -166,6 +181,10 @@ int main(int argc, char *argv[]) {
    /* print_matrix(NDIM); */
    check_matrix(NDIM);
    free(arg);
+
+   end = get_micro_clock();
+   fprintf(stderr, "> application runtime: %lld milliseconds\n", start - end);
+
    return 0;
 }
 

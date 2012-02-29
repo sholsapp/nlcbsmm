@@ -210,7 +210,6 @@ namespace NLCBSMM {
    void               reserve_pages();
    void               set_new_owner(uint32_t page_addr, uint32_t ip);
    uint64_t           get_micro_clock();
-   void               log(FILE* f, char* message);
    // TODO: Fix naming convention
    unsigned int       pageIndex(unsigned char* p, unsigned char* base);
    unsigned char*     pageAlign(unsigned char* p);
