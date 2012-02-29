@@ -578,11 +578,16 @@ namespace NLCBSMM {
                      inet_ntoa(retaddr.sin_addr),
                      ntohs(retaddr.sin_port));
 
-               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                     new (work_memory) WorkTupleType(retaddr,
-                        new (packet_memory) GenericPacket(SYNC_PAGE_ACK_F))
-                     );
-               cond_signal(&uni_speaker_cond);
+               //safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+               //      new (work_memory) WorkTupleType(retaddr,
+               //         new (packet_memory) GenericPacket(SYNC_PAGE_ACK_F))
+               //      );
+               //cond_signal(&uni_speaker_cond);
+
+               direct_comm(retaddr,
+                     new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
+                     GenericPacket(SYNC_PAGE_ACK_F));
+
                break;
 
             case SYNC_DONE_F:
@@ -1463,7 +1468,6 @@ namespace NLCBSMM {
             }
             fprintf(stderr, "> Blocking comm timed out (%s)\n", id);
             clone_heap.free(send);
-            // Close socket
             close(sk);
             return NULL;
 
