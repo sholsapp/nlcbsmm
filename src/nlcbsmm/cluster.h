@@ -620,10 +620,15 @@ namespace NLCBSMM {
                            -1, 0)) == MAP_FAILED) {
                   fprintf(stderr, "> map failed\n");
                }
+               else {
+                  fprintf(stderr, "> mapped pthread stack at %p\n", thr_stack);
+               }
 
                // Get address of function
                func = (void*) ntohl(tc->func_ptr);
                arg  = (void*) ntohl(tc->arg);
+
+               fprintf(stderr, "> queue work for worker_func\n");
 
                // Queue pthread work
                thread_work_memory = clone_heap.malloc(sizeof(ThreadWorkType));
