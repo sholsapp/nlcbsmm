@@ -450,6 +450,7 @@ namespace NLCBSMM {
 
             uint8_t*               payload_buf    = NULL;
             uint8_t*               page_ptr       = NULL;
+            uint8_t*               page_aligned   = NULL;
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  thread_work_memory = NULL;
@@ -615,14 +616,17 @@ namespace NLCBSMM {
                tc = reinterpret_cast<ThreadCreate*>(buffer);
                fprintf(stderr, "%lld > thread create (func=%p)\n", get_micro_clock(), (void*) ntohl(tc->func_ptr));
 
-               fprintf(stderr, "> Looking up machine...");
                // Received work, we're now active
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
-               fprintf(stderr, "done\n");
 
                // Get where caller put thread stack
+               // Use padding convention to get a thread-stack-sized page-aligned section of memory
                fprintf(stderr, "> Parsing thread create packet...");
-               thr_stack     = (void*) ((uint8_t*) pageAlign((uint8_t*) ntohl(tc->stack_ptr)) + PAGE_SZ);
+               // Page aligned ptr
+               page_aligned  = (uint8_t*) page_align((void*) ntohl(tc->stack_ptr));
+               // Wastes some memory
+               thr_stack     = (void*) (page_aligned + PAGE_SZ);
+               // Discard the padding for actual stack size
                thr_stack_sz  = ntohl(tc->stack_sz);
                thr_stack_ptr = (void*) ((uint8_t*) thr_stack + thr_stack_sz);
                fprintf(stderr, "done\n");
@@ -1577,12 +1581,9 @@ namespace NLCBSMM {
             //            -1, 0)) == MAP_FAILED) {
             //   fprintf(stderr, "> pthread stack map failed\n");
             //}
-
-
+            // TODO: this is a hack.
             if ((thr_stack = malloc(PTHREAD_STACK_SZ + PAGE_SZ)) == NULL) {
-
                fprintf(stderr, "> pthread stack malloc failed\n");
-
             }
 
             // Sync page table with available worker

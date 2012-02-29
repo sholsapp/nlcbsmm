@@ -20,6 +20,11 @@ namespace NLCBSMM {
    }
 
 
+   void* page_align(void* p) {
+      return (unsigned char*) (((int) p) & ~(PAGE_SZ-1));
+   }
+
+
    bool isPageZeros(void* p) {
       /**
        * Helper function to check of a page of memory is all zeros
