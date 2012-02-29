@@ -175,7 +175,7 @@ namespace NLCBSMM {
 
                   // Send thread_id to caller, wait for ThreadJoin
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                  p = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr,
+                  p = blocking_comm(sk, (struct sockaddr*) &retaddr,
                         new (packet_memory) ThreadCreateAck(thr_id),
                         timeout);
 
