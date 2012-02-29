@@ -574,10 +574,6 @@ namespace NLCBSMM {
                      syncp->get_payload_ptr(),
                      PAGE_SZ);
 
-               fprintf(stderr, "SYNC_PAGE_ACK_F to %s:%d\n",
-                     inet_ntoa(retaddr.sin_addr),
-                     ntohs(retaddr.sin_port));
-
                //safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                //      new (work_memory) WorkTupleType(retaddr,
                //         new (packet_memory) GenericPacket(SYNC_PAGE_ACK_F))
@@ -1427,7 +1423,8 @@ namespace NLCBSMM {
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
 
-            sk = new_comm(0, true);
+            //sk = new_comm(0, true);
+            sk = new_comm();
 
             //addr.sin_family      = AF_INET;
             //addr.sin_addr.s_addr = rec_ip;
