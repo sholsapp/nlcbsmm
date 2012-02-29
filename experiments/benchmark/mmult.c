@@ -27,7 +27,7 @@ void blocking_entry(void) {
 
 #define MAX_THREAD 20
 
-#define NDIM 50 
+#define NDIM 200
 
 double** a;
 double** b;
