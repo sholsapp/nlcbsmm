@@ -39,6 +39,19 @@ namespace NLCBSMM {
       return (uint64_t) ts.tv_sec * 1000000LL + (uint64_t) ts.tv_nsec / 1000LL;
    }
 
+   void log(FILE* f, char* message) {
+      struct timeval tv;
+      struct tm* ptm;
+      char   time_string[40];
+      long   milliseconds;
+      gettimeofday (&tv, NULL);
+      ptm = localtime (&tv.tv_sec);
+      strftime (time_string, sizeof (time_string), "%H:%M:%S", ptm);
+      milliseconds = tv.tv_usec / 1000;
+      fprintf(f, "%s.%03ld - %s\n", time_string, milliseconds, message);
+      return;
+   }
+
 
    const char* get_local_interface() {
       /**
@@ -164,8 +177,8 @@ namespace NLCBSMM {
          // If this isn't us
          if (ip != local_addr.s_addr
                && machine->status != MACHINE_ACTIVE) {
-            fprintf(stderr, "> Available worker: %s\n",
-                  inet_ntoa((struct in_addr&) ip));
+            //fprintf(stderr, "> Available worker: %s\n",
+            //      inet_ntoa((struct in_addr&) ip));
             return ip;
          }
       }

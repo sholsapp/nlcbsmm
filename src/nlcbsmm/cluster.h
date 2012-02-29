@@ -913,8 +913,6 @@ namespace NLCBSMM {
                // If we're the master
                if (_uuid == 0) {
 
-                  fprintf(stderr, "> %s trying to join...\n", payload_buf);
-
                   // Verify request's address space requirements
                   if ((uint32_t) global_main() == ntohl(mjp->main_addr)
                         && (uint32_t) global_end() == ntohl(mjp->end_addr)
@@ -1009,7 +1007,7 @@ namespace NLCBSMM {
 
             case MULTICAST_HEARTBEAT_F:
                mjh = reinterpret_cast<MulticastHeartbeat*>(buffer);
-               fprintf(stderr, "%s: <3\n", payload_buf);
+               //fprintf(stderr, "%s: <3\n", payload_buf);
                break;
 
             default:
