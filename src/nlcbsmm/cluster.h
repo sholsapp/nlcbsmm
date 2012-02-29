@@ -1096,7 +1096,7 @@ namespace NLCBSMM {
             // Causes:
             // my hash map >> fuck - didn't find 0x96ccdcc
             // my hash map >> fuck - didn't find 0x1
-            //clone_heap.free(p);
+            clone_heap.free(p);
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
