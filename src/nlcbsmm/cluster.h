@@ -635,54 +635,51 @@ namespace NLCBSMM {
 
                break;
 
-               /*
-                  case ACQUIRE_WRITE_LOCK_F:
-                  fprintf(stderr, " > Recieved a request to acquire ownership of the pt\n");
-                  awl = reinterpret_cast<AcquireWriteLock*>(buffer);
-                  mutex_lock(&pt_owner_lock);
+            case ACQUIRE_WRITE_LOCK_F:
+               fprintf(stderr, " > Recieved a request to acquire ownership of the pt\n");
+               awl = reinterpret_cast<AcquireWriteLock*>(buffer);
+               mutex_lock(&pt_owner_lock);
                // IF we are the pt_owner
                if(pt_owner == local_addr.s_addr) {
 
-               fprintf(stderr, "> Active sync to %s:%d\n",
-               inet_ntoa((struct in_addr&) retaddr.sin_addr),
-               ntohs(awl->ret_port));
+                  fprintf(stderr, "> Active sync to %s:%d\n",
+                        inet_ntoa((struct in_addr&) retaddr.sin_addr),
+                        ntohs(awl->ret_port));
 
-               // Respond to the specified sync port (already in network order)
-               retaddr.sin_port = awl->ret_port;
+                  // Respond to the specified sync port (already in network order)
+                  retaddr.sin_port = awl->ret_port;
 
-               // Sync page table region (locks pt_lock)
-               active_pt_sync(retaddr);
+                  // Sync page table region (locks pt_lock)
+                  active_pt_sync(retaddr);
 
-               // OK to give ownership of the pt away
-               pt_owner =  retaddr.sin_addr.s_addr;
+                  // OK to give ownership of the pt away
+                  pt_owner =  retaddr.sin_addr.s_addr;
 
-               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-               fprintf(stderr, " > Release ownership of the page table\n");
-               // Inform the sender that it now has ownership of the pt
-               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-               // A new work tuple
-               new (work_memory) WorkTupleType(retaddr,
-               // A new packet
-               new (packet_memory) ReleaseWriteLock(next_addr))
-               );
+                  fprintf(stderr, " > Release ownership of the page table\n");
+                  // Inform the sender that it now has ownership of the pt
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) ReleaseWriteLock(next_addr))
+                        );
 
-               // Signal unicast speaker there is queued work
-               cond_signal(&uni_speaker_cond);
+                  // Signal unicast speaker there is queued work
+                  cond_signal(&uni_speaker_cond);
 
-               // TODO: BROADCAST NEW PT OWNER
+                  // TODO: BROADCAST NEW PT OWNER
                }
                else {
-               fprintf(stderr," > Need to reroute\n");
-               //TODO: send the reroute packet, we are not the pt_owner
+                  fprintf(stderr," > Need to reroute\n");
+                  //TODO: send the reroute packet, we are not the pt_owner
                }
 
                mutex_unlock(&pt_owner_lock);
                break;
-                */
 
-            case ACQUIRE_WRITE_LOCK_F:
             case RELEASE_WRITE_LOCK_F:
             case SYNC_RELEASE_PAGE_F:
             case SYNC_DONE_ACK_F:
