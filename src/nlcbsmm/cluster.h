@@ -532,9 +532,9 @@ namespace NLCBSMM {
 
                page_addr = ntohl(ap->page_addr);
 
-               fprintf(stderr, "> %s wants %p\n",
-                     inet_ntoa(retaddr.sin_addr),
-                     (void*) page_addr);
+               //fprintf(stderr, "> %s wants %p\n",
+               //      inet_ntoa(retaddr.sin_addr),
+               //      (void*) page_addr);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
