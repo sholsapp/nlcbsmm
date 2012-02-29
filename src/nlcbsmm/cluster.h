@@ -1096,7 +1096,7 @@ namespace NLCBSMM {
                   p = blocking_comm(
                         (struct sockaddr*) &addr,
                         new (packet_memory) SyncPage(page_addr, page_data),
-                        timeout,
+                        15,
                         "sync page");
 
                   if (p->get_flag() != SYNC_PAGE_ACK_F)
