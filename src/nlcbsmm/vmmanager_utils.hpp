@@ -200,6 +200,13 @@ namespace NLCBSMM {
       return;
    }
 
+   uint32_t get_owner(uint32_t page_addr) {
+      /**
+       *
+       */
+      return (*page_table)[page_addr].second->ip_address;
+   }
+
 
    WorkTupleType* safe_pop(PacketQueueType* queue, mutex* m) {
       /**
