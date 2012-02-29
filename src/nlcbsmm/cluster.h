@@ -1108,7 +1108,7 @@ namespace NLCBSMM {
             // This ensures that the pt is actually sync'd.  Need logic in SYNC_START/SYNC_DONE to
             // fix this.
             // TODO: FUCKKKK FIX THIS
-            sleep(1);
+            //usleep(100);
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
@@ -1558,6 +1558,7 @@ namespace NLCBSMM {
             // Sync page table with available worker
             mutex_lock(&pt_lock);
             active_pt_sync(remote_addr);
+            mutex_unlock(&pt_lock);
 
             // Notify available worker to start thread
             p = ClusterCoordinator::blocking_comm(
@@ -1576,7 +1577,9 @@ namespace NLCBSMM {
                fprintf(stderr, "> remote pthread id: %d\n", thr_id);
 
                // Set node state to ACTIVE
+               mutex_lock(&pt_lock);
                node_list->find(remote_addr.sin_addr.s_addr)->second->status = MACHINE_ACTIVE;
+               mutex_unlock(&pt_lock);
 
                fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
                      thr_id,
@@ -1596,9 +1599,6 @@ namespace NLCBSMM {
 
             // This was returned to us, we're done with it
             clone_heap.free(p);
-
-            // We're done with the pt
-            mutex_unlock(&pt_lock);
 
             return thr_id;
          }
