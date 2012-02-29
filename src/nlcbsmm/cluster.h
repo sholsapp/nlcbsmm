@@ -1088,7 +1088,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
 
             // TODO: memory leak
-            //clone_heap.free(p);
+            clone_heap.free(p);
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
