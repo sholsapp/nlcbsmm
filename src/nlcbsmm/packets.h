@@ -30,6 +30,10 @@
 #define ACQUIRE_WRITE_LOCK_F      0x4A
 #define RELEASE_WRITE_LOCK_F      0x4B
 
+#define MUTEX_LOCK_REQUEST_F      0x5A
+#define MUTEX_LOCK_GRANT_F        0x5B
+#define MUTEX_UNLOCK_F            0x5C
+
 #include "constants.h"
 
 
@@ -352,6 +356,66 @@ class ReleasePage : public Packet {
          page_addr  = htonl(_page_addr);
          // Copy payload into packet
          memcpy(this->get_payload_ptr(), (void*) _page_addr, PAGE_SZ);
+      }
+
+}__attribute__((packed));
+
+class MutexLockRequest : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t mutex_id;
+
+      MutexLockRequest(uint32_t _mutex_id) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = MUTEX_LOCK_REQUEST_F;
+         mutex_id   = htonl(_mutex_id);
+      }
+
+}__attribute__((packed));
+
+class MutexLockGrant : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t mutex_id;
+
+      MutexLockGrant(uint32_t _mutex_id) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = MUTEX_LOCK_GRANT_F;
+         mutex_id   = htonl(_mutex_id);
+      }
+
+}__attribute__((packed));
+
+class MutexUnlock : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint8_t  flag;
+
+      uint32_t mutex_id;
+
+      MutexUnlock(uint32_t _mutex_id) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flag       = MUTEX_UNLOCK_F;
+         mutex_id   = htonl(_mutex_id);
       }
 
 }__attribute__((packed));
