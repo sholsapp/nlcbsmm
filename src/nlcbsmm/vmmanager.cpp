@@ -197,13 +197,18 @@ namespace NLCBSMM {
 
       end = get_micro_clock();
 
-      char buf[256];
-      sprintf(buf, "Fault: %p from %s in %lld mcs.\n",
-            rel_page, 
+      //char buf[256];
+      //sprintf(buf, "Fault: %p from %s in %lld mcs.\n",
+      //      rel_page, 
+      //      inet_ntoa((struct in_addr&) node->ip_address),
+      //      (end - start));
+      // Print summary
+      //log(stderr, buf);
+
+      fprintf(stderr, "> Fault: %p from %s in %lld mcs.\n",
+            rel_page,
             inet_ntoa((struct in_addr&) node->ip_address),
             (end - start));
-      // Print summary
-      log(stderr, buf);
 
       return;
    }
