@@ -1037,7 +1037,7 @@ namespace NLCBSMM {
          }
 
 
-         static void active_pt_sync_2(struct sockaddr_in retaddr) {
+         static void active_pt_sync(struct sockaddr_in retaddr) {
             /**
              * TODO: implement this
              */
@@ -1134,97 +1134,6 @@ namespace NLCBSMM {
 
             // TODO: memory leak
             //clone_heap.free(p);
-
-            return;
-         }
-
-
-         static void active_pt_sync(struct sockaddr_in retaddr) {
-            /**
-             * TODO: implement this
-             */
-            Packet*                p              = NULL;
-            GenericPacket*         gp             = NULL;
-            SyncPage*              syncp          = NULL;
-            WorkTupleType*         work           = NULL;
-
-            uint8_t*               page_ptr       = NULL;
-            void*                  packet_memory  = NULL;
-            void*                  work_memory    = NULL;
-            void*                  page_data      = NULL;
-            uint32_t               region_sz      = 0;
-            uint32_t               page_addr      = 0;
-            uint32_t               i              = 0;
-            uint32_t               timeout        = 0;
-
-            struct sockaddr_in     addr           = {0};
-
-            // Set timeout to 5 seconds
-            timeout = 5;
-
-            // Respond to the other server's listener
-            retaddr.sin_port = htons(UNICAST_PORT);
-
-            // Don't want to modify retaddr in-place
-            addr = retaddr;
-
-            // How big is the region we're sync'ing?
-            region_sz = PAGE_TABLE_MACH_LIST_SZ
-               + PAGE_TABLE_OBJ_SZ
-               + PAGE_TABLE_SZ
-               + PAGE_TABLE_ALLOC_HEAP_SZ
-               + PAGE_TABLE_HEAP_SZ;
-
-            // Where does the region start?
-            page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
-
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-            // Send a SYNC_DONE_F and wait for ack
-            p = blocking_comm(
-                  (struct sockaddr*) &addr,
-                  new (packet_memory) GenericPacket(SYNC_START_F),
-                  timeout,
-                  "sync start");
-            // TODO: verify response is SYNC_START_ACK_F
-
-            // Queue work to send page table
-            for (i = 0; i < region_sz; i += PAGE_SZ) {
-
-               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
-               page_data = reinterpret_cast<void*>(page_ptr + i);
-
-               // If this page has non-zero contents
-               if (!isPageZeros(page_data)) {
-
-                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-                  // Push work onto the uni_speaker's queue
-                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                        // A new work tuple
-                        new (work_memory) WorkTupleType(retaddr,
-                           // A new packet
-                           new (packet_memory) SyncPage(page_addr, page_data))
-                        );
-                  // Signal unicast speaker there is queued work
-                  cond_signal(&uni_speaker_cond);
-               }
-            }
-
-            // TODO: get rid of this
-            // This ensures that the pt is actually sync'd.  Need logic in SYNC_START/SYNC_DONE to
-            // fix this.
-            // TODO: FUCKKKK FIX THIS
-            usleep(1000000);
-
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-            // Send a SYNC_DONE_F and wait for ack
-            p = blocking_comm(
-                  (struct sockaddr*) &retaddr,
-                  new (packet_memory) GenericPacket(SYNC_DONE_F),
-                  timeout,
-                  "sync done");
-            // TODO: verify response is SYNC_DONE_ACK_F
 
             return;
          }
@@ -1661,17 +1570,23 @@ namespace NLCBSMM {
             // Map this memory into our address space
             // TODO: make this position agnostic (could fail when mapped into other address space)
             // TODO: insert this memory into the page table
-            if((thr_stack = mmap(NULL,
-                        PTHREAD_STACK_SZ,
-                        PROT_NONE,
-                        MAP_SHARED | MAP_ANONYMOUS,
-                        -1, 0)) == MAP_FAILED) {
-               fprintf(stderr, "> pthread stack map failed\n");
+            //if((thr_stack = mmap(NULL,
+            //            PTHREAD_STACK_SZ,
+            //            PROT_NONE,
+            //            MAP_SHARED | MAP_ANONYMOUS,
+            //            -1, 0)) == MAP_FAILED) {
+            //   fprintf(stderr, "> pthread stack map failed\n");
+            //}
+
+            if ((thr_stack = malloc(PTHREAD_STACK_SZ)) == NULL) {
+
+               fprintf(stderr, "> pthread stack malloc failed\n");
+
             }
 
             // Sync page table with available worker
             mutex_lock(&pt_lock);
-            active_pt_sync_2(remote_addr);
+            active_pt_sync(remote_addr);
             mutex_unlock(&pt_lock);
 
             // Notify available worker to start thread
