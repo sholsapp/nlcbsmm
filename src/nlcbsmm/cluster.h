@@ -1031,6 +1031,92 @@ namespace NLCBSMM {
          }
 
 
+         static void active_pt_sync_2(struct sockaddr_in retaddr) {
+            /**
+             * TODO: implement this
+             */
+            Packet*                p              = NULL;
+            GenericPacket*         gp             = NULL;
+            SyncPage*              syncp          = NULL;
+            WorkTupleType*         work           = NULL;
+
+            uint8_t*               page_ptr       = NULL;
+            void*                  packet_memory  = NULL;
+            void*                  work_memory    = NULL;
+            void*                  page_data      = NULL;
+            uint32_t               region_sz      = 0;
+            uint32_t               page_addr      = 0;
+            uint32_t               i              = 0;
+            uint32_t               timeout        = 0;
+
+            struct sockaddr_in     addr           = {0};
+
+            // Set timeout to 5 seconds
+            timeout = 5;
+
+            // Respond to the other server's listener
+            retaddr.sin_port = htons(UNICAST_PORT);
+
+            // Don't want to modify retaddr in-place
+            addr = retaddr;
+
+            // How big is the region we're sync'ing?
+            region_sz = PAGE_TABLE_MACH_LIST_SZ
+               + PAGE_TABLE_OBJ_SZ
+               + PAGE_TABLE_SZ
+               + PAGE_TABLE_ALLOC_HEAP_SZ
+               + PAGE_TABLE_HEAP_SZ;
+
+            // Where does the region start?
+            page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
+
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            // Send a SYNC_DONE_F and wait for ack
+            p = blocking_comm(
+                  (struct sockaddr*) &addr,
+                  new (packet_memory) GenericPacket(SYNC_START_F),
+                  timeout,
+                  "sync start");
+
+            if (p->get_flag() != SYNC_START_ACK_F)
+               fprintf(stderr, "> Bad sync start ack!\n");
+
+            for (i = 0; i < region_sz; i += PAGE_SZ) {
+
+               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+               page_data = reinterpret_cast<void*>(page_ptr + i);
+
+               // If this page has non-zero contents
+               if (!isPageZeros(page_data)) {
+
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  // TODO: make this persistent to avoid socket create/destroy per packet
+                  p = blocking_comm(
+                        (struct sockaddr*) &addr,
+                        new (packet_memory) SyncPage(page_addr, page_data),
+                        timeout,
+                        "sync page");
+
+                  if (p->get_flag() != SYNC_PAGE_ACK_F)
+                     fprintf(stderr, "> Bad sync page ack!\n");
+               }
+            }
+
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            // Send a SYNC_DONE_F and wait for ack
+            p = blocking_comm(
+                  (struct sockaddr*) &retaddr,
+                  new (packet_memory) GenericPacket(SYNC_DONE_F),
+                  timeout,
+                  "sync done");
+
+            if (p->get_flag() != SYNC_DONE_ACK_F)
+               fprintf(stderr, "> Bad sync done ack!\n");
+
+            return;
+         }
+
+
          static void active_pt_sync(struct sockaddr_in retaddr) {
             /**
              * TODO: implement this
@@ -1555,7 +1641,7 @@ namespace NLCBSMM {
 
             // Sync page table with available worker
             mutex_lock(&pt_lock);
-            active_pt_sync(remote_addr);
+            active_pt_sync_2(remote_addr);
             mutex_unlock(&pt_lock);
 
             // Notify available worker to start thread
