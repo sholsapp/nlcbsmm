@@ -175,7 +175,7 @@ namespace NLCBSMM {
 
                   // Send thread_id to caller, wait for ThreadJoin
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                  p = blocking_comm(sk, (struct sockaddr*) &retaddr,
+                  p = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr,
                         new (packet_memory) ThreadCreateAck(thr_id),
                         timeout);
 
@@ -1270,21 +1270,25 @@ namespace NLCBSMM {
 
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            if ((ret = select_call(sk, timeout, 0)) > 0) {
-               // Wait for response
-               if ((nbytes = recvfrom(sk,
-                           rec_buffer,
-                           MAX_PACKET_SZ,
-                           0,
-                           (struct sockaddr *) to,
-                           &addrlen)) < 0) {
-                  perror("recvfrom");
-                  exit(EXIT_FAILURE);
+            for (int c = 0; c < timeout; c++) {
+
+               if ((ret = select_call(sk, 1, 0)) > 0) {
+
+                  if ((nbytes = recvfrom(sk,
+                              rec_buffer,
+                              MAX_PACKET_SZ,
+                              0,
+                              (struct sockaddr*) to,
+                              &addrlen)) < 0) {
+                     perror("recvfrom");
+                     exit(EXIT_FAILURE);
+                  }
                }
-            }
-            else {
-               // TODO: handle failure intelligently
-               fprintf(stderr, "> Persistent blocking communication timed out\n");
+
+               if (c == timeout -1) {
+                  // TODO: handle failure intelligently
+                  fprintf(stderr, "> Persistent blocking communication timed out\n");
+               }
             }
 
             // Release memory (NOTE: we're returning the rec_buffer (don't free))
@@ -1330,21 +1334,25 @@ namespace NLCBSMM {
 
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            if ((ret = select_call(sk, timeout, 0)) > 0) {
-               // Wait for response
-               if ((nbytes = recvfrom(sk,
-                           rec_buffer,
-                           MAX_PACKET_SZ,
-                           0,
-                           addr,
-                           &addrlen)) < 0) {
-                  perror("recvfrom");
-                  exit(EXIT_FAILURE);
+            for (int c = 0; c < timeout; c++) {
+
+               if ((ret = select_call(sk, 1, 0)) > 0) {
+
+                  if ((nbytes = recvfrom(sk,
+                              rec_buffer,
+                              MAX_PACKET_SZ,
+                              0,
+                              addr,
+                              &addrlen)) < 0) {
+                     perror("recvfrom");
+                     exit(EXIT_FAILURE);
+                  }
                }
-            }
-            else {
-               // TODO: handle failure intelligently
-               fprintf(stderr, "> Blocking communication timed out\n");
+
+               if (c == timeout -1) {
+                  // TODO: handle failure intelligently
+                  fprintf(stderr, "> Persistent blocking communication timed out\n");
+               }
             }
 
             // Release memory (NOTE: we're returning the rec_buffer (don't free))
