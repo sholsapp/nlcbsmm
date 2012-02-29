@@ -622,7 +622,7 @@ namespace NLCBSMM {
 
                // Get where caller put thread stack
                fprintf(stderr, "> Parsing thread create packet...");
-               thr_stack     = (void*) ntohl(tc->stack_ptr);
+               thr_stack     = (void*) ((uint8_t*) pageAlign((uint8_t*) ntohl(tc->stack_ptr)) + PAGE_SZ);
                thr_stack_sz  = ntohl(tc->stack_sz);
                thr_stack_ptr = (void*) ((uint8_t*) thr_stack + thr_stack_sz);
                fprintf(stderr, "done\n");
@@ -1578,7 +1578,8 @@ namespace NLCBSMM {
             //   fprintf(stderr, "> pthread stack map failed\n");
             //}
 
-            if ((thr_stack = malloc(PTHREAD_STACK_SZ)) == NULL) {
+
+            if ((thr_stack = malloc(PTHREAD_STACK_SZ + PAGE_SZ)) == NULL) {
 
                fprintf(stderr, "> pthread stack malloc failed\n");
 
