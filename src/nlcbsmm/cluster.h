@@ -1088,15 +1088,16 @@ namespace NLCBSMM {
                   timeout,
                   "sync start");
 
-            if (p->get_flag() != SYNC_START_ACK_F)
-               fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
+            if (p) {
+               if (p->get_flag() != SYNC_START_ACK_F)
+                  fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
 
-            // TODO: memory leak
-            // TODO: WTF
-            // Causes:
-            // my hash map >> fuck - didn't find 0x96ccdcc
-            // my hash map >> fuck - didn't find 0x1
-            clone_heap.free(p);
+               // TODO: memory leak
+               clone_heap.free(p);
+            }
+            else {
+               fprintf(stderr, "> Sync start null response!\n");
+            }
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
@@ -1361,6 +1362,8 @@ namespace NLCBSMM {
 
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
+            memset(rec_buffer, 0, MAX_PACKET_SZ);
+
             for (int c = 0; c < timeout; c++) {
 
                // Send packet
@@ -1393,6 +1396,7 @@ namespace NLCBSMM {
             }
             fprintf(stderr, "> Blocking comm timed out (%s)\n", id);
             clone_heap.free(send);
+            clone_heap.free(rec_buffer);
             close(sk);
             return NULL;
 
