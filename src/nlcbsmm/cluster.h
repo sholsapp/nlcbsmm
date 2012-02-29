@@ -1085,7 +1085,7 @@ namespace NLCBSMM {
                   "sync start");
 
             if (p->get_flag() != SYNC_START_ACK_F)
-               fprintf(stderr, "> Bad sync start ack!\n");
+               fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
 
             // TODO: memory leak
             //clone_heap.free(p);
@@ -1109,7 +1109,7 @@ namespace NLCBSMM {
                         "sync page");
 
                   if (p->get_flag() != SYNC_PAGE_ACK_F)
-                     fprintf(stderr, "> Bad sync page ack!\n");
+                     fprintf(stderr, "> Bad sync page ack (%x)!\n", p->get_flag());
 
                   // TODO: memory leak
                   clone_heap.free(p);
@@ -1126,7 +1126,7 @@ namespace NLCBSMM {
                   "sync done");
 
             if (p->get_flag() != SYNC_DONE_ACK_F)
-               fprintf(stderr, "> Bad sync done ack!\n");
+               fprintf(stderr, "> Bad sync done ack (%x)!\n", p->get_flag());
 
             // TODO: memory leak
             //clone_heap.free(p);
@@ -1613,7 +1613,7 @@ namespace NLCBSMM {
                   );
 
             if (p->get_flag() != THREAD_JOIN_ACK_F)
-               fprintf(stderr, "> Bad thread join ack!\n");
+               fprintf(stderr, "> Bad thread join ack (%x)!\n", p->get_flag());
 
             clone_heap.free(p);
 
