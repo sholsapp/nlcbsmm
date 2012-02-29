@@ -1422,7 +1422,7 @@ namespace NLCBSMM {
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
 
-            sk = new_comm(true);
+            sk = new_comm(0, true);
 
             //addr.sin_family      = AF_INET;
             //addr.sin_addr.s_addr = rec_ip;
