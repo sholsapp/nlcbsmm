@@ -607,7 +607,7 @@ namespace NLCBSMM {
 
             case THREAD_CREATE_F:
                tc = reinterpret_cast<ThreadCreate*>(buffer);
-               fprintf(stderr, "> thread create (func=%p)\n", (void*) ntohl(tc->func_ptr));
+               fprintf(stderr, "%lld > thread create (func=%p)\n", get_micro_clock(), (void*) ntohl(tc->func_ptr));
 
                fprintf(stderr, "> Looking up machine...");
                // Received work, we're now active
@@ -1070,7 +1070,6 @@ namespace NLCBSMM {
             // Where does the region start?
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
-            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
             p = blocking_comm(
@@ -1110,7 +1109,6 @@ namespace NLCBSMM {
             // TODO: FUCKKKK FIX THIS
             usleep(1000000);
 
-            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
             p = blocking_comm(
@@ -1529,7 +1527,7 @@ namespace NLCBSMM {
             ThreadCreate*    tc  = NULL;
             ThreadCreateAck* tca = NULL;
 
-            fprintf(stderr, ">>>> pthread_create(%s) func(%p) arg(%p)\n", local_ip, start_routine, arg);
+            fprintf(stderr, "%lld >> pthread_create(%s) func(%p) arg(%p)\n", get_micro_clock(), local_ip, start_routine, arg);
 
             remote_ip = get_available_worker();
 
