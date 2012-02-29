@@ -1266,20 +1266,20 @@ namespace NLCBSMM {
 
             addrlen = sizeof(struct sockaddr);
 
-            // Send packet
-            if (sendto(sk,
-                     packet,
-                     MAX_PACKET_SZ,
-                     0,
-                     (struct sockaddr *) to,
-                     addrlen) < 0) {
-               perror("cluster.h, 659, sendto");
-               exit(EXIT_FAILURE);
-            }
-
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             for (int c = 0; c < timeout; c++) {
+
+               // Send packet
+               if (sendto(sk,
+                        packet,
+                        MAX_PACKET_SZ,
+                        0,
+                        (struct sockaddr *) to,
+                        addrlen) < 0) {
+                  perror("cluster.h, 659, sendto");
+                  exit(EXIT_FAILURE);
+               }
 
                if ((ret = select_call(sk, 1, 0)) > 0) {
 
@@ -1300,7 +1300,7 @@ namespace NLCBSMM {
             fprintf(stderr, "> Persistent blocking comm timed out (%s)\n", id);
             // Release memory (NOTE: we're returning the rec_buffer (don't free))
             clone_heap.free(packet);
-            return reinterpret_cast<Packet*>(rec_buffer);
+            return NULL;
          }
 
 

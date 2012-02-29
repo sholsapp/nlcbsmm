@@ -136,8 +136,6 @@ namespace NLCBSMM {
       faulting_addr = reinterpret_cast<uint8_t*>(info->si_addr);
       aligned_addr  = pageAlign(faulting_addr);
 
-      fprintf(stderr, "> Looking up %p\n", aligned_addr);
-
       pt_itr = page_table->find((uint32_t) aligned_addr);
 
       // If the address was not found in the page table
