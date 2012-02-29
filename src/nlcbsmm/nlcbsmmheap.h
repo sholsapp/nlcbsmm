@@ -200,7 +200,7 @@ namespace HL {
                /**
                 * WORKAROUND: apparent gcc bug.
                 */
-               //fprintf(stderr, "nlcbsmm-heap (free 1): %p(%d)\n", ptr, sz);
+               fprintf(stderr, "nlcbsmm-heap (free 1): %p(%d)\n", ptr, sz);
                NlcbsmmChunkHeap<heap_identifier>::free (ptr, sz);
             }
 
@@ -212,7 +212,7 @@ namespace HL {
                assert (reinterpret_cast<size_t>(ptr) % Alignment == 0);
                MyMapLock.lock();
                size_t sz = MyMap.get (ptr);
-               //fprintf(stderr, "nlcbsmm-heap (free 2): %p(%d)\n", ptr, sz);
+               fprintf(stderr, "nlcbsmm-heap (free 2): %p(%d)\n", ptr, sz);
                NlcbsmmChunkHeap<heap_identifier>::free (ptr, sz);
                MyMap.erase (ptr);
                MyMapLock.unlock();

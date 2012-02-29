@@ -1087,7 +1087,8 @@ namespace NLCBSMM {
             if (p->get_flag() != SYNC_START_ACK_F)
                fprintf(stderr, "> Bad sync start ack!\n");
 
-            clone_heap.free(p);
+            // TODO: memory leak
+            //clone_heap.free(p);
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
@@ -1110,7 +1111,8 @@ namespace NLCBSMM {
                   if (p->get_flag() != SYNC_PAGE_ACK_F)
                      fprintf(stderr, "> Bad sync page ack!\n");
 
-                  clone_heap.free(p);
+                  // TODO: memory leak
+                  //clone_heap.free(p);
                }
             }
 
@@ -1126,7 +1128,8 @@ namespace NLCBSMM {
             if (p->get_flag() != SYNC_DONE_ACK_F)
                fprintf(stderr, "> Bad sync done ack!\n");
 
-            clone_heap.free(p);
+            // TODO: memory leak
+            //clone_heap.free(p);
 
             return;
          }
