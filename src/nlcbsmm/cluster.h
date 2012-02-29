@@ -568,10 +568,15 @@ namespace NLCBSMM {
             case SYNC_PAGE_F:
                syncp = reinterpret_cast<SyncPage*>(buffer);
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
+
                // Sync the page (assume page table is already locked)
                memcpy((void*) ntohl(syncp->page_offset),
                      syncp->get_payload_ptr(),
                      PAGE_SZ);
+
+               fprintf(stderr, "SYNC_PAGE_ACK_F to %s:%d\n",
+                     inet_ntoa(retaddr.sin_addr),
+                     ntohs(retaddr.sin_port));
 
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                      new (work_memory) WorkTupleType(retaddr,
@@ -1284,7 +1289,7 @@ namespace NLCBSMM {
          }
 
 
-         static uint32_t new_comm(uint32_t port=0) {
+         static uint32_t new_comm(uint32_t port=0, bool print=false) {
             /**
              *
              */
@@ -1308,7 +1313,8 @@ namespace NLCBSMM {
 
             getsockname(sk, (struct sockaddr*) &self, &selflen);
 
-            //fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
+            if (print)
+               fprintf(stderr, ">> new listener on %d\n", ntohs(self.sin_port));
 
             return sk;
          }
@@ -1416,7 +1422,7 @@ namespace NLCBSMM {
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
 
-            sk = new_comm();
+            sk = new_comm(true);
 
             //addr.sin_family      = AF_INET;
             //addr.sin_addr.s_addr = rec_ip;
