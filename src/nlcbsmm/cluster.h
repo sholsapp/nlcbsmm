@@ -179,7 +179,7 @@ namespace NLCBSMM {
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   p = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr,
                         new (packet_memory) ThreadCreateAck(thr_id),
-                        timeout);
+                        timeout, "worker func - thread create ack");
 
                   fprintf(stderr, "> thread worker got packet!\n");
 
@@ -1252,7 +1252,7 @@ namespace NLCBSMM {
          }
 
 
-         static Packet* persistent_blocking_comm(uint32_t sk, struct sockaddr* to, Packet* packet, uint32_t timeout) {
+         static Packet* persistent_blocking_comm(uint32_t sk, struct sockaddr* to, Packet* packet, uint32_t timeout, const char* id) {
             /**
              *
              */
@@ -1295,7 +1295,7 @@ namespace NLCBSMM {
                   return reinterpret_cast<Packet*>(rec_buffer);
                }
             }
-            fprintf(stderr, "> Persistent blocking communication timed out\n");
+            fprintf(stderr, "> Persistent blocking comm timed out (%s)\n", id);
             // Release memory (NOTE: we're returning the rec_buffer (don't free))
             clone_heap.free(packet);
             return reinterpret_cast<Packet*>(rec_buffer);
@@ -1418,7 +1418,7 @@ namespace NLCBSMM {
                addr.sin_port          = htons(self.sin_port);
 
                // Send packet, wait for response
-               rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout);
+               rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout, "acquire pt lock (1)");
 
                while (rec->get_flag() != RELEASE_WRITE_LOCK_F) {
 
@@ -1438,7 +1438,7 @@ namespace NLCBSMM {
                   }
 
                   // Send packet, wait for response
-                  rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout);
+                  rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout, "acquire pt lock (2)");
                }
 
                if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
