@@ -1435,6 +1435,7 @@ namespace NLCBSMM {
 
             for (int c = 0; c < timeout; c++) {
 
+               fprintf(stderr, "> Sending (%x)\n", send->get_flag());
                // Send packet
                if (sendto(sk,
                         send,
