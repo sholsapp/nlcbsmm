@@ -28,63 +28,82 @@
 
 namespace NLCBSMM {
 
+   /**
+    * The type of a virtual memory address (32-bit value)
+    */
+   typedef uint32_t vmaddr_t;
+
    typedef
       FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> > PageTableHeapType;
 
-   //
-   // Page table types
-   //
+   /**
+    * Machine table types
+    */
    typedef
-      std::map<uint32_t,
-      Machine*,
+      std::map<uint32_t, Machine*,
       std::less<uint32_t>,
       PageTableAllocator<std::pair<uint32_t, Machine* > > >
          MachineTableType;
-
    typedef
       MachineTableType::iterator MachineTableItr;
 
+   /**
+    * Page table types
+    */
    typedef
       std::pair<Page*, Machine*> PageTableElementType;
-
    typedef
-      std::map<uint32_t,
-      PageTableElementType,
+      std::map<uint32_t, PageTableElementType,
       std::less<uint32_t>,
       PageTableAllocator<std::pair<uint32_t, PageTableElementType > > >
          PageTableType;
-
    typedef
       PageTableType::iterator PageTableItr;
 
+   /**
+    * Thread table type
+    */
    typedef
-      std::map<uint32_t,
-      struct sockaddr,
+      std::map<uint32_t, struct sockaddr,
       std::less<uint32_t>,
       CloneAllocator<std::pair<uint32_t, struct sockaddr> > >
          ThreadTableType;
 
-   //
-   // Work queue types
-   //
+   /**
+    * Mutex table type
+    */
+   typedef
+      std::deque<struct sockaddr,
+      CloneAllocator<struct sockaddr> >
+         WaitQueue;
+   typedef
+      std::map<vmaddr_t, WaitQueue,
+      std::less<vmaddr_t>,
+      CloneAllocator<std::pair<vmaddr_t, WaitQueue> > >
+         MutexTableType;
+
+   /**
+    * Work queue type
+    */
    typedef
       std::pair<struct sockaddr_in, Packet*> WorkTupleType;
-
    typedef
       std::deque<WorkTupleType*,
       CloneAllocator<WorkTupleType* > > PacketQueueType;
 
+   /**
+    * Thread work type
+    */
    typedef
       std::pair<struct sockaddr_in, PthreadWork> ThreadWorkType;
-
    typedef
       std::deque<ThreadWorkType*,
       CloneAllocator<ThreadWorkType* > > ThreadQueueType;
 
 
-   //
-   // The pthread library function signatures
-   //
+   /**
+    * The pthread library function signatures
+    */
    typedef
       void* (*threadFunctionType) (void *);
 

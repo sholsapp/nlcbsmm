@@ -360,7 +360,7 @@ namespace NLCBSMM {
                   addr = work->first;
                   p    = work->second;
 
-                  fprintf(stderr, "> sending a packet (0x%x) to %s:%d!\n", p->get_flag(), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+                  //fprintf(stderr, "> sending a packet (0x%x) to %s:%d!\n", p->get_flag(), inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
                   if (sendto(sk, p, MAX_PACKET_SZ, 0, (struct sockaddr *) &addr , sizeof(addr)) < 0) {
                      perror("cluster.h, 1, sendto");
@@ -473,7 +473,7 @@ namespace NLCBSMM {
             switch (p->get_flag()) {
 
             case UNICAST_JOIN_ACCEPT_F:
-               fprintf(stderr, "> received join accept\n");
+               //fprintf(stderr, "> received join accept\n");
 
                uja = reinterpret_cast<UnicastJoinAcceptance*>(buffer);
 
@@ -510,7 +510,7 @@ namespace NLCBSMM {
                break;
 
             case UNICAST_JOIN_ACCEPT_ACK_F:
-               fprintf(stderr, "> received join accept ack\n");
+               //fprintf(stderr, "> received join accept ack\n");
 
                // Passively sync the page table region
                passive_pt_sync(retaddr);
@@ -525,9 +525,9 @@ namespace NLCBSMM {
 
                page_addr = ntohl(ap->page_addr);
 
-               fprintf(stderr, "> %s wants %p\n",
-                     inet_ntoa(retaddr.sin_addr),
-                     (void*) page_addr);
+               //fprintf(stderr, "> %s wants %p\n",
+               //      inet_ntoa(retaddr.sin_addr),
+               //      (void*) page_addr);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
@@ -540,11 +540,11 @@ namespace NLCBSMM {
                break;
 
             case SYNC_START_F:
-               fprintf(stderr, "> received a sync start\n");
+               //fprintf(stderr, "> received a sync start\n");
 
                mutex_lock(&pt_lock);
 
-               fprintf(stderr, "> acquired pt_lock, zeroing page.\n");
+               //fprintf(stderr, "> acquired pt_lock, zeroing page.\n");
 
                zero_pt();
 
@@ -574,7 +574,7 @@ namespace NLCBSMM {
                break;
 
             case SYNC_DONE_F:
-               fprintf(stderr, "> sync done\n");
+               //fprintf(stderr, "> sync done\n");
 
                // TODO: error checking
                node_list->find(local_addr.s_addr)->second->status = MACHINE_IDLE;
@@ -635,51 +635,54 @@ namespace NLCBSMM {
 
                break;
 
-            case ACQUIRE_WRITE_LOCK_F:
-               fprintf(stderr, " > Recieved a request to acquire ownership of the pt\n");
-               awl = reinterpret_cast<AcquireWriteLock*>(buffer);
-               mutex_lock(&pt_owner_lock);
+               /*
+                  case ACQUIRE_WRITE_LOCK_F:
+                  fprintf(stderr, " > Recieved a request to acquire ownership of the pt\n");
+                  awl = reinterpret_cast<AcquireWriteLock*>(buffer);
+                  mutex_lock(&pt_owner_lock);
                // IF we are the pt_owner
                if(pt_owner == local_addr.s_addr) {
 
-                  fprintf(stderr, "> Active sync to %s:%d\n",
-                        inet_ntoa((struct in_addr&) retaddr.sin_addr),
-                        ntohs(awl->ret_port));
+               fprintf(stderr, "> Active sync to %s:%d\n",
+               inet_ntoa((struct in_addr&) retaddr.sin_addr),
+               ntohs(awl->ret_port));
 
-                  // Respond to the specified sync port (already in network order)
-                  retaddr.sin_port = awl->ret_port;
+               // Respond to the specified sync port (already in network order)
+               retaddr.sin_port = awl->ret_port;
 
-                  // Sync page table region (locks pt_lock)
-                  active_pt_sync(retaddr);
+               // Sync page table region (locks pt_lock)
+               active_pt_sync(retaddr);
 
-                  // OK to give ownership of the pt away
-                  pt_owner =  retaddr.sin_addr.s_addr;
+               // OK to give ownership of the pt away
+               pt_owner =  retaddr.sin_addr.s_addr;
 
-                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-                  fprintf(stderr, " > Release ownership of the page table\n");
-                  // Inform the sender that it now has ownership of the pt
-                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                        // A new work tuple
-                        new (work_memory) WorkTupleType(retaddr,
-                           // A new packet
-                           new (packet_memory) ReleaseWriteLock(next_addr))
-                        );
+               fprintf(stderr, " > Release ownership of the page table\n");
+               // Inform the sender that it now has ownership of the pt
+               safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+               // A new work tuple
+               new (work_memory) WorkTupleType(retaddr,
+               // A new packet
+               new (packet_memory) ReleaseWriteLock(next_addr))
+               );
 
-                  // Signal unicast speaker there is queued work
-                  cond_signal(&uni_speaker_cond);
+               // Signal unicast speaker there is queued work
+               cond_signal(&uni_speaker_cond);
 
-                  // TODO: BROADCAST NEW PT OWNER
+               // TODO: BROADCAST NEW PT OWNER
                }
                else {
-                  fprintf(stderr," > Need to reroute\n");
-                  //TODO: send the reroute packet, we are not the pt_owner
+               fprintf(stderr," > Need to reroute\n");
+               //TODO: send the reroute packet, we are not the pt_owner
                }
 
                mutex_unlock(&pt_owner_lock);
                break;
+                */
 
+            case ACQUIRE_WRITE_LOCK_F:
             case RELEASE_WRITE_LOCK_F:
             case SYNC_RELEASE_PAGE_F:
             case SYNC_DONE_ACK_F:
@@ -751,7 +754,7 @@ namespace NLCBSMM {
                // Set status to master
                node_list->find(local_addr.s_addr)->second->status = MACHINE_MASTER;
 
-               fprintf(stderr, " > Taking pt_owner = %s\n",
+               fprintf(stdout, " > Master ready\n",
                      inet_ntoa((struct in_addr&)pt_owner));
 
                // Give ourselves write lock on page table
@@ -921,7 +924,7 @@ namespace NLCBSMM {
 
                      // TODO: make sure user isn't is in the page table
 
-                     fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(addr));
+                     //fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(addr));
                      raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
                      node_list->insert(
                            std::pair<uint32_t, Machine*>(

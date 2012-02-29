@@ -285,6 +285,7 @@ extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
 }
 
 
+/*
 extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
 
 #if defined(linux) || defined(__APPLE__)
@@ -347,6 +348,7 @@ extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
    return 0;
 
 }
+*/
 
 
 #endif
