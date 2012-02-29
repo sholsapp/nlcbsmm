@@ -135,8 +135,6 @@ namespace NLCBSMM {
 
             while(1) {
 
-               fprintf(stderr, "> worker func\n");
-
                // If there is no work in the queue
                if (safe_thread_size(&thread_deque, &thread_deque_lock) == 0) {
                   // Wait for work (blocks until signal from other thread)
@@ -149,6 +147,8 @@ namespace NLCBSMM {
                work = safe_thread_pop(&thread_deque, &thread_deque_lock);
 
                if (work != NULL) {
+
+                  fprintf(stderr, "> worker func running\n");
 
                   // Set up client/server
                   sk = new_comm();
