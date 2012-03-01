@@ -191,8 +191,8 @@ namespace NLCBSMM {
             // Set new owner (us)
             set_new_owner((uint32_t) rel_page, local_addr.s_addr);
 
-            //ClusterCoordinator::direct_comm(remote_addr,
-            //      new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
+            ClusterCoordinator::direct_comm(remote_addr,
+                  new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
 
          }
 
