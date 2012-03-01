@@ -534,9 +534,7 @@ namespace NLCBSMM {
                ap = reinterpret_cast<AcquirePage*>(buffer);
                page_addr     = ntohl(ap->page_addr);
 
-               mutex_lock(&pt_lock);
                current_owner = get_owner(page_addr);
-               mutex_unlock(&pt_lock);
 
                //Check to make sure we are the owner of the page
                //if(current_owner == local_addr.s_addr) {
