@@ -114,11 +114,13 @@ namespace NLCBSMM {
       uint32_t              timeout        = 0;
       uint32_t              perm           = 0;
       struct sockaddr_in    remote_addr    = {0};
+      struct sockaddr_in    addr           = {0};
       Packet*               p              = NULL;
       ThreadCreate*         tc             = NULL;
       ThreadCreateAck*      tca            = NULL;
       AcquirePage*          ap             = NULL;
       ReleasePage*          rp             = NULL;
+      SyncReroute*          reroute_pack   = NULL;
       Machine*              node           = NULL;
       Page*                 page           = NULL;
       PageTableItr          pt_itr;
@@ -161,8 +163,10 @@ namespace NLCBSMM {
 
       timeout = 5;
 
+      addr = remote_addr; // no modify in place
+
       p = ClusterCoordinator::blocking_comm(
-            (struct sockaddr*) &remote_addr,
+            (struct sockaddr*) &addr,
             reinterpret_cast<Packet*>(
                new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
             timeout,
@@ -184,6 +188,14 @@ namespace NLCBSMM {
 
          // Set new owner (us)
          set_new_owner((uint32_t) rel_page, local_addr.s_addr);
+      }
+      else if (p->get_flag() == SYNC_REROUTE_F) {
+         reroute_pack = reinterpret_cast<SyncReroute*>(p);
+
+         fprintf(stderr, "> Handler: reroute %p request to %s\n",
+               aligned_addr,
+               inet_ntoa((struct in_addr&) reroute_pack->ip));
+
       }
 
       // TODO: Add a multicat packet to inform the other hosts
