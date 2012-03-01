@@ -540,7 +540,7 @@ namespace NLCBSMM {
                rp            = new (packet_memory) ReleasePage(page_addr);
                // TODO: this needs to wait for ack!
                //direct_comm(retaddr, rp);
-               p = blocking_comm((struct sockaddr*) &retaddr, rp, 2, "release page ack");
+               p = blocking_comm((struct sockaddr*) &retaddr, rp, 5, "release page ack");
                if (p->get_flag() != SYNC_RELEASE_PAGE_ACK_F)
                   fprintf(stderr, "> Bad sync release page ack (%x)!\n", p->get_flag());
 
