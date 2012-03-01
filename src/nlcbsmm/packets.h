@@ -16,6 +16,7 @@
 #define SYNC_START_ACK_F          0x21
 #define SYNC_ACQUIRE_PAGE_F       0x23
 #define SYNC_RELEASE_PAGE_F       0x24
+#define SYNC_RELEASE_PAGE_ACK_F   0x25
 #define SYNC_PAGE_F               0x2A
 #define SYNC_PAGE_ACK_F           0x2B
 #define SYNC_DONE_F               0x2C
