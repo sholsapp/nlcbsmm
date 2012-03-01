@@ -1370,7 +1370,7 @@ namespace NLCBSMM {
 
             for (int c = 0; c < timeout; c++) {
 
-               fprintf(stderr, "> blocking comm sending %x\n", send->get_flag());
+               //fprintf(stderr, "> blocking comm sending %x\n", send->get_flag());
 
                // Send packet
                if (sendto(sk,
