@@ -27,7 +27,7 @@ void blocking_entry(void) {
 
 #define MAX_THREAD 20
 
-#define NDIM 200
+int NDIM = 100;
 
 double** a;
 double** b;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
       }
 
    if (argc != 2) {
-      printf("Usage: %s n\n  where n is no. of thread\n", argv[0]);
+      printf("Usage: %s n dim\n  where n is no. of thread and dim is the size of matrix\n", argv[0]);
       exit(1);
    }
 
@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
       printf("The no of thread should between 1 and %d.\n", MAX_THREAD);
       exit(1);
    }
+
+   NDIM = atoi(argv[2]);
 
    threads = (pthread_t*) malloc(n * sizeof(pthread_t));
    pthread_attr_init(&pthread_custom_attr);
