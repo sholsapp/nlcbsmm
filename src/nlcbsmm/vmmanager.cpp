@@ -160,6 +160,10 @@ namespace NLCBSMM {
 
       timeout = 5;
 
+      fprintf(stderr, "> Asking %s for %p\n",
+            inet_ntoa((struct in_addr&) remote_ip),
+            (void*) aligned_addr);
+
       packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
       p = ClusterCoordinator::persistent_blocking_comm(sk,
             (struct sockaddr*) &remote_addr,
