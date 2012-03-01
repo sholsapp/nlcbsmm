@@ -206,7 +206,8 @@ namespace NLCBSMM {
       // TODO: Add a multicat packet to inform the other hosts
       // that I am the new owner of the page p (or let loser do this?)
 
-      clone_heap.free(p);
+      if (p)
+         clone_heap.free(p);
 
       // TODO: increment the version of the page?
 
