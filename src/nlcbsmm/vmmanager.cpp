@@ -162,7 +162,7 @@ namespace NLCBSMM {
 
       timeout = 5;
 
-      p = ClusterCoordinator::blocking_comm(
+      p = ClusterCoordinator::persistent_blocking_comm(sk,
             (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(
                new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
