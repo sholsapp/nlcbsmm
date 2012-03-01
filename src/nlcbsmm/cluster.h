@@ -535,9 +535,9 @@ namespace NLCBSMM {
 
                page_addr = ntohl(ap->page_addr);
 
-               //fprintf(stderr, "> %s wants %p\n",
-               //      inet_ntoa(retaddr.sin_addr),
-               //      (void*) page_addr);
+               fprintf(stderr, "> %s wants %p\n",
+                     inet_ntoa(retaddr.sin_addr),
+                     (void*) page_addr);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
@@ -1369,6 +1369,8 @@ namespace NLCBSMM {
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             for (int c = 0; c < timeout; c++) {
+
+               fprintf(stderr, "> blocking comm sending %x\n", send->get_flag());
 
                // Send packet
                if (sendto(sk,
