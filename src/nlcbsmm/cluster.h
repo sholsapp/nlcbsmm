@@ -538,7 +538,7 @@ namespace NLCBSMM {
                      (void*) page_addr);
 
                //Check to make sure we are the owner of the page
-               if(get_owner(page_addr) != local_addr.s_addr) {
+               if(get_owner(page_addr) == local_addr.s_addr) {
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   rp            = new (packet_memory) ReleasePage(page_addr);
                   direct_comm(retaddr, rp);
@@ -546,12 +546,12 @@ namespace NLCBSMM {
                   // Set page table ownership/permissions
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
                   if(mprotect((void*) page_addr, PAGE_SZ, PROT_NONE) == -1) {
-                     fprintf(stderr, "ERROR> MPROTECT FAILED, on page %p\n", page_addr);
+                     fprintf(stderr, "ERROR> MPROTECT FAILED, on page %p\n", (void*)page_addr);
                   }
                   
                }
                else {
-                  fprintf(stderr, "WARNING> %s tried to take ownership of a page that we do not own\n",inet_ntoa(retaddr.sin_addr));
+                  fprintf(stderr, "WARNING> %s tried to take ownership of a page(%p) that we do not own\n",inet_ntoa(retaddr.sin_addr), (void*)page_addr);
                }
                break;
 
