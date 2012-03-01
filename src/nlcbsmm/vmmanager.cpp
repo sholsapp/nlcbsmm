@@ -229,7 +229,7 @@ namespace NLCBSMM {
 
       fprintf(stderr, "> SEGFAULT (couldn't resolve %p)\n", aligned_addr);
 
-      exit(EXIT_FAILURE);
+      //exit(EXIT_FAILURE);
 
       return;
    }
