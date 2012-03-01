@@ -188,6 +188,7 @@ namespace NLCBSMM {
       if (node_itr != node_list->end()) {
          return (*node_itr).second;
       }
+      fprintf(stderr, "> Failed to get worker!\n");
       return NULL;
    }
 
@@ -196,7 +197,13 @@ namespace NLCBSMM {
       /**
        *
        */
-      (*page_table)[page_addr].second = get_worker(ip);
+      Machine* worker = get_worker(ip);
+      if (worker) {
+         (*page_table)[page_addr].second = worker;
+      }
+      else {
+         fprintf(stderr, "> Failed to set owner(%s)\n", inet_ntoa((struct in_addr&) ip));
+      }
       return;
    }
 
