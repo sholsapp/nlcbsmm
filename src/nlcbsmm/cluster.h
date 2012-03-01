@@ -542,8 +542,6 @@ namespace NLCBSMM {
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
 
-               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-
                //direct_comm(retaddr, rp);
                blocking_comm((struct sockaddr*) &retaddr,
                      rp,
@@ -551,7 +549,8 @@ namespace NLCBSMM {
                      "release page");
 
                // Set page table ownership/permissions
-               mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
+               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+               mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
 
                break;
 
