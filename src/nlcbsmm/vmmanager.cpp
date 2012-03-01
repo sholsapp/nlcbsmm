@@ -190,22 +190,17 @@ namespace NLCBSMM {
          // Set new owner (us)
          set_new_owner((uint32_t) rel_page, local_addr.s_addr);
       }
-      else if (p->get_flag() == SYNC_REROUTE_F) {
-         reroute_pack = reinterpret_cast<SyncReroute*>(p);
-
-         reroute_owner = ntohl(reroute_pack->ip);
-
-         fprintf(stderr, "> Handler: reroute %p request to %s\n",
-               aligned_addr,
-               inet_ntoa((struct in_addr&) reroute_owner));
-
-         mutex_lock(&pt_lock);
-         set_new_owner((uint32_t) aligned_addr, reroute_owner);
-         mutex_unlock(&pt_lock);
-
+      //else if (p->get_flag() == SYNC_REROUTE_F) {
+      //   reroute_pack = reinterpret_cast<SyncReroute*>(p);
+      //   reroute_owner = ntohl(reroute_pack->ip);
+      //   fprintf(stderr, "> Handler: reroute %p request to %s\n",
+      //         aligned_addr,
+      //         inet_ntoa((struct in_addr&) reroute_owner));
+      //   mutex_lock(&pt_lock);
+      //   set_new_owner((uint32_t) aligned_addr, reroute_owner);
+      //   mutex_unlock(&pt_lock);
          // Done, fault again and resolve fault
-
-      }
+      //}
 
       // TODO: Add a multicat packet to inform the other hosts
       // that I am the new owner of the page p (or let loser do this?)
