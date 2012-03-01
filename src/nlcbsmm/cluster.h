@@ -532,15 +532,11 @@ namespace NLCBSMM {
 
             case SYNC_ACQUIRE_PAGE_F:
                ap = reinterpret_cast<AcquirePage*>(buffer);
+               page_addr     = ntohl(ap->page_addr);
 
-               page_addr = ntohl(ap->page_addr);
-
-               fprintf(stderr, "> %s wants %p\n",
-                     inet_ntoa(retaddr.sin_addr),
-                     (void*) page_addr);
-
-
+               mutex_lock(&pt_lock);
                current_owner = get_owner(page_addr);
+               mutex_unlock(&pt_lock);
 
                //Check to make sure we are the owner of the page
                if(current_owner == local_addr.s_addr) {
@@ -550,7 +546,10 @@ namespace NLCBSMM {
                   direct_comm(retaddr, rp);
 
                   // Set page table ownership/permissions
+                  mutex_lock(&pt_lock);
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+                  mutex_unlock(&pt_lock);
+
                   if(mprotect((void*) page_addr, PAGE_SZ, PROT_NONE) == -1) {
                      fprintf(stderr, "ERROR> MPROTECT FAILED, on page %p\n", (void*)page_addr);
                   }
@@ -561,7 +560,6 @@ namespace NLCBSMM {
                         inet_ntoa(retaddr.sin_addr), 
                         (void*) page_addr,
                         inet_ntoa((struct in_addr&) current_owner));
-
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   reroute_pack  = new (packet_memory) SyncReroute(current_owner);
                   // TODO: not sure if need to wait for ack!
@@ -570,14 +568,8 @@ namespace NLCBSMM {
                break;
 
             case SYNC_START_F:
-               //fprintf(stderr, "> received a sync start\n");
-
                mutex_lock(&pt_lock);
-
-               //fprintf(stderr, "> acquired pt_lock, zeroing page.\n");
-
                zero_pt();
-
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -585,28 +577,23 @@ namespace NLCBSMM {
                         new (packet_memory) GenericPacket(SYNC_START_ACK_F))
                      );
                cond_signal(&uni_speaker_cond);
-
                break;
 
             case SYNC_PAGE_F:
                syncp = reinterpret_cast<SyncPage*>(buffer);
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
-
                // Sync the page (assume page table is already locked)
                memcpy((void*) ntohl(syncp->page_offset),
                      syncp->get_payload_ptr(),
                      PAGE_SZ);
-
                //safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                //      new (work_memory) WorkTupleType(retaddr,
                //         new (packet_memory) GenericPacket(SYNC_PAGE_ACK_F))
                //      );
                //cond_signal(&uni_speaker_cond);
-
                direct_comm(retaddr,
                      new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
                      GenericPacket(SYNC_PAGE_ACK_F));
-
                break;
 
             case SYNC_DONE_F:
