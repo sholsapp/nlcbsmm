@@ -146,6 +146,9 @@ namespace NLCBSMM {
          fprintf(stderr,"> SEGFAULT: %p\n", aligned_addr);
          exit(EXIT_FAILURE);
       }
+      else {
+         fprintf(stderr, "> Trying to handle\n");
+      }
 
       tuple = (*pt_itr).second;
       page  = tuple.first;
