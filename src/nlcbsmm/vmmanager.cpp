@@ -161,6 +161,10 @@ namespace NLCBSMM {
 
       timeout = 5;
 
+      fprintf(stderr, "> Asking %s for %p\n",
+            inet_ntoa((struct in_addr&) remote_addr.sin_addr),
+            aligned_addr);
+
       p = ClusterCoordinator::blocking_comm(
             (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(
@@ -184,6 +188,8 @@ namespace NLCBSMM {
 
          // Set new owner (us)
          set_new_owner((uint32_t) rel_page, local_addr.s_addr);
+
+         fprintf(stderr, "> %p acquired!\n", rel_page);
       }
 
       // TODO: Add a multicat packet to inform the other hosts
