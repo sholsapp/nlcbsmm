@@ -166,6 +166,7 @@ namespace NLCBSMM {
 
       addr = remote_addr; // no modify in place
 
+      fprintf(stderr, "> Signal handler aquiring %p\n", (void*) aligned_addr);
       p = ClusterCoordinator::blocking_comm(
             (struct sockaddr*) &addr,
             reinterpret_cast<Packet*>(
