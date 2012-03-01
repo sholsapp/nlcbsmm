@@ -191,9 +191,6 @@ namespace NLCBSMM {
 
          fprintf(stderr, "> %p acquired!\n", rel_page);
 
-         ClusterCoordinator::direct_comm(remote_addr,
-              new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
-
       }
 
       // TODO: Add a multicat packet to inform the other hosts
