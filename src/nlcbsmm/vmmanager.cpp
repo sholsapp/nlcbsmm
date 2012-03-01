@@ -208,6 +208,7 @@ namespace NLCBSMM {
                rel_page,
                inet_ntoa((struct in_addr&) remote_ip),
                (end - start));
+         fflush(stdout);
 
          // Free the packet
          clone_heap.free(p);
