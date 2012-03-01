@@ -536,9 +536,6 @@ namespace NLCBSMM {
 
                current_owner = get_owner(page_addr);
 
-               //Check to make sure we are the owner of the page
-               //if(current_owner == local_addr.s_addr) {
-
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
                // TODO: this needs to wait for ack!
@@ -551,17 +548,6 @@ namespace NLCBSMM {
                   fprintf(stderr, "ERROR> MPROTECT FAILED, on page %p\n", (void*)page_addr);
                }
 
-               //}
-               //else {
-               //   fprintf(stderr, "> %s wants %p, rerouting to (%s)\n",
-               //         inet_ntoa(retaddr.sin_addr),
-               //         (void*) page_addr,
-               //         inet_ntoa((struct in_addr&) current_owner));
-               //   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-               //   reroute_pack  = new (packet_memory) SyncReroute(current_owner);
-               //   // TODO: not sure if need to wait for ack!
-               //   direct_comm(retaddr, reroute_pack);
-               //}
                break;
 
             case SYNC_START_F:

@@ -166,7 +166,6 @@ namespace NLCBSMM {
 
       addr = remote_addr; // no modify in place
 
-      fprintf(stderr, "> Signal handler aquiring %p\n", (void*) aligned_addr);
       p = ClusterCoordinator::blocking_comm(
             (struct sockaddr*) &addr,
             reinterpret_cast<Packet*>(
@@ -191,17 +190,6 @@ namespace NLCBSMM {
          // Set new owner (us)
          set_new_owner((uint32_t) rel_page, local_addr.s_addr);
       }
-      //else if (p->get_flag() == SYNC_REROUTE_F) {
-      //   reroute_pack = reinterpret_cast<SyncReroute*>(p);
-      //   reroute_owner = ntohl(reroute_pack->ip);
-      //   fprintf(stderr, "> Handler: reroute %p request to %s\n",
-      //         aligned_addr,
-      //         inet_ntoa((struct in_addr&) reroute_owner));
-      //   mutex_lock(&pt_lock);
-      //   set_new_owner((uint32_t) aligned_addr, reroute_owner);
-      //   mutex_unlock(&pt_lock);
-         // Done, fault again and resolve fault
-      //}
 
       // TODO: Add a multicat packet to inform the other hosts
       // that I am the new owner of the page p (or let loser do this?)
@@ -215,11 +203,11 @@ namespace NLCBSMM {
 
       end = get_micro_clock();
 
-      //fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
-      //      get_micro_clock(),
-      //      rel_page,
-      //      inet_ntoa((struct in_addr&) node->ip_address),
-      //      (end - start));
+      fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
+            get_micro_clock(),
+            aligned_page,
+            inet_ntoa((struct in_addr&) node->ip_address),
+            (end - start));
 
       return;
    }
