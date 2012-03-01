@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
          b[i][j] = i + j;
       }
 
-   if (argc != 2) {
+   if (argc != 3) {
       printf("Usage: %s n dim\n  where n is no. of thread and dim is the size of matrix\n", argv[0]);
       exit(1);
    }
