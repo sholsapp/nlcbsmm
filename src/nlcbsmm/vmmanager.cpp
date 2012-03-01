@@ -191,6 +191,7 @@ namespace NLCBSMM {
             // Set new owner (us)
             set_new_owner((uint32_t) rel_page, local_addr.s_addr);
 
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             ClusterCoordinator::direct_comm(remote_addr,
                   new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
 
