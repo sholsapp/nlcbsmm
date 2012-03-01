@@ -543,14 +543,19 @@ namespace NLCBSMM {
                rp            = new (packet_memory) ReleasePage(page_addr);
 
                //direct_comm(retaddr, rp);
-               blocking_comm((struct sockaddr*) &retaddr,
+               p = blocking_comm((struct sockaddr*) &retaddr,
                      rp,
                      5,
                      "release page");
 
-               // Set page table ownership/permissions
-               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-               mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
+               if (p) {
+                  // Set page table ownership/permissions
+                  set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+                  mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
+               }
+               else {
+                  fprintf(stderr, "> Bad release page response\n");
+               }
 
                break;
 
@@ -1548,10 +1553,14 @@ namespace NLCBSMM {
                   "thread join"
                   );
 
-            if (p->get_flag() != THREAD_JOIN_ACK_F)
-               fprintf(stderr, "> Bad thread join ack (%x)!\n", p->get_flag());
-
-            clone_heap.free(p);
+            if (p) {
+               if (p->get_flag() != THREAD_JOIN_ACK_F)
+                  fprintf(stderr, "> Bad thread join ack (%x)!\n", p->get_flag());
+               clone_heap.free(p);
+            }
+            else {
+               fprintf(stderr, "> Bad thread join response\n");
+            }
 
             return 0;
          }
@@ -1619,36 +1628,40 @@ namespace NLCBSMM {
                   "thread create"
                   );
 
-            if (p->get_flag() == THREAD_CREATE_ACK_F) {
-               tca = reinterpret_cast<ThreadCreateAck*>(p);
+            if (p) {
+               if (p->get_flag() == THREAD_CREATE_ACK_F) {
+                  tca = reinterpret_cast<ThreadCreateAck*>(p);
 
-               thr_id = ntohl(tca->thread_id);
+                  thr_id = ntohl(tca->thread_id);
 
-               fprintf(stderr, "> remote pthread id: %d\n", thr_id);
+                  fprintf(stderr, "> remote pthread id: %d\n", thr_id);
 
-               // Set node state to ACTIVE
-               mutex_lock(&pt_lock);
-               node_list->find(remote_addr.sin_addr.s_addr)->second->status = MACHINE_ACTIVE;
-               mutex_unlock(&pt_lock);
+                  // Set node state to ACTIVE
+                  mutex_lock(&pt_lock);
+                  node_list->find(remote_addr.sin_addr.s_addr)->second->status = MACHINE_ACTIVE;
+                  mutex_unlock(&pt_lock);
 
-               fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
-                     thr_id,
-                     inet_ntoa(remote_addr.sin_addr),
-                     ntohs(remote_addr.sin_port));
+                  fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
+                        thr_id,
+                        inet_ntoa(remote_addr.sin_addr),
+                        ntohs(remote_addr.sin_port));
 
-               // Save (retaddr -> thr_id) for joining later
-               thread_map.insert(
-                     std::pair<uint32_t, struct sockaddr>
-                     (thr_id, *((struct sockaddr*) &remote_addr)));
+                  // Save (retaddr -> thr_id) for joining later
+                  thread_map.insert(
+                        std::pair<uint32_t, struct sockaddr>
+                        (thr_id, *((struct sockaddr*) &remote_addr)));
 
+               }
+               else {
+                  fprintf(stderr, "> Weird response (%x)\n", p->get_flag());
+               }
+               // This was returned to us, we're done with it
+               clone_heap.free(p);
             }
             else {
-               fprintf(stderr, "> Weird response (%x)\n", p->get_flag());
+               fprintf(stderr, "Bad thread create response\n");
+               thr_id = -1;
             }
-
-
-            // This was returned to us, we're done with it
-            clone_heap.free(p);
 
             return thr_id;
          }
