@@ -202,8 +202,9 @@ namespace NLCBSMM {
 
          end = get_micro_clock();
 
-         fprintf(stdout, "FAULTINFO:%lld|%p|%s|%lld\n",
+         fprintf(stdout, "SEGV|%lld|%s|%p|%s|%lld\n",
                get_micro_clock(),
+               inet_ntoa((struct in_addr&) local_addr.s_addr),
                rel_page,
                inet_ntoa((struct in_addr&) node->ip_address),
                (end - start));
