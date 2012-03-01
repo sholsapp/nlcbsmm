@@ -175,6 +175,9 @@ namespace NLCBSMM {
             );
 
       if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
+
+         fprintf(stderr, "> Received page!\n");
+
          rp = reinterpret_cast<ReleasePage*>(p);
 
          rel_page = (void*) ntohl(rp->page_addr);
