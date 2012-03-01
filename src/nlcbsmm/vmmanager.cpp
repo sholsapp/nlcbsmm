@@ -124,6 +124,8 @@ namespace NLCBSMM {
       PageTableItr          pt_itr;
       PageTableElementType  tuple;
 
+      uint32_t sk = 0;
+
       uint64_t start, end;
 
       start = get_micro_clock();
@@ -155,6 +157,8 @@ namespace NLCBSMM {
       remote_addr.sin_addr.s_addr = remote_ip;
       remote_addr.sin_port        = htons(UNICAST_PORT);
 
+      sk = ClusterCoordinator::new_comm();
+
 
       work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
       packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
@@ -165,7 +169,7 @@ namespace NLCBSMM {
             inet_ntoa((struct in_addr&) remote_addr.sin_addr),
             aligned_addr);
 
-      p = ClusterCoordinator::blocking_comm(
+      p = ClusterCoordinator::persistent_blocking_comm(sk,
             (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(
                new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
@@ -204,6 +208,8 @@ namespace NLCBSMM {
       sigprocmask(SIG_UNBLOCK, &set, &oset);
 
       end = get_micro_clock();
+
+      close(sk);
 
       //fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
       //      get_micro_clock(),
