@@ -16,13 +16,11 @@
 #define SYNC_START_ACK_F          0x21
 #define SYNC_ACQUIRE_PAGE_F       0x23
 #define SYNC_RELEASE_PAGE_F       0x24
-#define SYNC_RELEASE_PAGE_ACK_F   0x25
 #define SYNC_PAGE_F               0x2A
 #define SYNC_PAGE_ACK_F           0x2B
 #define SYNC_DONE_F               0x2C
 #define SYNC_DONE_ACK_F           0x2D
 #define SYNC_RESERVE_F            0x2E
-#define SYNC_REROUTE_F            0x2F
 
 #define THREAD_CREATE_F           0x3A
 #define THREAD_CREATE_ACK_F       0x3B
@@ -205,27 +203,6 @@ class SyncReserve : public Packet {
          ip          = htonl(_owner);
          start_addr  = htonl(reinterpret_cast<uint32_t>(_start_addr));
          sz          = htonl(_sz);
-      }
-
-}__attribute__((packed));
-
-
-class SyncReroute : public Packet {
-   /**
-    *
-    */
-   public:
-      uint32_t sequence;
-      uint32_t payload_sz;
-      uint8_t  flag;
-
-      uint32_t ip;
-
-      SyncReroute(uint32_t _current_owner) {
-         sequence    = htonl(0);
-         payload_sz  = htonl(0);
-         flag        = SYNC_REROUTE_F;
-         ip          = htonl(_current_owner);
       }
 
 }__attribute__((packed));

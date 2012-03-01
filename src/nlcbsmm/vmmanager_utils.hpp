@@ -136,7 +136,7 @@ namespace NLCBSMM {
                         PROT_NONE,
                         MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
                         -1, 0)) == MAP_FAILED) {
-               fprintf(stderr, "> %p already mapped\n", addr);
+               //fprintf(stderr, "> %p already mapped\n", addr);
                mprotect(addr, PAGE_SZ, PROT_READ | PROT_WRITE);
             }
          }
@@ -188,7 +188,6 @@ namespace NLCBSMM {
       if (node_itr != node_list->end()) {
          return (*node_itr).second;
       }
-      fprintf(stderr, "> Failed to get worker!\n");
       return NULL;
    }
 
@@ -197,21 +196,8 @@ namespace NLCBSMM {
       /**
        *
        */
-      Machine* worker = get_worker(ip);
-      if (worker) {
-         (*page_table)[page_addr].second = worker;
-      }
-      else {
-         fprintf(stderr, "> Failed to set owner(%s)\n", inet_ntoa((struct in_addr&) ip));
-      }
+      (*page_table)[page_addr].second = get_worker(ip);
       return;
-   }
-
-   uint32_t get_owner(uint32_t page_addr) {
-      /**
-       *
-       */
-      return (*page_table)[page_addr].second->ip_address;
    }
 
 

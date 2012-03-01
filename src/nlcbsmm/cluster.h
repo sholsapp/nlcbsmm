@@ -446,7 +446,6 @@ namespace NLCBSMM {
             AcquireWriteLock*      awl            = NULL;
             AcquirePage*           ap             = NULL;
             ReleasePage*           rp             = NULL;
-            SyncReroute*           reroute_pack   = NULL;
             WorkTupleType*         work           = NULL;
 
             uint8_t*               payload_buf    = NULL;
@@ -462,7 +461,6 @@ namespace NLCBSMM {
             void*                  arg            = NULL;
             void*                  test           = NULL;
             uint32_t               i              = 0;
-            uint32_t               current_owner  = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
             uint32_t               page_addr      = 0;
@@ -532,32 +530,32 @@ namespace NLCBSMM {
 
             case SYNC_ACQUIRE_PAGE_F:
                ap = reinterpret_cast<AcquirePage*>(buffer);
-               page_addr     = ntohl(ap->page_addr);
 
-               fprintf(stderr, "> %s wants %p\n",
-                     inet_ntoa((struct in_addr&) retaddr.sin_addr),
-                     (void*) page_addr);
+               page_addr = ntohl(ap->page_addr);
+
+               //fprintf(stderr, "> %s wants %p\n",
+               //      inet_ntoa(retaddr.sin_addr),
+               //      (void*) page_addr);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
-               // TODO: this needs to wait for ack!
-               //direct_comm(retaddr, rp);
-               p = blocking_comm((struct sockaddr*) &retaddr, rp, 5, "release page ack");
-               if (p->get_flag() != SYNC_RELEASE_PAGE_ACK_F)
-                  fprintf(stderr, "> Bad sync release page ack (%x)!\n", p->get_flag());
+               direct_comm(retaddr, rp);
 
                // Set page table ownership/permissions
                set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-
-               if(mprotect((void*) page_addr, PAGE_SZ, PROT_NONE) == -1) {
-                  fprintf(stderr, "ERROR> MPROTECT FAILED, on page %p\n", (void*)page_addr);
-               }
+               mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
 
                break;
 
             case SYNC_START_F:
+               //fprintf(stderr, "> received a sync start\n");
+
                mutex_lock(&pt_lock);
+
+               //fprintf(stderr, "> acquired pt_lock, zeroing page.\n");
+
                zero_pt();
+
                work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -565,23 +563,28 @@ namespace NLCBSMM {
                         new (packet_memory) GenericPacket(SYNC_START_ACK_F))
                      );
                cond_signal(&uni_speaker_cond);
+
                break;
 
             case SYNC_PAGE_F:
                syncp = reinterpret_cast<SyncPage*>(buffer);
                fprintf(stderr, "> received sync page (%p)\n", (void*) ntohl(syncp->page_offset));
+
                // Sync the page (assume page table is already locked)
                memcpy((void*) ntohl(syncp->page_offset),
                      syncp->get_payload_ptr(),
                      PAGE_SZ);
+
                //safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                //      new (work_memory) WorkTupleType(retaddr,
                //         new (packet_memory) GenericPacket(SYNC_PAGE_ACK_F))
                //      );
                //cond_signal(&uni_speaker_cond);
+
                direct_comm(retaddr,
                      new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
                      GenericPacket(SYNC_PAGE_ACK_F));
+
                break;
 
             case SYNC_DONE_F:
@@ -1085,16 +1088,15 @@ namespace NLCBSMM {
                   timeout,
                   "sync start");
 
-            if (p) {
-               if (p->get_flag() != SYNC_START_ACK_F)
-                  fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
+            if (p->get_flag() != SYNC_START_ACK_F)
+               fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
 
-               // TODO: memory leak
-               //clone_heap.free(p);
-            }
-            else {
-               fprintf(stderr, "> Sync start null response!\n");
-            }
+            // TODO: memory leak
+            // TODO: WTF
+            // Causes:
+            // my hash map >> fuck - didn't find 0x96ccdcc
+            // my hash map >> fuck - didn't find 0x1
+            //clone_heap.free(p);
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
@@ -1359,8 +1361,6 @@ namespace NLCBSMM {
 
             rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            memset(rec_buffer, 0, MAX_PACKET_SZ);
-
             for (int c = 0; c < timeout; c++) {
 
                // Send packet
@@ -1393,7 +1393,6 @@ namespace NLCBSMM {
             }
             fprintf(stderr, "> Blocking comm timed out (%s)\n", id);
             clone_heap.free(send);
-            clone_heap.free(rec_buffer);
             close(sk);
             return NULL;
 

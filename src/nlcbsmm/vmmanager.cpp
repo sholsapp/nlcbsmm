@@ -113,15 +113,12 @@ namespace NLCBSMM {
       uint32_t              remote_ip      = 0;
       uint32_t              timeout        = 0;
       uint32_t              perm           = 0;
-      uint32_t              reroute_owner  = 0;
       struct sockaddr_in    remote_addr    = {0};
-      struct sockaddr_in    addr           = {0};
       Packet*               p              = NULL;
       ThreadCreate*         tc             = NULL;
       ThreadCreateAck*      tca            = NULL;
       AcquirePage*          ap             = NULL;
       ReleasePage*          rp             = NULL;
-      SyncReroute*          reroute_pack   = NULL;
       Machine*              node           = NULL;
       Page*                 page           = NULL;
       PageTableItr          pt_itr;
@@ -164,10 +161,8 @@ namespace NLCBSMM {
 
       timeout = 5;
 
-      addr = remote_addr; // no modify in place
-
       p = ClusterCoordinator::blocking_comm(
-            (struct sockaddr*) &addr,
+            (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(
                new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
             timeout,
@@ -175,9 +170,6 @@ namespace NLCBSMM {
             );
 
       if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
-
-         fprintf(stderr, "> Received page!\n");
-
          rp = reinterpret_cast<ReleasePage*>(p);
 
          rel_page = (void*) ntohl(rp->page_addr);
@@ -192,9 +184,6 @@ namespace NLCBSMM {
 
          // Set new owner (us)
          set_new_owner((uint32_t) rel_page, local_addr.s_addr);
-
-         ClusterCoordinator::direct_comm(addr,
-               new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
       }
 
       // TODO: Add a multicat packet to inform the other hosts
@@ -209,11 +198,11 @@ namespace NLCBSMM {
 
       end = get_micro_clock();
 
-      fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
-            get_micro_clock(),
-            aligned_addr,
-            inet_ntoa((struct in_addr&) node->ip_address),
-            (end - start));
+      //fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
+      //      get_micro_clock(),
+      //      rel_page,
+      //      inet_ntoa((struct in_addr&) node->ip_address),
+      //      (end - start));
 
       return;
    }
