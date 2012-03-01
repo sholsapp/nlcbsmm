@@ -186,8 +186,6 @@ namespace NLCBSMM {
                         new (packet_memory) ThreadCreateAck(thr_id),
                         timeout, "worker func - thread create ack");
 
-                  fprintf(stderr, "> thread worker got packet!\n");
-
                   // Check if received a ThreadJoin
                   if (p->get_flag() == THREAD_JOIN_F) {
                      fprintf(stderr, " > Wait for thread %d\n", thr_id);
@@ -205,6 +203,10 @@ namespace NLCBSMM {
                      direct_comm(retaddr,
                            new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
                            GenericPacket(THREAD_JOIN_ACK_F));
+
+                  }
+                  else {
+                     fprintf(stderr, "> Thread worker got non-join packet (%x)\n", p->get_flag());
 
                   }
 
@@ -539,7 +541,12 @@ namespace NLCBSMM {
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
-               direct_comm(retaddr, rp);
+
+               //direct_comm(retaddr, rp);
+               blocking_comm((struct sockaddr*) &retaddr,
+                     rp,
+                     5,
+                     "release page");
 
                // Set page table ownership/permissions
                set_new_owner(page_addr, retaddr.sin_addr.s_addr);
