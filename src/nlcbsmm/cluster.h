@@ -545,9 +545,7 @@ namespace NLCBSMM {
                direct_comm(retaddr, rp);
 
                // Set page table ownership/permissions
-               mutex_lock(&pt_lock);
                set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-               mutex_unlock(&pt_lock);
 
                if(mprotect((void*) page_addr, PAGE_SZ, PROT_NONE) == -1) {
                   fprintf(stderr, "ERROR> MPROTECT FAILED, on page %p\n", (void*)page_addr);
