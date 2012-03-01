@@ -113,6 +113,7 @@ namespace NLCBSMM {
       uint32_t              remote_ip      = 0;
       uint32_t              timeout        = 0;
       uint32_t              perm           = 0;
+      uint32_t              reroute_owner  = 0;
       struct sockaddr_in    remote_addr    = {0};
       struct sockaddr_in    addr           = {0};
       Packet*               p              = NULL;
@@ -192,9 +193,11 @@ namespace NLCBSMM {
       else if (p->get_flag() == SYNC_REROUTE_F) {
          reroute_pack = reinterpret_cast<SyncReroute*>(p);
 
+         reroute_owner = ntohl(reroute_pack->ip);
+
          fprintf(stderr, "> Handler: reroute %p request to %s\n",
                aligned_addr,
-               inet_ntoa((struct in_addr&) reroute_pack->ip));
+               inet_ntoa((struct in_addr&) reroute_owner));
 
       }
 
