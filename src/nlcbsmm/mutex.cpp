@@ -1,5 +1,7 @@
 #include "mutex.h"
 
+#include <cstdio>
+
 struct timespec TIMESPEC = { INT_MAX, 0 };
 
 extern "C" {
@@ -32,6 +34,8 @@ extern "C" {
       int i;
       int c;
 
+      fprintf(stderr, "> lock\n");
+
       // Spin and try to take lock
       for (i = 0; i < 100; i++) {
          c = cmpxchg(m, 0, 1);
@@ -54,6 +58,8 @@ extern "C" {
 
    int mutex_unlock(mutex *m) {
       int i;
+
+      fprintf(stderr, "> unlock\n");
 
       // Unlock, and if not contended then exit
       if (*m == 2) {
