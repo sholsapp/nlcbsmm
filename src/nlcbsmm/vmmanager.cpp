@@ -199,6 +199,12 @@ namespace NLCBSMM {
                aligned_addr,
                inet_ntoa((struct in_addr&) reroute_owner));
 
+         mutex_lock(&pt_lock);
+         set_new_owner((uint32_t) aligned_addr, reroute_owner);
+         mutex_unlock(&pt_lock);
+
+         // Done, fault again and resolve fault
+
       }
 
       // TODO: Add a multicat packet to inform the other hosts
