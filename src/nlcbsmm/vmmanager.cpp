@@ -187,8 +187,8 @@ namespace NLCBSMM {
 
             // Memory should be mapped, set permissions
             if(mprotect(rel_page,
-                  PAGE_SZ,
-                  PROT_READ | PROT_WRITE) < 0) {
+                     PAGE_SZ,
+                     PROT_READ | PROT_WRITE) < 0) {
                fprintf(stderr, "> Fault: mprotect failed\n");
             }
 
@@ -219,17 +219,15 @@ namespace NLCBSMM {
 
          // Free the packet
          clone_heap.free(p);
-
+      }
+      else {
+         fprintf(stderr, "> SEGFAULT (couldn't resolve %p)\n", aligned_addr);
+         //exit(EXIT_FAILURE);
       }
 
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
-
       close(sk);
-
-      fprintf(stderr, "> SEGFAULT (couldn't resolve %p)\n", aligned_addr);
-
-      //exit(EXIT_FAILURE);
 
       return;
    }
