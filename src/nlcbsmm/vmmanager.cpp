@@ -113,6 +113,8 @@ namespace NLCBSMM {
       uint32_t              timeout        = 0;
       uint32_t              perm           = 0;
       struct sockaddr_in    remote_addr    = {0};
+      struct sockaddr_in    to             = {0};
+      struct sockaddr_in    from           = {0};
       Packet*               p              = NULL;
       ThreadCreate*         tc             = NULL;
       ThreadCreateAck*      tca            = NULL;
@@ -156,13 +158,16 @@ namespace NLCBSMM {
       remote_addr.sin_addr.s_addr = remote_ip;
       remote_addr.sin_port        = htons(UNICAST_PORT);
 
+      // Debug (for printing)
+      from = remote_addr;
+      to.sin_family = AF_INET;
+      to.sin_addr   = local_addr;
+      to.sin_port   = 0;
+
       sk = ClusterCoordinator::new_comm();
 
       timeout = 5;
 
-      fprintf(stderr, "> Asking %s for %p\n",
-            inet_ntoa((struct in_addr&) remote_ip),
-            (void*) aligned_addr);
 
       packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
       p = ClusterCoordinator::persistent_blocking_comm(sk,
@@ -172,6 +177,10 @@ namespace NLCBSMM {
             timeout,
             "acquire page"
             );
+
+      fprintf(stderr, "> Asked %s for %p\n",
+            inet_ntoa((struct in_addr&) remote_ip),
+            (void*) aligned_addr);
 
       // If we received a response
       if (p) {
@@ -206,11 +215,11 @@ namespace NLCBSMM {
 
          end = get_micro_clock();
 
-         fprintf(stdout, "SEGV|%lld|%s|%p|%s|%lld\n",
+         fprintf(stdout, "SEGV|%lld|%s|%s|%p|%lld\n",
                get_micro_clock(),
-               inet_ntoa((struct in_addr&) local_addr.s_addr),
+               inet_ntoa(to.sin_addr),
+               inet_ntoa(from.sin_addr),
                rel_page,
-               inet_ntoa((struct in_addr&) remote_ip),
                (end - start));
          fflush(stdout);
 
@@ -219,7 +228,7 @@ namespace NLCBSMM {
       }
       else {
          fprintf(stderr, "> SEGFAULT (couldn't resolve %p)\n", aligned_addr);
-         //exit(EXIT_FAILURE);
+         exit(EXIT_FAILURE);
       }
 
       // Unblock sigsegv
