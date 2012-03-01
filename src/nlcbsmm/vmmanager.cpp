@@ -206,7 +206,7 @@ namespace NLCBSMM {
                get_micro_clock(),
                inet_ntoa((struct in_addr&) local_addr.s_addr),
                rel_page,
-               inet_ntoa((struct in_addr&) node->ip_address),
+               inet_ntoa((struct in_addr&) remote_ip),
                (end - start));
 
          // Free the packet
