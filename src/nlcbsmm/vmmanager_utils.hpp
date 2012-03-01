@@ -136,7 +136,7 @@ namespace NLCBSMM {
                         PROT_NONE,
                         MAP_SHARED | MAP_ANONYMOUS | MAP_FIXED,
                         -1, 0)) == MAP_FAILED) {
-               //fprintf(stderr, "> %p already mapped\n", addr);
+               fprintf(stderr, "> %p already mapped\n", addr);
                mprotect(addr, PAGE_SZ, PROT_READ | PROT_WRITE);
             }
          }
