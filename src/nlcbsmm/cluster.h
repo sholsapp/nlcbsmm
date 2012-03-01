@@ -1115,7 +1115,7 @@ namespace NLCBSMM {
                   fprintf(stderr, "> Bad sync start ack (%x)!\n", p->get_flag());
 
                // TODO: memory leak
-               clone_heap.free(p);
+               //clone_heap.free(p);
             }
             else {
                fprintf(stderr, "> Sync start null response!\n");
