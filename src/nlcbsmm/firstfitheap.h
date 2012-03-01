@@ -69,7 +69,7 @@ class FirstFitHeap : public Super {
 
          //fprintf(stderr, ">> free(%d) = %p\n", Super::getSize((void*) ptr), ptr);
          for (int i = 0; i < Super::getSize((void*) ptr); i++) {
-            ((uint8_t*) ptr)[i] = 0xAB;
+            ((uint8_t*) ptr)[i] = 0xED;
          }
 
          // Add this object to the free list.
