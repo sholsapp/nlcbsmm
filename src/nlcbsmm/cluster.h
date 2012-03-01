@@ -534,7 +534,9 @@ namespace NLCBSMM {
                ap = reinterpret_cast<AcquirePage*>(buffer);
                page_addr     = ntohl(ap->page_addr);
 
-               current_owner = get_owner(page_addr);
+               fprintf(stderr, "> %s wants %p\n",
+                     inet_ntoa((struct in_addr&) retaddr.sin_addr),
+                     (void*) page_addr);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
