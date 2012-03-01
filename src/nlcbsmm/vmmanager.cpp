@@ -103,7 +103,6 @@ namespace NLCBSMM {
       sigset_t set;
 
       void*                 packet_memory  = NULL;
-      void*                 work_memory    = NULL;
       void*                 raw            = NULL;
       void*                 test           = NULL;
       void*                 rel_page       = NULL;
@@ -162,8 +161,6 @@ namespace NLCBSMM {
 
       sk = ClusterCoordinator::new_comm();
 
-
-      work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
       packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
       timeout = 5;
@@ -180,49 +177,59 @@ namespace NLCBSMM {
             "acquire page"
             );
 
-      if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
-         rp = reinterpret_cast<ReleasePage*>(p);
+      // If we received a response
+      if (p) {
 
-         rel_page = (void*) ntohl(rp->page_addr);
+         if (p->get_flag() == SYNC_RELEASE_PAGE_F) {
+            rp = reinterpret_cast<ReleasePage*>(p);
 
-         // Memory should be mapped, set permissions
-         mprotect(rel_page,
-               PAGE_SZ,
-               PROT_READ | PROT_WRITE);
+            rel_page = (void*) ntohl(rp->page_addr);
 
-         // Copy page data
-         memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
+            // Memory should be mapped, set permissions
+            if(mprotect(rel_page,
+                  PAGE_SZ,
+                  PROT_READ | PROT_WRITE) < 0) {
+               fprintf(stderr, "> Fault: mprotect failed\n");
+            }
 
-         // Set new owner (us)
-         set_new_owner((uint32_t) rel_page, local_addr.s_addr);
+            // Copy page data
+            memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
 
-         fprintf(stderr, "> %p acquired!\n", rel_page);
+            // Set new owner (us)
+            set_new_owner((uint32_t) rel_page, local_addr.s_addr);
 
-         ClusterCoordinator::direct_comm(remote_addr,
-               new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
+            fprintf(stderr, "> %p acquired!\n", rel_page);
 
-      }
+            ClusterCoordinator::direct_comm(remote_addr,
+                  new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
 
-      // TODO: Add a multicat packet to inform the other hosts
-      // that I am the new owner of the page p (or let loser do this?)
+         }
 
-      if (p)
+         // TODO: Add a multicat packet to inform the other hosts
+         // that I am the new owner of the page p (or let loser do this?)
+         // TODO: increment the version of the page?
+
+         end = get_micro_clock();
+
+         fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
+               get_micro_clock(),
+               rel_page,
+               inet_ntoa((struct in_addr&) node->ip_address),
+               (end - start));
+
+         // Free the packet
          clone_heap.free(p);
 
-      // TODO: increment the version of the page?
+      }
 
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
 
-      end = get_micro_clock();
-
       close(sk);
 
-      fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
-            get_micro_clock(),
-            rel_page,
-            inet_ntoa((struct in_addr&) node->ip_address),
-            (end - start));
+      fprintf(stderr, "> SEGFAULT (couldn't resolve %p)\n", aligned_addr);
+
+      exit(EXIT_FAILURE);
 
       return;
    }
