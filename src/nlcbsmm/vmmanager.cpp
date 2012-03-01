@@ -205,7 +205,7 @@ namespace NLCBSMM {
 
       fprintf(stderr, "%lld > Fault: %p from %s in %lld mcs.\n",
             get_micro_clock(),
-            aligned_page,
+            aligned_addr,
             inet_ntoa((struct in_addr&) node->ip_address),
             (end - start));
 
