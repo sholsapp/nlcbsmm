@@ -8,6 +8,7 @@
 
 #define MULTICAST_JOIN_F          0x0A
 #define MULTICAST_HEARTBEAT_F     0x0B
+#define MULTICAST_OWNER_UPDATE_F  0x0C
 
 #define UNICAST_JOIN_ACCEPT_F     0x1A
 #define UNICAST_JOIN_ACCEPT_ACK_F 0x1B
@@ -81,7 +82,7 @@ class MulticastHeartbeat : public Packet {
          flags      = MULTICAST_HEARTBEAT_F;
       }
 
-};
+}__attribute__((packed));
 
 class MulticastJoin : public Packet {
    /**
@@ -114,6 +115,29 @@ class MulticastJoin : public Packet {
          end_addr        = htonl(reinterpret_cast<uint32_t>(_end_addr));
          prog_break_addr = htonl(reinterpret_cast<uint32_t>(_prog_break_addr));
       }
+}__attribute__((packed));
+
+
+class OwnerUpdate : public Packet {
+   /**
+    *
+    */
+   public:
+      uint32_t sequence;
+      uint32_t payload_sz;
+      uint32_t flags;
+
+      uint32_t ip;
+      uint32_t page_addr;
+
+      OwnerUpdate(uint32_t _ip, uint32_t _page_addr) {
+         sequence   = htonl(0);
+         payload_sz = htonl(0);
+         flags      = MULTICAST_OWNER_UPDATE_F;
+         ip         = htonl(_ip);
+         page_addr  = htonl(_page_addr);
+      }
+
 }__attribute__((packed));
 
 

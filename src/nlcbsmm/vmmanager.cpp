@@ -158,10 +158,9 @@ namespace NLCBSMM {
 
       sk = ClusterCoordinator::new_comm();
 
-      packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
       timeout = 5;
 
+      packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
       p = ClusterCoordinator::persistent_blocking_comm(sk,
             (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(

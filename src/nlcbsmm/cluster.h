@@ -542,11 +542,11 @@ namespace NLCBSMM {
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
 
-               direct_comm(retaddr, rp);
-               //blocking_comm((struct sockaddr*) &retaddr,
-               //      rp,
-               //      5,
-               //      "release page");
+               //direct_comm(retaddr, rp);
+               blocking_comm((struct sockaddr*) &retaddr,
+                     rp,
+                     5,
+                     "release page");
 
                // Set page table ownership/permissions
                set_new_owner(page_addr, retaddr.sin_addr.s_addr);
@@ -913,6 +913,7 @@ namespace NLCBSMM {
             MulticastJoin*         mjp            = NULL;
             MulticastHeartbeat*    mjh            = NULL;
             UnicastJoinAcceptance* uja            = NULL;
+            OwnerUpdate*           update         = NULL;
             SyncReserve*           sr             = NULL;
             WorkTupleType*         work           = NULL;
             void*                  packet_memory  = NULL;
@@ -924,6 +925,7 @@ namespace NLCBSMM {
             uint32_t               ip             = 0;
             uint32_t               start_addr     = 0;
             uint32_t               memory_sz      = 0;
+            uint32_t               page_addr      = 0;
             struct sockaddr_in     retaddr        = {0};
             struct in_addr         addr           = {0};
 
@@ -1034,6 +1036,14 @@ namespace NLCBSMM {
                fprintf(stderr, "> Reserve request from non-cluster member %s\n", inet_ntoa(addr));
                }
                 */
+               break;
+
+            case MULTICAST_OWNER_UPDATE_F:
+               update = reinterpret_cast<OwnerUpdate*>(buffer);
+               page_addr = ntohl(update->page_addr);
+               ip        = ntohl(update->ip);
+               // TODO: does this need to be locked?
+               set_new_owner(page_addr, ip);
                break;
 
             case MULTICAST_HEARTBEAT_F:
