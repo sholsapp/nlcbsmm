@@ -21,6 +21,8 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 
+#include <execinfo.h>
+
 #include "vmmanager.h"
 #include "constants.h"
 
@@ -111,6 +113,9 @@ namespace NLCBSMM {
       sigset_t oset;
       sigset_t set;
 
+      void *array[10];
+      size_t size;
+
       void*                 packet_memory  = NULL;
       void*                 raw            = NULL;
       void*                 test           = NULL;
@@ -154,6 +159,8 @@ namespace NLCBSMM {
       if(pt_itr == page_table->end()) {
          // This is a real segfault
          fprintf(stderr,"> SEGFAULT: %p\n", aligned_addr);
+         size = backtrace(array, 10);
+         backtrace_symbols_fd(array, size, 2);
          exit(EXIT_FAILURE);
       }
 
