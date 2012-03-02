@@ -41,6 +41,9 @@ namespace NLCBSMM {
    const char*    local_ip   = NULL;
    struct in_addr local_addr = {0};
 
+   MutexTableType   mutex_map;
+   mutex            mutex_map_lock;
+
    ThreadTableType  thread_map;
    mutex            thread_map_lock;
 
@@ -316,6 +319,7 @@ namespace NLCBSMM {
       //mutex_init(&pt_heap_lock,          NULL);
       //mutex_init(&clone_heap_lock,       NULL);
       mutex_init(&node_list_lock,        NULL);
+      mutex_init(&mutex_map_lock,        NULL);
       return;
    }
 

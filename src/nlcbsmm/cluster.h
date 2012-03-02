@@ -450,6 +450,7 @@ namespace NLCBSMM {
             AcquireWriteLock*      awl            = NULL;
             AcquirePage*           ap             = NULL;
             ReleasePage*           rp             = NULL;
+            MutexLockRequest*      mut_lock_req   = NULL;
             WorkTupleType*         work           = NULL;
 
             uint8_t*               payload_buf    = NULL;
@@ -470,6 +471,7 @@ namespace NLCBSMM {
             uint32_t               page_addr      = 0;
             uint32_t               thr_id         = 0;
             uint32_t               thr_stack_sz   = 0;
+            uint32_t               mut_id         = 0;
 
             Machine*               node           = NULL;
             Page*                  page           = NULL;
@@ -729,9 +731,28 @@ namespace NLCBSMM {
                mutex_unlock(&pt_owner_lock);
                break;
 
+            case MUTEX_LOCK_REQUEST_F:
+               mut_lock_req = reinterpret_cast<MutexLockRequest*>(buffer);
+
+               mut_id = ntohl(mut_lock_req->mutex_id);
+
+               // TODO: look up mutex
+               // TODO: if mutex exist in map
+               // TODO:   if locked
+               // TODO:     put retaddr into the wait queue
+               // TODO:   else
+               // TODO:     send retaddr a mutex lock grant
+               // TODO: else
+               // TODO:     ignore request (stdlibc++)
+
+               fprintf(stderr, "Mutex lock request (%d)\n", mut_id);
+               break;
+
             case RELEASE_WRITE_LOCK_F:
             case SYNC_RELEASE_PAGE_F:
             case SYNC_DONE_ACK_F:
+            case MUTEX_LOCK_GRANT_F:
+            case MUTEX_UNLOCK_F:
                // These types of packets are handled directly
                fprintf(stderr, "ERROR> ignored packet type(%x)\n", p->get_flag());
                break;

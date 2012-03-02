@@ -261,6 +261,16 @@ extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
 
    fprintf(stderr, "> pthread_mutex_init\n");
 
+   WaitQueue waiters;
+
+   // TODO: What if a non-master node calls pthread_mutex_init?  Need to trasmit data to master
+
+   // Insert mutex's address into map, with no waiters
+   mutex_lock(&mutex_map_lock);
+   mutex_map.insert(std::pair<vmaddr_t, WaitQueue>
+         ((vmaddr_t) mutex, waiters));
+   mutex_unlock(&mutex_map_lock);
+
    return 0;
 }
 
@@ -280,6 +290,8 @@ extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
 
    fprintf(stderr, "> pthread_mutex_destory\n");
 
+   // TODO: delete it from the map?
+
    return 0;
 
 }
@@ -293,14 +305,18 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
    char fname[] = "_pthread_mutex_lock";
 #endif
 
-   // A pointer to the library version of pthread_join.
+   // Causes SIGSEGV -- appears libstdc++ is using pthread_mutex_lock
+   //  and this messes with library _init functions and _ctors.
    //static pthread_mutex_lock_function real_pthread_mutex_lock =
    //   reinterpret_cast<pthread_mutex_lock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
    fprintf(stderr, "> pthread_mutex_lock\n");
 
-   //real_pthread_mutex_lock(mutex);
+   // TODO: if mutex exists in mutex map
+   // TODO:   if we don't already have the lock
+   // TODO:     send request to master
+   // TODO:     block on lock
 
    return 0;
 
@@ -315,14 +331,17 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
    char fname[] = "_pthread_mutex_unlock";
 #endif
 
-   // A pointer to the library version of pthread_join.
+   // Causes SIGSEGV -- appears libstdc++ is using pthread_mutex_lock
+   //  and this messes with library _init functions and _ctors.
    //static pthread_mutex_unlock_function real_pthread_mutex_unlock =
    //   reinterpret_cast<pthread_mutex_unlock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
    fprintf(stderr, "> pthread_mutex_unlock\n");
 
-   //real_pthread_mutex_unlock(mutex);
+   // TODO: if mutex exists in the mutex map
+   // TODO:   if we currently hold the lock
+   // TODO:     send release to master
 
    return 0;
 

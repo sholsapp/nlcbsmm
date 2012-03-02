@@ -147,11 +147,13 @@ namespace NLCBSMM {
    extern const char* local_ip;
    extern struct in_addr local_addr;
 
-   // The page table
-   extern PageTableType* page_table;
-   extern MachineTableType* node_list;
-   extern ThreadTableType thread_map;
+   // The page table (heap allocated, sync'd)
+   extern PageTableType*     page_table;
+   extern MachineTableType*  node_list;
 
+   // Master state (static allocation, not sync'd)
+   extern ThreadTableType    thread_map;
+   extern MutexTableType     mutex_map;
 
    // The work queues
    extern PacketQueueType uni_speaker_work_deque;
@@ -167,6 +169,8 @@ namespace NLCBSMM {
    extern mutex multi_speaker_lock;
    extern mutex thread_cond_lock;
    extern mutex thread_deque_lock;
+   extern mutex node_list_lock;
+   extern mutex mutex_map_lock;
 
    // This forces threads to wait on each other in case someone is reading/writing the
    // page table.
@@ -186,7 +190,6 @@ namespace NLCBSMM {
    // and free from the clone heap.
    //extern mutex clone_heap_lock;
 
-   extern mutex node_list_lock;
 
    // The next valid address to pull memory from. This is transmitted in the releaseWriteLock
    // packet.
