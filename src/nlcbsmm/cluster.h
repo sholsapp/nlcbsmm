@@ -824,10 +824,13 @@ namespace NLCBSMM {
                   work = safe_pop(&multi_speaker_work_deque, &multi_speaker_lock);
 
                   // If there is work, override default action
-                  if (work != NULL) {
+                  if (work != NULL && work->second != NULL) {
                      // Overwrite the packet with useful work
                      memcpy(buffer, work->second, MAX_PACKET_SZ);
                      clone_heap.free(work->second);
+                  }
+                  else {
+                     fprintf(stderr, "> Someone pushed bad multicast work (null pointers)\n");
                   }
 
                }
