@@ -97,7 +97,7 @@ void check_matrix(int dim)
             e+=a[i][k]*b[k][j];
 
          if (e!=c[i][j]) {
-            printf("(%d,%d) error\n",i,j);
+            //printf("(%d,%d) error\n",i,j);
             error++;
          }
       }
