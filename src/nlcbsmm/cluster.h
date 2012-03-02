@@ -1551,7 +1551,7 @@ namespace NLCBSMM {
             owner = reinterpret_cast<struct sockaddr_in*>(&thread_map[thread_id]);
             packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            fprintf(stderr, "> pthead join: contact %s:%d for thread\n",
+            fprintf(stderr, "> Pthread join: contact %s:%d for thread\n",
                   inet_ntoa((struct in_addr&) owner->sin_addr),
                   ntohs(owner->sin_port));
 
@@ -1652,11 +1652,6 @@ namespace NLCBSMM {
                   mutex_lock(&pt_lock);
                   node_list->find(remote_addr.sin_addr.s_addr)->second->status = MACHINE_ACTIVE;
                   mutex_unlock(&pt_lock);
-
-                  fprintf(stderr, "> Send pthread_join (%d) to %s:%d\n",
-                        thr_id,
-                        inet_ntoa(remote_addr.sin_addr),
-                        ntohs(remote_addr.sin_port));
 
                   // Save (retaddr -> thr_id) for joining later
                   thread_map.insert(
