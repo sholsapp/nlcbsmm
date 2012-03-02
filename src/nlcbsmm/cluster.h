@@ -195,7 +195,7 @@ namespace NLCBSMM {
                         perror("wait error");
                      }
 
-                     fprintf(stderr, "> Thread waited for\n");
+                     fprintf(stderr, "> Thread %d waited for\n", thr_ret);
 
                      // Sync pages with retaddr
 
