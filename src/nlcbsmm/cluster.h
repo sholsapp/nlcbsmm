@@ -528,7 +528,9 @@ namespace NLCBSMM {
                passive_pt_sync(retaddr);
 
                // TODO: error checking
+               mutex_lock(&node_list_lock);
                node_list->find(retaddr.sin_addr.s_addr)->second->status = MACHINE_IDLE;
+               mutex_unlock(&node_list_lock);
                break;
 
 
@@ -605,7 +607,9 @@ namespace NLCBSMM {
                //fprintf(stderr, "> sync done\n");
 
                // TODO: error checking
+               mutex_lock(&node_list_lock);
                node_list->find(local_addr.s_addr)->second->status = MACHINE_IDLE;
+               mutex_unlock(&node_list_lock);
 
                // Map any new pages and set permissions
                reserve_pages();
@@ -631,7 +635,9 @@ namespace NLCBSMM {
                fprintf(stderr, "%lld > thread create (func=%p)\n", get_micro_clock(), (void*) ntohl(tc->func_ptr));
 
                // Received work, we're now active
+               mutex_lock(&node_list_lock);
                node_list->find(local_addr.s_addr)->second->status = MACHINE_ACTIVE;
+               mutex_unlock(&node_list_lock);
 
                // Get where caller put thread stack
                // Use padding convention to get a thread-stack-sized page-aligned section of memory
@@ -790,7 +796,9 @@ namespace NLCBSMM {
                _uuid = 0;
 
                // Set status to master
+               mutex_lock(&node_list_lock);
                node_list->find(local_addr.s_addr)->second->status = MACHINE_MASTER;
+               mutex_unlock(&node_list_lock);
 
                fprintf(stdout, " > Master ready\n",
                      inet_ntoa((struct in_addr&)pt_owner));
@@ -964,11 +972,13 @@ namespace NLCBSMM {
 
                      //fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(addr));
                      raw = pt_heap_malloc(sizeof(Machine));
+                     mutex_lock(&node_list_lock);
                      node_list->insert(
                            std::pair<uint32_t, Machine*>(
                               ip,
                               new (raw) Machine(ip))
                            );
+                     mutex_unlock(&node_list_lock);
 
                      // Allocate memory for the new work/packet
                      work_memory   = clone_heap_malloc(sizeof(WorkTupleType));

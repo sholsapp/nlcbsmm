@@ -186,6 +186,8 @@ namespace NLCBSMM {
    // and free from the clone heap.
    extern mutex clone_heap_lock;
 
+   extern mutex node_list_lock;
+
    // The next valid address to pull memory from. This is transmitted in the releaseWriteLock
    // packet.
    extern uint32_t next_addr;

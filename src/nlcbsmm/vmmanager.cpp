@@ -76,6 +76,8 @@ namespace NLCBSMM {
    // and free from the clone heap.
    mutex clone_heap_lock;
 
+   mutex node_list_lock;
+
    MachineTableType* node_list;
    PageTableType*    page_table;
 
@@ -309,6 +311,7 @@ namespace NLCBSMM {
       mutex_init(&thread_map_lock,       NULL);
       mutex_init(&pt_heap_lock,          NULL);
       mutex_init(&clone_heap_lock,       NULL);
+      mutex_init(&node_list_lock,        NULL);
       return;
    }
 

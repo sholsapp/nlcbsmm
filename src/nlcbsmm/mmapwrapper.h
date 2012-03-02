@@ -95,6 +95,8 @@ namespace HL {
                return;
             }
 
+            mutex_lock(&node_list_lock);
+
             if (node_list->count(local_addr.s_addr) == 0) {
                fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
                raw = pt_heap_malloc(sizeof(Machine));
@@ -109,7 +111,6 @@ namespace HL {
             mach_status = node_list->find(local_addr.s_addr)->second->status;
 
             //fprintf(stderr, "> %s state %d\n", inet_ntoa(local_addr), mach_status);
-
             if (mach_status == MACHINE_ACTIVE
                   || mach_status == MACHINE_MASTER) {
 
@@ -139,6 +140,8 @@ namespace HL {
                            ))
                      );
             }
+
+            mutex_unlock(&node_list_lock);
 
             return;
          }
