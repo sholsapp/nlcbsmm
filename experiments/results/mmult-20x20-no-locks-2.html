@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>mmult.c-20x20-no-locks-20x20-2</title>
+    <link href="layout.css" rel="stylesheet" type="text/css">
+    <script language="javascript" type="text/javascript" src="./js/jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="./js/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="./js/jquery.flot.symbol.js"></script>
+ </head>
+ <body>
+    <h1>mmult.c-20x20-no-locks-2</h1>
+
+    <div id="placeholder" style="width:600px;height:300px"></div>
+
+    <p>System composed of three nodes (one master and two workers) thrashing during multiplication of 20x20 matrix.  The X-axis describes time in microseconds.  The Y-axis describes memory page address (displayed as an integer).</p>
+
+<script type="text/javascript">
+$(function () {
+    var data = [
+        { data: [
+		  [223803, 2859802624],
+		  [229698, 2860236800],
+		  [234657, 2859806720],
+		  [239645, 2860240896],
+		  [247816, 2859597824],
+		  [253314, 2859794432],
+		  [258308, 2860007424],
+		  [265665, 2860011520],
+		  [273528, 2860015616],
+		  [278655, 2860019712],
+		  [285474, 2860023808],
+		  [293543, 2860224512],
+		  [300895, 2860228608],
+		  [305910, 2859798528],
+		  [310981, 2860232704],
+		  [313767, 2859802624],
+		  [316370, 2860236800],
+		  [318773, 2859806720],
+		  [322127, 2860240896],
+		  [327361, 2860777472],
+		], points: { symbol: "circle" } },
+
+        { data: [
+		  [0, 2860777472],
+		  [7669, 2859597824],
+		  [14843, 2859794432],
+		  [17404, 2860007424],
+		  [20366, 2860011520],
+		  [22911, 2860015616],
+		  [27244, 2860019712],
+		  [32220, 2860023808],
+		  [36532, 2860224512],
+		  [40149, 2860228608],
+		  [45245, 2859798528],
+		  [49039, 2860232704],
+		  [54239, 2859802624],
+		  [58419, 2860236800],
+		  [62370, 2859806720],
+		  [66934, 2860240896],
+		  [139408, 2859597824],
+		  [144564, 2859794432],
+		  [149965, 2860007424],
+		  [156787, 2860011520],
+		  [163588, 2860015616],
+		  [170033, 2860019712],
+		  [176498, 2860023808],
+		  [184494, 2860224512],
+		  [191755, 2860228608],
+		  [197091, 2859798528],
+		  [202052, 2860232704],
+		  [218333, 2860777472],
+		], points: { symbol: "square" } },
+        { data: [
+		  [253433, 2860777472],
+		  [255692, 2859597824],
+		  [257744, 2859794432],
+		  [259887, 2860007424],
+		  [262023, 2860011520],
+		  [264454, 2860015616],
+		  [270856, 2860019712],
+		  [273583, 2860023808],
+		  [275962, 2860224512],
+		  [278448, 2860228608],
+		  [281163, 2859798528],
+		  [284198, 2860232704],
+		  [289079, 2859802624],
+		  [294015, 2860236800],
+		  [298859, 2859806720],
+		  [304056, 2860240896],
+		], points: { symbol: "cross" } }
+    ];
+    $.plot($("#placeholder"), data, {
+        series: { points: { show: true, radius: 5 } },
+        grid: { hoverable: true }
+    });
+});
+</script>
+ </body>
+</html>
