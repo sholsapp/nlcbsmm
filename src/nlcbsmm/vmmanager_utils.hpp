@@ -203,7 +203,15 @@ namespace NLCBSMM {
       /**
        *
        */
-      (*page_table)[page_addr].second = get_worker(ip);
+      Machine* mach = get_worker(ip);
+      if (mach) {
+         mutex_lock(&pt_lock);
+         (*page_table)[page_addr].second = mach;
+         mutex_unlock(&pt_lock);
+      }
+      else {
+         fprintf(stderr, "> Failed to get worker (%d)\n", ip);
+      }
       return;
    }
 
