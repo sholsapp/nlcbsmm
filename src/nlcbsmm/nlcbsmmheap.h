@@ -176,8 +176,8 @@ namespace HL {
                /**
                 *
                 */
-               void * ptr = NlcbsmmChunkHeap<heap_identifier>::malloc (sz);
                MyMapLock.lock();
+               void * ptr = NlcbsmmChunkHeap<heap_identifier>::malloc (sz);
                MyMap.set (ptr, sz);
                MyMapLock.unlock();
                assert (reinterpret_cast<size_t>(ptr) % Alignment == 0);
@@ -205,7 +205,9 @@ namespace HL {
                 * WORKAROUND: apparent gcc bug.
                 */
                //fprintf(stderr, "nlcbsmm-heap (free 1): %p(%d)\n", ptr, sz);
+               MyMapLock.lock();
                NlcbsmmChunkHeap<heap_identifier>::free (ptr, sz);
+               MyMapLock.unlock();
             }
 
 
