@@ -181,6 +181,10 @@ namespace HL {
                MyMap.set (ptr, sz);
                MyMapLock.unlock();
                assert (reinterpret_cast<size_t>(ptr) % Alignment == 0);
+                 
+               if(ptr == NULL || ptr == 0)
+                  fprintf(stderr,"MEGA ERROR :( | nlcbsmmheap returning %p\n", ptr);
+                
                return const_cast<void *>(ptr);
             }
 
