@@ -215,6 +215,8 @@ namespace NLCBSMM {
 
             }
 
+            fprintf(stderr, "> Thread exitting.\n");
+
             return 0;
          }
 
