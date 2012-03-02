@@ -181,7 +181,7 @@ namespace NLCBSMM {
                   timeout = 10000000;
 
                   // Send thread_id to caller, wait for ThreadJoin
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   p = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr,
                         new (packet_memory) ThreadCreateAck(thr_id),
                         timeout, "worker func - thread create ack");
@@ -201,7 +201,7 @@ namespace NLCBSMM {
 
                      // Indicate finished
                      direct_comm(retaddr,
-                           new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
+                           new (clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
                            GenericPacket(THREAD_JOIN_ACK_F));
 
                   }
@@ -210,7 +210,7 @@ namespace NLCBSMM {
 
                   }
 
-                  clone_heap.free(p);
+                  clone_heap_free((void*)p);
                }
 
             }
@@ -378,8 +378,8 @@ namespace NLCBSMM {
 
                   // Another thread allocated memory and queued it for work, so
                   // free memory when we're done sending it.
-                  clone_heap.free(p);
-                  clone_heap.free(work);
+                  clone_heap_free((void*)p);
+                  clone_heap_free(work);
                }
             }
             return 0;
@@ -415,7 +415,7 @@ namespace NLCBSMM {
                exit(EXIT_FAILURE);
             }
 
-            packet_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            packet_buffer = (uint8_t*) clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             while(1) {
                // Clear the memory buffer each time
@@ -431,7 +431,7 @@ namespace NLCBSMM {
             }
 
             // Shit is scarce, son!
-            clone_heap.free(packet_buffer);
+            clone_heap_free(packet_buffer);
             return 0;
          }
 
@@ -504,8 +504,8 @@ namespace NLCBSMM {
                // Respond to the other server's listener
                retaddr.sin_port = htons(UNICAST_PORT);
 
-               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                // Push work onto the uni_speaker's queue
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -539,7 +539,7 @@ namespace NLCBSMM {
                      inet_ntoa(retaddr.sin_addr),
                      (void*) page_addr);
 
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
 
                //direct_comm(retaddr, rp);
@@ -568,8 +568,8 @@ namespace NLCBSMM {
 
                zero_pt();
 
-               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                      new (work_memory) WorkTupleType(retaddr,
                         new (packet_memory) GenericPacket(SYNC_START_ACK_F))
@@ -594,7 +594,7 @@ namespace NLCBSMM {
                //cond_signal(&uni_speaker_cond);
 
                direct_comm(retaddr,
-                     new (clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
+                     new (clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ))
                      GenericPacket(SYNC_PAGE_ACK_F));
 
                break;
@@ -610,8 +610,8 @@ namespace NLCBSMM {
 
                // TODO: need better assurance that sync is actually done (have we already
                // received and mapped all the pages?).
-               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                      new (work_memory) WorkTupleType(retaddr,
                         new (packet_memory) GenericPacket(SYNC_DONE_ACK_F))
@@ -663,7 +663,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> queue work for worker_func\n");
 
                // Queue pthread work
-               thread_work_memory = clone_heap.malloc(sizeof(ThreadWorkType));
+               thread_work_memory = clone_heap_malloc(sizeof(ThreadWorkType));
                safe_thread_push(&thread_deque, &thread_deque_lock,
                      new (thread_work_memory) ThreadWorkType(retaddr,
                         PthreadWork((uint32_t) func,
@@ -694,8 +694,8 @@ namespace NLCBSMM {
                   // OK to give ownership of the pt away
                   pt_owner =  retaddr.sin_addr.s_addr;
 
-                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                   fprintf(stderr, " > Release ownership of the page table\n");
                   // Inform the sender that it now has ownership of the pt
@@ -765,7 +765,7 @@ namespace NLCBSMM {
 
             // This buffer is big enough to hold the biggest packet
             psz     = MAX_PACKET_SZ;
-            buffer  = clone_heap.malloc(psz);
+            buffer  = clone_heap_malloc(psz);
 
             // Build packet
             p = new (buffer) MulticastJoin(local_addr.s_addr,
@@ -817,7 +817,7 @@ namespace NLCBSMM {
                   if (work != NULL) {
                      // Overwrite the packet with useful work
                      memcpy(buffer, work->second, MAX_PACKET_SZ);
-                     clone_heap.free(work->second);
+                     clone_heap_free(work->second);
                   }
 
                }
@@ -835,7 +835,7 @@ namespace NLCBSMM {
             }
 
             // Shit is scarce, son!
-            clone_heap.free(buffer);
+            clone_heap_free(buffer);
             return 0;
          }
 
@@ -885,7 +885,7 @@ namespace NLCBSMM {
             }
 
             // Get a new buffer from our allocator
-            packet_buffer = (uint8_t*) clone_heap.malloc(MAX_PACKET_SZ);
+            packet_buffer = (uint8_t*) clone_heap_malloc(MAX_PACKET_SZ);
 
             while (1) {
 
@@ -903,7 +903,7 @@ namespace NLCBSMM {
                }
             }
 
-            clone_heap.free(packet_buffer);
+            clone_heap_free(packet_buffer);
             return 0;
          }
 
@@ -961,7 +961,7 @@ namespace NLCBSMM {
                      // TODO: make sure user isn't is in the page table
 
                      //fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(addr));
-                     raw = get_pt_heap(&pt_lock)->malloc(sizeof(Machine));
+                     raw = pt_heap_malloc(sizeof(Machine));
                      node_list->insert(
                            std::pair<uint32_t, Machine*>(
                               ip,
@@ -969,8 +969,8 @@ namespace NLCBSMM {
                            );
 
                      // Allocate memory for the new work/packet
-                     work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                     packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                     work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+                     packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                      // Who to contact
                      retaddr.sin_family      = AF_INET;
@@ -1102,7 +1102,7 @@ namespace NLCBSMM {
             // Where does the region start?
             page_ptr  = reinterpret_cast<uint8_t*>(global_pt_start_addr());
 
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
             p = blocking_comm(
                   (struct sockaddr*) &addr,
@@ -1118,7 +1118,7 @@ namespace NLCBSMM {
             // Causes:
             // my hash map >> fuck - didn't find 0x96ccdcc
             // my hash map >> fuck - didn't find 0x1
-            //clone_heap.free(p);
+            //clone_heap_free((void*)p);
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
@@ -1128,7 +1128,7 @@ namespace NLCBSMM {
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
 
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                   // TODO: make this persistent to avoid socket create/destroy per packet
                   addr = retaddr; // no modify in place
@@ -1142,11 +1142,11 @@ namespace NLCBSMM {
                      fprintf(stderr, "> Bad sync page ack (%x)!\n", p->get_flag());
 
                   // TODO: memory leak
-                  clone_heap.free(p);
+                  clone_heap_free((void*)p);
                }
             }
 
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
             addr = retaddr; // no modify in place
             p = blocking_comm(
@@ -1159,7 +1159,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> Bad sync done ack (%x)!\n", p->get_flag());
 
             // TODO: memory leak
-            clone_heap.free(p);
+            clone_heap_free((void*)p);
 
             return;
          }
@@ -1206,8 +1206,8 @@ namespace NLCBSMM {
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
 
-                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
                   // Push work onto the uni_speaker's queue
                   safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -1221,8 +1221,8 @@ namespace NLCBSMM {
                }
             }
 
-            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             // Push work onto the uni_speaker's queue
             safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
@@ -1302,7 +1302,7 @@ namespace NLCBSMM {
             }
 
             // Release memory
-            clone_heap.free(send);
+            clone_heap_free(send);
             // Close socket
             close(sk);
          }
@@ -1320,7 +1320,7 @@ namespace NLCBSMM {
 
             addrlen = sizeof(struct sockaddr);
 
-            rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            rec_buffer = (uint8_t*) clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             for (int c = 0; c < timeout; c++) {
 
@@ -1347,13 +1347,13 @@ namespace NLCBSMM {
                      exit(EXIT_FAILURE);
                   }
                   // Release memory (NOTE: we're returning the rec_buffer (don't free))
-                  clone_heap.free(packet);
+                  clone_heap_free((void*)packet);
                   return reinterpret_cast<Packet*>(rec_buffer);
                }
             }
             fprintf(stderr, "> Persistent blocking comm timed out (%s)\n", id);
             // Release memory (NOTE: we're returning the rec_buffer (don't free))
-            clone_heap.free(packet);
+            clone_heap_free((void*)packet);
             return NULL;
          }
 
@@ -1381,7 +1381,7 @@ namespace NLCBSMM {
             //addr.sin_port        = htons(UNICAST_PORT);
             addrlen              = sizeof(struct sockaddr);
 
-            rec_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            rec_buffer = (uint8_t*) clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             for (int c = 0; c < timeout; c++) {
 
@@ -1410,13 +1410,13 @@ namespace NLCBSMM {
                      exit(EXIT_FAILURE);
                   }
                   // Release memory (NOTE: we're returning the rec_buffer (don't free))
-                  clone_heap.free(send);
+                  clone_heap_free(send);
                   close(sk);
                   return reinterpret_cast<Packet*>(rec_buffer);
                }
             }
             fprintf(stderr, "> Blocking comm timed out (%s)\n", id);
-            clone_heap.free(send);
+            clone_heap_free(send);
             close(sk);
             return NULL;
 
@@ -1463,7 +1463,7 @@ namespace NLCBSMM {
                //zero_pt();
 
                // Build acquire lock packet
-               send_buffer = (uint8_t*) clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               send_buffer = (uint8_t*) clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                acq         = new (send_buffer) AcquireWriteLock(self.sin_port);
                timeout     = 5; // seconds
 
@@ -1513,8 +1513,8 @@ namespace NLCBSMM {
                // TODO: need to re-route packets to new owner sometimes
 
                // Release memory
-               clone_heap.free(rec);
-               clone_heap.free(send_buffer);
+               clone_heap_free(rec);
+               clone_heap_free(send_buffer);
                // Close socket
                close(sk);
             }
@@ -1537,7 +1537,7 @@ namespace NLCBSMM {
             Packet*             p              = NULL;
 
             owner = reinterpret_cast<struct sockaddr_in*>(&thread_map[thread_id]);
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             fprintf(stderr, "> pthead join: contact %s:%d for thread\n",
                   inet_ntoa((struct in_addr&) owner->sin_addr),
@@ -1556,7 +1556,7 @@ namespace NLCBSMM {
             if (p) {
                if (p->get_flag() != THREAD_JOIN_ACK_F)
                   fprintf(stderr, "> Bad thread join ack (%x)!\n", p->get_flag());
-               clone_heap.free(p);
+               clone_heap_free((void*)p);
             }
             else {
                fprintf(stderr, "> Bad thread join response\n");
@@ -1594,8 +1594,8 @@ namespace NLCBSMM {
             remote_addr.sin_addr.s_addr = remote_ip;
             remote_addr.sin_port        = htons(UNICAST_PORT);
 
-            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
             timeout = 5;
 
@@ -1656,7 +1656,7 @@ namespace NLCBSMM {
                   fprintf(stderr, "> Weird response (%x)\n", p->get_flag());
                }
                // This was returned to us, we're done with it
-               clone_heap.free(p);
+               clone_heap_free((void*)p);
             }
             else {
                fprintf(stderr, "Bad thread create response\n");

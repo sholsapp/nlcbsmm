@@ -179,6 +179,13 @@ namespace NLCBSMM {
    // page table.
    extern mutex pt_lock;
 
+   // This is a per-process lock, so the various threads don't simutaneously malloc
+   // and free from the pt heap.
+   extern mutex pt_heap_lock;
+   // This is a per-process lock, so the various threads don't simutaneously malloc
+   // and free from the clone heap.
+   extern mutex clone_heap_lock;
+
    // The next valid address to pull memory from. This is transmitted in the releaseWriteLock
    // packet.
    extern uint32_t next_addr;
@@ -200,6 +207,11 @@ namespace NLCBSMM {
    void               safe_thread_push(ThreadQueueType* queue, mutex* m, ThreadWorkType* work);
    int                safe_thread_size(ThreadQueueType* queue, mutex* m);
 
+
+   void*              pt_heap_malloc(uint32_t sz);
+   void               pt_heap_free(void* addr);
+   void*              clone_heap_malloc(uint32_t sz);
+   void               clone_heap_free(void* addr);
 
    PageTableHeapType* get_pt_heap(mutex* m);
    uint32_t           get_available_worker();
