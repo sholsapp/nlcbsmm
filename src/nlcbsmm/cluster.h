@@ -561,6 +561,8 @@ namespace NLCBSMM {
                   fprintf(stderr, "> Bad release page response\n");
                }
 
+               clone_heap.free(p);
+
                break;
 
             case SYNC_START_F:
