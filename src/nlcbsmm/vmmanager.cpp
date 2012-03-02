@@ -73,10 +73,10 @@ namespace NLCBSMM {
 
    // This is a per-process lock, so the various threads don't simutaneously malloc
    // and free from the pt heap.
-   mutex pt_heap_lock;
+   //mutex pt_heap_lock;
    // This is a per-process lock, so the various threads don't simutaneously malloc
    // and free from the clone heap.
-   mutex clone_heap_lock;
+   //mutex clone_heap_lock;
 
    mutex node_list_lock;
 
@@ -180,7 +180,7 @@ namespace NLCBSMM {
       timeout = 5;
 
 
-      packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+      packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
       p = ClusterCoordinator::persistent_blocking_comm(sk,
             (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(
@@ -214,7 +214,7 @@ namespace NLCBSMM {
             // Set new owner (us)
             set_new_owner((uint32_t) rel_page, local_addr.s_addr);
 
-            packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             ClusterCoordinator::direct_comm(remote_addr,
                   new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
 
@@ -235,7 +235,7 @@ namespace NLCBSMM {
          fflush(stdout);
 
          // Free the packet
-         clone_heap_free(p);
+         clone_heap.free(p);
       }
       else {
          fprintf(stderr, "> SEGFAULT (couldn't resolve %p)\n", aligned_addr);
@@ -311,13 +311,13 @@ namespace NLCBSMM {
       mutex_init(&thread_cond_lock,      NULL);
       mutex_init(&thread_deque_lock,     NULL);
       mutex_init(&thread_map_lock,       NULL);
-      mutex_init(&pt_heap_lock,          NULL);
-      mutex_init(&clone_heap_lock,       NULL);
+      //mutex_init(&pt_heap_lock,          NULL);
+      //mutex_init(&clone_heap_lock,       NULL);
       mutex_init(&node_list_lock,        NULL);
       return;
    }
 
-   void* pt_heap_malloc(uint32_t sz) {
+   /*void* pt_heap_malloc(uint32_t sz) {
       void* ret;
       mutex_lock(&pt_heap_lock);
       ret = pt_heap->malloc(sz);
@@ -343,15 +343,17 @@ namespace NLCBSMM {
       mutex_lock(&clone_heap_lock);
       clone_heap.free(addr);
       mutex_unlock(&clone_heap_lock);
-   }
+   }*/
 
 
    void nlcbsmm_init_heaps() {
       /**
        * Cheap hack, but forces heaps to initialize memory pools.
        */
-      pt_heap_free(pt_heap_malloc(8));
-      clone_heap_free(clone_heap_malloc(8));
+      //pt_heap_free(pt_heap_malloc(8));
+      pt_heap->free(pt_heap->malloc(8));
+      //clone_heap_free(clone_heap_malloc(8));
+      clone_heap.free(clone_heap.malloc(8));
       return;
    }
 

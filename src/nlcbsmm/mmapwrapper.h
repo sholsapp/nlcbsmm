@@ -99,7 +99,7 @@ namespace HL {
 
             if (node_list->count(local_addr.s_addr) == 0) {
                fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
-               raw = pt_heap_malloc(sizeof(Machine));
+               raw = pt_heap->malloc(sizeof(Machine));//BAD:)
                node_list->insert(
                      std::pair<uint32_t, Machine*>(
                         local_addr.s_addr,
@@ -114,8 +114,8 @@ namespace HL {
             if (mach_status == MACHINE_ACTIVE
                   || mach_status == MACHINE_MASTER) {
 
-               work_memory   = clone_heap_malloc(sizeof(WorkTupleType));
-               packet_memory = clone_heap_malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
                      new (work_memory) WorkTupleType(fake,
                         new (packet_memory) SyncReserve(local_addr.s_addr, ptr, sz))
@@ -129,7 +129,7 @@ namespace HL {
             for (int page = 0; page < page_count; page++) {
                page_addr = block_addr + (page * PAGE_SZ);
                //fprintf(stderr, "Superblock (%p) - Page (%p)\n", block_addr, page_addr);
-               raw = pt_heap_malloc(sizeof(Page));
+               raw = pt_heap->malloc(sizeof(Page));
                page_table->insert(
                      std::pair<uint32_t, PageTableElementType>((uint32_t) page_addr,
                         PageTableElementType(

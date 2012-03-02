@@ -68,9 +68,9 @@ namespace NLCBSMM {
             //std::cerr << "allocate " << num << " element(s)"
             //   << " of size " << sizeof(T) << std::endl;
             // The heap is coupled global variabled -- must be defined!
-            mutex_lock(&pt_heap_lock);
+            //mutex_lock(&pt_heap_lock);
             pointer ret = (pointer)(pt_heap->malloc(num*sizeof(T)));
-            mutex_unlock(&pt_heap_lock);
+            //mutex_unlock(&pt_heap_lock);
             //std::cerr << "pt allocated at: " << (void*)ret << std::endl;
             return ret;
          }
@@ -101,9 +101,9 @@ namespace NLCBSMM {
             //   << " of size " << sizeof(T)
             //   << " at: " << (void*)p << std::endl;
             // The heap is coupled global variabled -- must be defined!
-            mutex_lock(&pt_heap_lock);
+            //mutex_lock(&pt_heap_lock);
             pt_heap->free((void*)p);
-            mutex_unlock(&pt_heap_lock);
+            //mutex_unlock(&pt_heap_lock);
          }
    };
 

@@ -181,10 +181,10 @@ namespace NLCBSMM {
 
    // This is a per-process lock, so the various threads don't simutaneously malloc
    // and free from the pt heap.
-   extern mutex pt_heap_lock;
+   //extern mutex pt_heap_lock;
    // This is a per-process lock, so the various threads don't simutaneously malloc
    // and free from the clone heap.
-   extern mutex clone_heap_lock;
+   //extern mutex clone_heap_lock;
 
    extern mutex node_list_lock;
 
@@ -210,10 +210,10 @@ namespace NLCBSMM {
    int                safe_thread_size(ThreadQueueType* queue, mutex* m);
 
 
-   void*              pt_heap_malloc(uint32_t sz);
-   void               pt_heap_free(void* addr);
-   void*              clone_heap_malloc(uint32_t sz);
-   void               clone_heap_free(void* addr);
+   //void*              pt_heap_malloc(uint32_t sz);
+   //void               pt_heap_free(void* addr);
+   //void*              clone_heap_malloc(uint32_t sz);
+   //void               clone_heap_free(void* addr);
 
    PageTableHeapType* get_pt_heap(mutex* m);
    uint32_t           get_available_worker();

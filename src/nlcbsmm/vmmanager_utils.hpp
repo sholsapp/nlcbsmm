@@ -57,7 +57,7 @@ namespace NLCBSMM {
       struct ifaddrs *ifa    = NULL;
       int            family  = 0;
       int            s       = 0;
-      char*          host    = (char*) clone_heap_malloc(sizeof(char) * NI_MAXHOST);
+      char*          host    = (char*) clone_heap.malloc(sizeof(char) * NI_MAXHOST);
 
       if (getifaddrs(&ifaddr) == -1) {
          perror("getifaddrs");
