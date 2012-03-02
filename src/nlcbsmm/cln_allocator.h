@@ -68,8 +68,10 @@ namespace NLCBSMM {
             //std::cerr << "allocate " << num << " element(s)"
             //   << " of size " << sizeof(T) << std::endl;
             // The heap is coupled global variabled -- must be defined!
+            mutex_lock(&clone_heap_lock);
             pointer ret = (pointer)(clone_heap.malloc(num*sizeof(T)));
-            //std::cerr << " allocated at: " << (void*)ret << std::endl;
+            mutex_unlock(&clone_heap_lock);
+            //std::cerr << "cln allocated at: " << (void*)ret << std::endl;
             return ret;
          }
 
@@ -94,11 +96,13 @@ namespace NLCBSMM {
             /**
              * Deallocate storage p of deleted elements.
              */
-            //std::cerr << "deallocate " << num << " element(s)"
+            //std::cerr << "cln deallocate " << num << " element(s)"
             //   << " of size " << sizeof(T)
             //   << " at: " << (void*)p << std::endl;
             // The heap is coupled global variabled -- must be defined!
+            mutex_lock(&clone_heap_lock);
             clone_heap.free((void*)p);
+            mutex_unlock(&clone_heap_lock);
          }
    };
 
