@@ -763,7 +763,7 @@ namespace NLCBSMM {
                         cond_signal(&uni_speaker_cond);
                      }
                      else {
-                        fprintf(stderr, "Waiting: %d\n", water_queue->size());
+                        fprintf(stderr, "Waiting: %d\n", wait_queue->size());
                      }
                   }
                   else {
