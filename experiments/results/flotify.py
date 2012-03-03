@@ -37,16 +37,19 @@ def translate(lines):
   data = list()
   for line in filter_lines(lines):
     # Parse fields
-    msg_id, clock, faulter, faultee, addr, runtime = line.split(DELIM)
-    # Add them to data
-    data.append({
-      'msg_id' : msg_id,
-      'clock' : int(clock),
-      'faulter' : faulter,
-      'faultee' : faultee,
-      'addr'    : int(addr, 16),
-      'runtime' : int(runtime)
-      });
+    try:
+      msg_id, clock, faulter, faultee, addr, runtime = line.split(DELIM)
+      # Add them to data
+      data.append({
+        'msg_id' : msg_id,
+        'clock' : int(clock),
+        'faulter' : faulter,
+        'faultee' : faultee,
+        'addr'    : int(addr, 16),
+        'runtime' : int(runtime)
+        });
+    except Exception as e:
+      print line
 
   time_base = min([d['clock'] for d in data])
 
