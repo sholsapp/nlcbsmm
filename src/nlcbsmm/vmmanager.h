@@ -73,8 +73,8 @@ namespace NLCBSMM {
     * Mutex table type
     */
    typedef
-      std::deque<struct sockaddr,
-      CloneAllocator<struct sockaddr> >
+      std::deque<struct sockaddr_in,
+      CloneAllocator<struct sockaddr_in> >
          WaitQueue;
    typedef
       std::map<vmaddr_t, WaitQueue,

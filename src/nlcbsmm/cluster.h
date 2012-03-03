@@ -452,6 +452,7 @@ namespace NLCBSMM {
             ReleasePage*           rp             = NULL;
             MutexLockRequest*      mut_lock_req   = NULL;
             WorkTupleType*         work           = NULL;
+            WaitQueue*             wait_queue     = NULL;
 
             uint8_t*               payload_buf    = NULL;
             uint8_t*               page_ptr       = NULL;
@@ -475,6 +476,7 @@ namespace NLCBSMM {
 
             Machine*               node           = NULL;
             Page*                  page           = NULL;
+            MutexTableType::iterator map_itr;
 
 
             // Generic packet data (type/payload size/payload)
@@ -733,19 +735,44 @@ namespace NLCBSMM {
 
             case MUTEX_LOCK_REQUEST_F:
                mut_lock_req = reinterpret_cast<MutexLockRequest*>(buffer);
-
                mut_id = ntohl(mut_lock_req->mutex_id);
-
-               // TODO: look up mutex
-               // TODO: if mutex exist in map
-               // TODO:   if locked
-               // TODO:     put retaddr into the wait queue
-               // TODO:   else
-               // TODO:     send retaddr a mutex lock grant
-               // TODO: else
-               // TODO:     ignore request (stdlibc++)
-
                fprintf(stderr, "Mutex lock request (%d)\n", mut_id);
+
+               if (mutex_map.count(mut_id) > 0) {
+                  map_itr = mutex_map.find(mut_id);
+                  if (map_itr != mutex_map.end()) {
+                     wait_queue = &(*map_itr).second;
+                     wait_queue->push_back(retaddr);
+                     // If this node is the only one waiting on the lock
+                     if (wait_queue->size() == 1) {
+                        // Allocate memory for the new work/packet
+                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                        // Send lock grant packet
+                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                              // A new work tuple
+                              new (work_memory) WorkTupleType(retaddr,
+                                 // A new packet
+                                 new (packet_memory) MutexLockGrant(mut_id))
+                              );
+                     }
+                  }
+                  else {
+                     fprintf(stderr, "> Couldn't find mutex (%p)\n", (void*) mut_id);
+                  }
+               }
+               else {
+                  // Not managed, send lock grant packet
+                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  // Send lock grant packet
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) MutexLockGrant(mut_id))
+                        );
+               }
                break;
 
             case RELEASE_WRITE_LOCK_F:
