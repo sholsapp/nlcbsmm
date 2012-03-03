@@ -451,6 +451,7 @@ namespace NLCBSMM {
             AcquirePage*           ap             = NULL;
             ReleasePage*           rp             = NULL;
             MutexLockRequest*      mut_lock_req   = NULL;
+            MutexUnlock*           mut_unlock     = NULL;
             WorkTupleType*         work           = NULL;
             WaitQueue*             wait_queue     = NULL;
 
@@ -477,6 +478,8 @@ namespace NLCBSMM {
             Machine*               node           = NULL;
             Page*                  page           = NULL;
             MutexTableType::iterator map_itr;
+
+            sockaddr_in            mut_holder     = {0};
 
 
             // Generic packet data (type/payload size/payload)
@@ -738,6 +741,8 @@ namespace NLCBSMM {
                mut_id = ntohl(mut_lock_req->mutex_id);
                fprintf(stderr, "Mutex lock request (%d)\n", mut_id);
 
+
+               mutex_lock(&mutex_map_lock);
                if (mutex_map.count(mut_id) > 0) {
                   map_itr = mutex_map.find(mut_id);
                   if (map_itr != mutex_map.end()) {
@@ -773,13 +778,76 @@ namespace NLCBSMM {
                            new (packet_memory) MutexLockGrant(mut_id))
                         );
                }
+               mutex_unlock(&mutex_map_lock);
+               break;
+
+            case MUTEX_UNLOCK_F:
+               mut_unlock = reinterpret_cast<MutexUnlock*>(buffer);
+               mut_id = ntohl(mut_unlock->mutex_id);
+               fprintf(stderr, "Mutex unlock request (%d)\n", mut_id);
+
+               mutex_lock(&mutex_map_lock);
+               if (mutex_map.count(mut_id) > 0) {
+                  map_itr = mutex_map.find(mut_id);
+                  if (map_itr != mutex_map.end()) {
+                     wait_queue = &(*map_itr).second;
+                     mut_holder = wait_queue->front();
+                     //Check the guy unlocking is the owner that has the lock
+                     if (mut_holder.sin_addr.s_addr == retaddr.sin_addr.s_addr) {
+                         // Allocate memory for the new work/packet
+                         work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                         packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                         // Send unlock ack packet
+                         safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                              // A new work tuple
+                              new (work_memory) WorkTupleType(retaddr,
+                                 // A new packet
+                                 new (packet_memory) GenericPacket(MUTEX_UNLOCK_ACK_F))
+                              );
+                         //Pop the front of the queue
+                         wait_queue->pop_front();
+                         //Check if something the queue
+                         if (wait_queue->size() > 0) {
+                            // Allocate memory for the new work/packet
+                            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                            // Send lock grant packet
+                            safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                              // A new work tuple
+                              new (work_memory) WorkTupleType(wait_queue->front(),
+                                 // A new packet
+                                 new (packet_memory) MutexLockGrant(mut_id))
+                              );
+                         }
+                     }
+                     else {
+                        fprintf(stderr, "> Mutex unlock error: %s attempted to unlock a lock belonging to %s\n", inet_ntoa((struct in_addr&) retaddr.sin_addr),
+                 												inet_ntoa((struct in_addr&) wait_queue->front()));
+                     }
+                  }
+                  else {
+                     fprintf(stderr, "> Couldn't find mutex (%p)\n", (void*) mut_id);
+                  }
+               }
+               else {
+                  // Not managed, send unlock ack packet
+                  work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                  packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                  // Send lock grant packet
+                  safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // A new work tuple
+                        new (work_memory) WorkTupleType(retaddr,
+                           // A new packet
+                           new (packet_memory) GenericPacket(MUTEX_UNLOCK_ACK_F))
+                        );
+               }
+               mutex_unlock(&mutex_map_lock);
                break;
 
             case RELEASE_WRITE_LOCK_F:
             case SYNC_RELEASE_PAGE_F:
             case SYNC_DONE_ACK_F:
             case MUTEX_LOCK_GRANT_F:
-            case MUTEX_UNLOCK_F:
                // These types of packets are handled directly
                fprintf(stderr, "ERROR> ignored packet type(%x)\n", p->get_flag());
                break;
