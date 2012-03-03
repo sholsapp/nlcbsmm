@@ -1699,12 +1699,106 @@ namespace NLCBSMM {
             return thr_id;
          }
 
-         static uint32_t net_pthread_mutex_lock(pthread_mutex_t *lock) {
+         static uint32_t net_pthread_mutex_lock(pthread_mutex_t *lock) {\
+            void*               packet_memory  = NULL;
+            void*               work_memory    = NULL;
+            void*               raw            = NULL;
+            uint32_t            remote_ip      = 0;
+            uint32_t            timeout        = 0;
+            struct sockaddr_in  remote_addr    = {0};
+            Packet*              p   = NULL;
 
+            fprintf(stderr, "%lld >> mutex_lock(%s)\n", get_micro_clock(), local_ip);
+
+            //TODO: MEGA HACK, need to implement a get_master function
+            remote_ip = pt_owner;
+
+            fprintf(stderr, ">>>> send lock-request to %s\n", inet_ntoa((struct in_addr&) remote_ip));
+
+            remote_addr.sin_family      = AF_INET;
+            remote_addr.sin_addr.s_addr = remote_ip;
+            remote_addr.sin_port        = htons(UNICAST_PORT);
+
+            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+            timeout = 100000;
+
+            // Send a message to the master requesting the lock
+            p = ClusterCoordinator::blocking_comm(
+                  (struct sockaddr*) &remote_addr,
+                  reinterpret_cast<Packet*>(
+                     new (packet_memory) MutexLockRequest((uint32_t) lock)),
+                  timeout,
+                  "mutex lock request"
+                  );
+
+            if (p) {
+               if (p->get_flag() == MUTEX_LOCK_GRANT_F) {
+                  fprintf(stderr, "> lock(%p) granted\n", (void*)lock);
+               }
+               else {
+                  fprintf(stderr, "> Wrong response to mutex lock request (%x)\n", p->get_flag());
+               }
+               // This was returned to us, we're done with it
+               clone_heap.free((void*)p);
+            }
+            else {
+               fprintf(stderr, "> Bad mutex lock response\n");
+            }
+
+            return 0;
          }
 
          static uint32_t net_pthread_mutex_unlock(pthread_mutex_t *lock) {
+            void*               packet_memory  = NULL;
+            void*               work_memory    = NULL;
+            void*               raw            = NULL;
+            uint32_t            remote_ip      = 0;
+            uint32_t            timeout        = 0;
+            struct sockaddr_in  remote_addr    = {0};
+            Packet*              p   = NULL;
 
+            fprintf(stderr, "%lld >> mutex_unlock(%s)\n", get_micro_clock(), local_ip);
+
+            //TODO: MEGA HACK, need to implement a get_master function
+            remote_ip = pt_owner;
+
+            fprintf(stderr, ">>>> send unlock to %s\n", inet_ntoa((struct in_addr&) remote_ip));
+
+            remote_addr.sin_family      = AF_INET;
+            remote_addr.sin_addr.s_addr = remote_ip;
+            remote_addr.sin_port        = htons(UNICAST_PORT);
+
+            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+
+            timeout = 100000;
+
+            // Send a message to the master to unlock the given lock
+            p = ClusterCoordinator::blocking_comm(
+                  (struct sockaddr*) &remote_addr,
+                  reinterpret_cast<Packet*>(
+                     new (packet_memory) MutexUnlock((uint32_t) lock)),
+                  timeout,
+                  "mutex unlock"
+                  );
+
+            if (p) {
+               if (p->get_flag() == MUTEX_UNLOCK_ACK_F) {
+                  fprintf(stderr, "> unlock(%p) success\n", (void*)lock);
+               }
+               else {
+                  fprintf(stderr, "> Wrong response to mutex unlock(%x)\n", p->get_flag());
+               }
+               // This was returned to us, we're done with it
+               clone_heap.free((void*)p);
+            }
+            else {
+               fprintf(stderr, "> Bad mutex unlock response\n");
+            }
+
+            return 0;
          }
 
          static uint32_t select_call(int socket, int seconds, int useconds) {

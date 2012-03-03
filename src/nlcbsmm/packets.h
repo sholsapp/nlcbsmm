@@ -35,6 +35,7 @@
 #define MUTEX_LOCK_REQUEST_F      0x5A
 #define MUTEX_LOCK_GRANT_F        0x5B
 #define MUTEX_UNLOCK_F            0x5C
+#define MUTEX_UNLOCK_ACK_F        0x5D
 
 #include "constants.h"
 
