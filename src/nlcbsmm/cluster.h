@@ -1699,11 +1699,11 @@ namespace NLCBSMM {
             return thr_id;
          }
 
-         static uint32_t net_pthread_mutex_lock(pthread_mutex_t lock) {
+         static uint32_t net_pthread_mutex_lock(pthread_mutex_t *lock) {
 
          }
 
-         static uint32_t net_pthread_mutex_unlock(pthread_mutex_t lock) {
+         static uint32_t net_pthread_mutex_unlock(pthread_mutex_t *lock) {
 
          }
 

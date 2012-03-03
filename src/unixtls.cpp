@@ -259,14 +259,14 @@ extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
       reinterpret_cast<pthread_mutex_init_function>
       (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   fprintf(stderr, "> pthread_mutex_init\n");
-
-   WaitQueue waiters;
 
    // TODO: What if a non-master node calls pthread_mutex_init?  Need to trasmit data to master
 
+   WaitQueue waiters;
+
    // Insert mutex's address into map, with no waiters
    mutex_lock(&mutex_map_lock);
+   fprintf(stderr, "> pthread_mute_init(%p)\n", (void*) mutex);
    mutex_map.insert(std::pair<vmaddr_t, WaitQueue>
          ((vmaddr_t) mutex, waiters));
    mutex_unlock(&mutex_map_lock);
@@ -311,14 +311,7 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
    //   reinterpret_cast<pthread_mutex_lock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   fprintf(stderr, "> pthread_mutex_lock\n");
-
-   // TODO: if mutex exists in mutex map
-   // TODO:   if we don't already have the lock
-   // TODO:     send request to master
-   // TODO:     block on lock
-
-   return 0;
+   return ClusterCoordinator::net_pthread_mutex_lock(mutex);
 
 }
 
@@ -337,13 +330,7 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
    //   reinterpret_cast<pthread_mutex_unlock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   fprintf(stderr, "> pthread_mutex_unlock\n");
-
-   // TODO: if mutex exists in the mutex map
-   // TODO:   if we currently hold the lock
-   // TODO:     send release to master
-
-   return 0;
+   return ClusterCoordinator::net_pthread_mutex_unlock(mutex);
 
 }
 
