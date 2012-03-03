@@ -749,7 +749,7 @@ namespace NLCBSMM {
                   map_itr = mutex_map.find(mut_id);
                   if (map_itr != mutex_map.end()) {
                      wait_queue = &(*map_itr).second;
-                     if (in_wait_queue(wait_queue, retaddr)) {
+                     if (!in_wait_queue(wait_queue, retaddr)) {
                         wait_queue->push_back(retaddr);
                         // If this node is the only one waiting on the lock
                         if (wait_queue->size() == 1) {                        
@@ -765,6 +765,20 @@ namespace NLCBSMM {
                               );
                            cond_signal(&uni_speaker_cond);
                         }
+                     }
+                     else if (wait_queue->front().sin_addr.s_addr == retaddr.sin_addr.s_addr) {//TODO: COmpare port
+                        //THIS IS FOR MUTEX_LOCK REQUES WHEN THE LOCK_GRANT IS LOST
+                     	// Allocate memory for the new work/packet
+                           work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                           packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                           // Send lock grant packet
+                           safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                              // A new work tuple
+                              new (work_memory) WorkTupleType(retaddr,
+                                 // A new packet
+                                 new (packet_memory) MutexLockGrant(mut_id))
+                              );
+                           cond_signal(&uni_speaker_cond);
                      }
                      else {
                         fprintf(stderr, "Waiting: %d\n", wait_queue->size());
