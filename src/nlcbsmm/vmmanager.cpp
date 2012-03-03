@@ -421,12 +421,12 @@ namespace NLCBSMM {
       register_signal_handlers();
 
       // Debug
-      print_init_message();
-
-      ready = true;
+      print_init_message();      
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();
+
+      ready = true;
    }
 
 }
