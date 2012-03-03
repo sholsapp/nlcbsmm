@@ -1590,7 +1590,8 @@ namespace NLCBSMM {
             // If write lock is not in init state
             if (pt_owner != -1
                   // And we do not own write lock on page table
-                  && local_addr.s_addr != pt_owner) {
+                  && local_addr.s_addr != pt_owner
+                  && false) { //TODO: FIX THIS
 
                // Start a new listener
                sk = new_comm();
