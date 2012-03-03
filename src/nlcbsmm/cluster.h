@@ -338,6 +338,7 @@ namespace NLCBSMM {
             /**
              *
              */
+            sleep(1);
             fprintf(stderr, "> uni-speaker\n");
 
             uint32_t               sk     = 0;
@@ -392,6 +393,7 @@ namespace NLCBSMM {
             /**
              *
              */
+            sleep(1);
             fprintf(stderr, "> uni-listener\n");
 
             uint8_t* packet_buffer    = NULL;
@@ -869,7 +871,8 @@ namespace NLCBSMM {
 
 
          static int multi_speaker(void* t) {
-            /**
+            sleep(1);
+           /**
              * Initialize the multicast speaker socket and enter daemon mode.  The outer event
              * loop is responsible for determining "state" before entering an inner event loop,
              * which is responsible for implementing whatever behavior "state" might be.
@@ -980,7 +983,8 @@ namespace NLCBSMM {
 
 
          static int multi_listener(void* t) {
-            /**
+            sleep(1); 
+           /**
              *
              */
             fprintf(stderr, "> multi-listener\n");
