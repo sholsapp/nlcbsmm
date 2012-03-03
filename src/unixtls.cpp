@@ -221,7 +221,7 @@ extern "C" int pthread_create (pthread_t *thread,
 }
 
 
-extern "C" int pthread_join (pthread_t thread, 
+extern "C" int pthread_join (pthread_t thread,
       void** value_ptr) {
    /**
     *
@@ -311,7 +311,10 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
    //   reinterpret_cast<pthread_mutex_lock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   return ClusterCoordinator::net_pthread_mutex_lock(mutex);
+   if (ready)
+      return ClusterCoordinator::net_pthread_mutex_lock(mutex);
+   else
+      return 0;
 
 }
 
@@ -330,7 +333,10 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
    //   reinterpret_cast<pthread_mutex_unlock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
-   return ClusterCoordinator::net_pthread_mutex_unlock(mutex);
+   if (ready)
+      return ClusterCoordinator::net_pthread_mutex_unlock(mutex);
+   else
+      return 0;
 
 }
 

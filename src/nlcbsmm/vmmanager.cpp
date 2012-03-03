@@ -29,6 +29,8 @@
 
 namespace NLCBSMM {
 
+   bool ready = false;
+
    // If a network thread needs memory, it must use this private
    // heap.  This memory is lost from the DSM system.
    FirstFitHeap<NlcbsmmMmapHeap<CLONE_HEAP_START> > clone_heap;
@@ -420,6 +422,8 @@ namespace NLCBSMM {
 
       // Debug
       print_init_message();
+
+      ready = true;
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();

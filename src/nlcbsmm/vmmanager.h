@@ -143,6 +143,8 @@ namespace NLCBSMM {
 
 namespace NLCBSMM {
 
+   extern bool ready;
+
    // The node's IP address
    extern const char* local_ip;
    extern struct in_addr local_addr;
