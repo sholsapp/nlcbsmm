@@ -749,20 +749,22 @@ namespace NLCBSMM {
                   map_itr = mutex_map.find(mut_id);
                   if (map_itr != mutex_map.end()) {
                      wait_queue = &(*map_itr).second;
-                     wait_queue->push_back(retaddr);
-                     // If this node is the only one waiting on the lock
-                     if (wait_queue->size() == 1) {
-                        // Allocate memory for the new work/packet
-                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                        // Send lock grant packet
-                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                     if (in_wait_queue(wait_queue, retaddr)) {
+                        wait_queue->push_back(retaddr);
+                        // If this node is the only one waiting on the lock
+                        if (wait_queue->size() == 1) {                        
+                           // Allocate memory for the new work/packet
+                           work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                           packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                           // Send lock grant packet
+                           safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                               // A new work tuple
                               new (work_memory) WorkTupleType(retaddr,
                                  // A new packet
                                  new (packet_memory) MutexLockGrant(mut_id))
                               );
-                        cond_signal(&uni_speaker_cond);
+                           cond_signal(&uni_speaker_cond);
+                        }
                      }
                      else {
                         fprintf(stderr, "Waiting: %d\n", wait_queue->size());
@@ -1382,6 +1384,16 @@ namespace NLCBSMM {
             return;
          }
 
+         static bool in_wait_queue(WaitQueue* queue, struct sockaddr_in addr) {
+            WaitQueue::iterator itr;
+            for (itr = queue->begin(); itr != queue->end(); itr++) {
+              if ((*itr).sin_addr.s_addr == addr.sin_addr.s_addr
+                   && (*itr).sin_port == addr.sin_port)
+                return true;
+            }
+            return false;
+         }
+
 
          static uint32_t new_comm(uint32_t port=0, bool print=false) {
             /**
@@ -1670,8 +1682,7 @@ namespace NLCBSMM {
 
             return;
          }
-
-
+         
          static uint32_t net_pthread_join(pthread_t thread_id) {
             /**
              * TODO: implement me
