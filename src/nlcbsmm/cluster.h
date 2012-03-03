@@ -760,6 +760,7 @@ namespace NLCBSMM {
                                  // A new packet
                                  new (packet_memory) MutexLockGrant(mut_id))
                               );
+                        cond_signal(&uni_speaker_cond);
                      }
                      else {
                         fprintf(stderr, "Waiting: %d\n", water_queue->size());
@@ -780,6 +781,7 @@ namespace NLCBSMM {
                            // A new packet
                            new (packet_memory) MutexLockGrant(mut_id))
                         );
+                  cond_signal(&uni_speaker_cond);
                }
                mutex_unlock(&mutex_map_lock);
                break;
@@ -797,35 +799,37 @@ namespace NLCBSMM {
                      mut_holder = wait_queue->front();
                      //Check the guy unlocking is the owner that has the lock
                      if (mut_holder.sin_addr.s_addr == retaddr.sin_addr.s_addr) {
-                         // Allocate memory for the new work/packet
-                         work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                         packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                         // Send unlock ack packet
-                         safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // Allocate memory for the new work/packet
+                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                        // Send unlock ack packet
+                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                               // A new work tuple
                               new (work_memory) WorkTupleType(retaddr,
                                  // A new packet
                                  new (packet_memory) GenericPacket(MUTEX_UNLOCK_ACK_F))
                               );
-                         //Pop the front of the queue
-                         wait_queue->pop_front();
-                         //Check if something the queue
-                         if (wait_queue->size() > 0) {
-                            // Allocate memory for the new work/packet
-                            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                            // Send lock grant packet
-                            safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                              // A new work tuple
-                              new (work_memory) WorkTupleType(wait_queue->front(),
-                                 // A new packet
-                                 new (packet_memory) MutexLockGrant(mut_id))
-                              );
-                         }
+                        cond_signal(&uni_speaker_cond);
+                        //Pop the front of the queue
+                        wait_queue->pop_front();
+                        //Check if something the queue
+                        if (wait_queue->size() > 0) {
+                           // Allocate memory for the new work/packet
+                           work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                           packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                           // Send lock grant packet
+                           safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                                 // A new work tuple
+                                 new (work_memory) WorkTupleType(wait_queue->front(),
+                                    // A new packet
+                                    new (packet_memory) MutexLockGrant(mut_id))
+                                 );
+                           cond_signal(&uni_speaker_cond);
+                        }
                      }
                      else {
                         fprintf(stderr, "> Mutex unlock error: %s attempted to unlock a lock belonging to %s\n", inet_ntoa((struct in_addr&) retaddr.sin_addr),
-                 												inet_ntoa((struct in_addr&) wait_queue->front()));
+                              inet_ntoa((struct in_addr&) wait_queue->front()));
                      }
                   }
                   else {
@@ -843,6 +847,7 @@ namespace NLCBSMM {
                            // A new packet
                            new (packet_memory) GenericPacket(MUTEX_UNLOCK_ACK_F))
                         );
+                  cond_signal(&uni_speaker_cond);
                }
                mutex_unlock(&mutex_map_lock);
                break;
