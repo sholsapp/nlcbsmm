@@ -2,7 +2,7 @@
 <html>
  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Varying threads, fixed matrix size of 200</title>
+    <title>Fixed thread count, varying matrix size</title>
     <link href="layout.css" rel="stylesheet" type="text/css">
     <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
     <script language="javascript" type="text/javascript" src="./js/jquery.js"></script>
@@ -10,11 +10,11 @@
     <script language="javascript" type="text/javascript" src="./js/jquery.flot.symbol.js"></script>
  </head>
  <body>
-    <h1>Fixed matrix size of 200, varied number of threads from 1-4</h1>
+    <h1>Fixed thread count of 4, varied matrix sizes of 100,200,400,700</h1>
 
     <div id="placeholder" style="width:600px;height:300px"></div>
 
-    <p>The Y-axis describes time in microseconds.  The X-axis describes the number of threads used.</p>
+    <p>The Y-axis describes time in microseconds.  The X-axis describes the size of the matrix.</p>
     <p>yellow:mmult-malloc</p>
     <p>blue:mmult-lock-malloc</p>
     <p>red:mmult-lock-strict-malloc</p>
@@ -23,25 +23,25 @@ $(function () {
 
     var data = [
         { data: [ 
- [1, 200401],
-  [2, 140297],
-  [3, 128476],
-  [4, 116824],
+ [100, 14636 ],
+  [200, 113440 ],
+  [400, 1297686 ],
+  [700, 14192182 ],
 ], points: { symbol: "square" } },
         { data: [  
 
-  [1, 189503 ],
-  [2, 183991 ],
-  [3, 181426 ],
-  [4, 181779 ],
+  [100, 20802  ],
+  [200, 183493  ],
+  [400, 2028156  ],
+  [700, 22013844  ],
         
 ], points: { symbol: "diamond" } },
         { data: [  
 
-  [1, 186080 ],
-  [2, 183115 ],
-  [3, 180772 ],
-  [4, 184511 ],
+  [100, 20447  ],
+  [200, 179808  ],
+  [400, 2049082   ],
+  [700, 21798524  ],
 
 ], points: { symbol: "cross" } }
     ];
