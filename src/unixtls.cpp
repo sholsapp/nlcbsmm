@@ -266,7 +266,7 @@ extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
 
    // Insert mutex's address into map, with no waiters
    mutex_lock(&mutex_map_lock);
-   fprintf(stderr, "> pthread_mute_init(%p)\n", (void*) mutex);
+   fprintf(stderr, "> pthread_mutex_init(%p)\n", (void*) mutex);
    mutex_map.insert(std::pair<vmaddr_t, WaitQueue>
          ((vmaddr_t) mutex, waiters));
    mutex_unlock(&mutex_map_lock);
@@ -311,6 +311,8 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
    //   reinterpret_cast<pthread_mutex_lock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
+   // Don't call NLCBSMM code until NLCBSMM has been loaded into memory.
+   //   This happens when libstdc++ loads before NLCBSMM
    if (ready)
       return ClusterCoordinator::net_pthread_mutex_lock(mutex);
    else
@@ -333,6 +335,8 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
    //   reinterpret_cast<pthread_mutex_unlock_function>
    //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
 
+   // Don't call NLCBSMM code until NLCBSMM has been loaded into memory.
+   //   This happens when libstdc++ loads before NLCBSMM
    if (ready)
       return ClusterCoordinator::net_pthread_mutex_unlock(mutex);
    else

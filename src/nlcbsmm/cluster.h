@@ -761,6 +761,9 @@ namespace NLCBSMM {
                                  new (packet_memory) MutexLockGrant(mut_id))
                               );
                      }
+                     else {
+                        fprintf(stderr, "Waiting: %d\n", water_queue->size());
+                     }
                   }
                   else {
                      fprintf(stderr, "> Couldn't find mutex (%p)\n", (void*) mut_id);
