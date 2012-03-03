@@ -19,8 +19,8 @@ long long int get_micro_clock() {
 #include <sys/stat.h>
 void blocking_entry(void) {
    FILE* fp;
-   mkfifo("go-pipe", 0755);
-   fp = fopen("go-pipe", "r");
+   mkfifo("/tmp/go-pipe", 0755);
+   fp = fopen("/tmp/go-pipe", "r");
    fprintf(stderr, "> Waiting for unblock signal\n");
    fgetc(fp);
 }
