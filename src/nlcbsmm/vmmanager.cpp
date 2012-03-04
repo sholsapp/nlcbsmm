@@ -196,9 +196,9 @@ namespace NLCBSMM {
             "acquire page"
             );
 
-      fprintf(stderr, "> Asked %s for %p\n",
-            inet_ntoa((struct in_addr&) remote_ip),
-            (void*) aligned_addr);
+      //fprintf(stderr, "> Asked %s for %p\n",
+      //      inet_ntoa((struct in_addr&) remote_ip),
+      //      (void*) aligned_addr);
 
       // If we received a response
       if (p) {

@@ -548,9 +548,9 @@ namespace NLCBSMM {
 
                page_addr = ntohl(ap->page_addr);
 
-               fprintf(stderr, "> %s wants %p\n",
-                     inet_ntoa(retaddr.sin_addr),
-                     (void*) page_addr);
+               //fprintf(stderr, "> %s wants %p\n",
+               //      inet_ntoa(retaddr.sin_addr),
+               //      (void*) page_addr);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
@@ -652,7 +652,6 @@ namespace NLCBSMM {
 
                // Get where caller put thread stack
                // Use padding convention to get a thread-stack-sized page-aligned section of memory
-               fprintf(stderr, "> Parsing thread create packet...");
                // Page aligned ptr
                page_aligned  = (uint8_t*) page_align((void*) ntohl(tc->stack_ptr));
                // Wastes some memory
@@ -660,9 +659,7 @@ namespace NLCBSMM {
                // Discard the padding for actual stack size
                thr_stack_sz  = ntohl(tc->stack_sz);
                thr_stack_ptr = (void*) ((uint8_t*) thr_stack + thr_stack_sz);
-               fprintf(stderr, "done\n");
 
-               fprintf(stderr, "> Mapping pthread stack memory\n");
                // Map this memory into our address space
                if((test = mmap((void*) thr_stack,
                            thr_stack_sz,
@@ -671,15 +668,10 @@ namespace NLCBSMM {
                            -1, 0)) == MAP_FAILED) {
                   fprintf(stderr, "> map failed\n");
                }
-               else {
-                  fprintf(stderr, "> mapped pthread stack at %p\n", thr_stack);
-               }
 
                // Get address of function
                func = (void*) ntohl(tc->func_ptr);
                arg  = (void*) ntohl(tc->arg);
-
-               fprintf(stderr, "> queue work for worker_func\n");
 
                // Queue pthread work
                thread_work_memory = clone_heap.malloc(sizeof(ThreadWorkType));
@@ -752,7 +744,7 @@ namespace NLCBSMM {
                      if (!in_wait_queue(wait_queue, retaddr)) {
                         wait_queue->push_back(retaddr);
                         // If this node is the only one waiting on the lock
-                        if (wait_queue->size() == 1) {                        
+                        if (wait_queue->size() == 1) {
                            // Allocate memory for the new work/packet
                            work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
