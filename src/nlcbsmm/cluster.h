@@ -1578,7 +1578,9 @@ namespace NLCBSMM {
                   return reinterpret_cast<Packet*>(rec_buffer);
                }
             }
-            fprintf(stderr, "> Blocking comm timed out (%s)\n", id);
+            fprintf(stderr, "> Blocking comm with %s time out (%s)\n",
+                inet_ntoa(addr.sin_addr),
+                id);
             clone_heap.free(send);
             close(sk);
             return NULL;
@@ -1640,7 +1642,7 @@ namespace NLCBSMM {
                addr.sin_port          = htons(self.sin_port);
 
                // Send packet, wait for response
-               rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout, "acquire pt lock (1)");
+               rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout, "acquire pt lock (3)");
 
                while (rec->get_flag() != RELEASE_WRITE_LOCK_F) {
 
@@ -1660,7 +1662,7 @@ namespace NLCBSMM {
                   }
 
                   // Send packet, wait for response
-                  rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout, "acquire pt lock (2)");
+                  rec = persistent_blocking_comm(sk, (struct sockaddr*) &addr, acq, timeout, "acquire pt lock (3)");
                }
 
                if (rec->get_flag() == RELEASE_WRITE_LOCK_F) {
