@@ -224,10 +224,9 @@ namespace NLCBSMM {
             // Memory should be mapped, set permissions
             if(mprotect(rel_page,
                      PAGE_SZ,
-                     PROT_READ) < 0) {
+                     PROT_READ | PROT_WRITE) < 0) {
                fprintf(stderr, "> Fault: mprotect failed\n");
             }
-
             // Copy page data
             memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
 
@@ -237,6 +236,15 @@ namespace NLCBSMM {
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             ClusterCoordinator::direct_comm(remote_addr,
                   new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
+
+            // Memory should be mapped, set permissions
+            if(mprotect(rel_page,
+                     PAGE_SZ,
+                     PROT_READ) < 0) {
+               fprintf(stderr, "> Fault: mprotect failed\n");
+            }
+
+
 
          }
 
