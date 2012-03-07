@@ -182,6 +182,7 @@ namespace NLCBSMM {
             fprintf(stderr, "> Fault: mprotect failed\n");
          }
          // TODO: invalidate page
+         return;
       }
 
       remote_ip                   = node->ip_address;
