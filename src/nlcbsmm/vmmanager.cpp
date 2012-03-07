@@ -176,7 +176,7 @@ namespace NLCBSMM {
       fprintf(stderr, "> %p - permission(%x)\n", (void*) page->address, page->protection);
       if (node->ip_address == local_addr.s_addr) {
          fprintf(stderr, "> %p invalidate - granting PROT_WRITE!\n", (void*) page->address);
-         if(mprotect(rel_page,
+         if(mprotect(page->address,
                   PAGE_SZ,
                   PROT_READ | PROT_WRITE) < 0) {
             fprintf(stderr, "> Fault: mprotect failed\n");
