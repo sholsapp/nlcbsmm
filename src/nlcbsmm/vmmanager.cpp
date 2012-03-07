@@ -43,8 +43,10 @@ namespace NLCBSMM {
    const char*    local_ip   = NULL;
    struct in_addr local_addr = {0};
 
-   MutexTableType   mutex_map;
-   mutex            mutex_map_lock;
+   AddressListType       invalidated;
+   InvalidationTableType mutex_rc_map;
+   MutexTableType        mutex_map;
+   mutex                 mutex_map_lock;
 
    ThreadTableType  thread_map;
    mutex            thread_map_lock;
@@ -171,7 +173,16 @@ namespace NLCBSMM {
       perm  = page->protection;
       node  = tuple.second;
 
-      fprintf(stderr, "%p - permission(%x)\n", (void*) page->address, page->protection);
+      fprintf(stderr, "> %p - permission(%x)\n", (void*) page->address, page->protection);
+      if (node->ip_address == local_addr.s_addr) {
+         fprintf(stderr, "> %p invalidate - granting PROT_WRITE!\n", (void*) page->address);
+         if(mprotect(rel_page,
+                  PAGE_SZ,
+                  PROT_READ | PROT_WRITE) < 0) {
+            fprintf(stderr, "> Fault: mprotect failed\n");
+         }
+         // TODO: invalidate page
+      }
 
       remote_ip                   = node->ip_address;
       remote_addr.sin_family      = AF_INET;
@@ -213,7 +224,7 @@ namespace NLCBSMM {
             // Memory should be mapped, set permissions
             if(mprotect(rel_page,
                      PAGE_SZ,
-                     PROT_READ | PROT_WRITE) < 0) {
+                     PROT_READ) < 0) {
                fprintf(stderr, "> Fault: mprotect failed\n");
             }
 
@@ -330,32 +341,32 @@ namespace NLCBSMM {
    }
 
    /*void* pt_heap_malloc(uint32_t sz) {
-      void* ret;
-      mutex_lock(&pt_heap_lock);
-      ret = pt_heap->malloc(sz);
-      mutex_unlock(&pt_heap_lock);
-      return ret;
-   }
-   
-   void pt_heap_free(void* addr) {
-      mutex_lock(&pt_heap_lock);
-      pt_heap->free(addr);
-      mutex_unlock(&pt_heap_lock);
-   }
+     void* ret;
+     mutex_lock(&pt_heap_lock);
+     ret = pt_heap->malloc(sz);
+     mutex_unlock(&pt_heap_lock);
+     return ret;
+     }
 
-   void* clone_heap_malloc(uint32_t sz) {
-      void* ret;
-      mutex_lock(&clone_heap_lock);
-      ret = clone_heap.malloc(sz);
-      mutex_unlock(&clone_heap_lock);
-      return ret;
-   }
-   
-   void clone_heap_free(void* addr) {
-      mutex_lock(&clone_heap_lock);
-      clone_heap.free(addr);
-      mutex_unlock(&clone_heap_lock);
-   }*/
+     void pt_heap_free(void* addr) {
+     mutex_lock(&pt_heap_lock);
+     pt_heap->free(addr);
+     mutex_unlock(&pt_heap_lock);
+     }
+
+     void* clone_heap_malloc(uint32_t sz) {
+     void* ret;
+     mutex_lock(&clone_heap_lock);
+     ret = clone_heap.malloc(sz);
+     mutex_unlock(&clone_heap_lock);
+     return ret;
+     }
+
+     void clone_heap_free(void* addr) {
+     mutex_lock(&clone_heap_lock);
+     clone_heap.free(addr);
+     mutex_unlock(&clone_heap_lock);
+     }*/
 
 
    void nlcbsmm_init_heaps() {
@@ -425,7 +436,7 @@ namespace NLCBSMM {
       register_signal_handlers();
 
       // Debug
-      print_init_message();      
+      print_init_message();
 
       // Spawn the thread that speaks/listens to cluster
       networkmanager.start_comms();

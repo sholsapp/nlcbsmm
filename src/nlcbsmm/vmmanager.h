@@ -162,8 +162,9 @@ namespace NLCBSMM {
    extern MachineTableType*  node_list;
 
    // Master state (static allocation, not sync'd)
-   extern ThreadTableType    thread_map;
-   extern MutexTableType     mutex_map;
+   extern ThreadTableType       thread_map;
+   extern MutexTableType        mutex_map;
+   extern InvalidationTableType mutex_rc_map;
 
    // The work queues
    extern PacketQueueType uni_speaker_work_deque;

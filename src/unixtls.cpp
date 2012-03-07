@@ -262,13 +262,16 @@ extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
 
    // TODO: What if a non-master node calls pthread_mutex_init?  Need to trasmit data to master
 
-   WaitQueue waiters;
+   WaitQueue       waiters;
+   AddressListType addr_list;
 
    // Insert mutex's address into map, with no waiters
    mutex_lock(&mutex_map_lock);
    fprintf(stderr, "> pthread_mutex_init(%p)\n", (void*) mutex);
    mutex_map.insert(std::pair<vmaddr_t, WaitQueue>
          ((vmaddr_t) mutex, waiters));
+   mutex_rc_map.insert(std::pair<vmaddr_t, AddressListType>
+         ((vmaddr_t) mutex, addr_list));
    mutex_unlock(&mutex_map_lock);
 
    return 0;
