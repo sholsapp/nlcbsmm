@@ -118,12 +118,13 @@ namespace NLCBSMM {
       sigset_t oset;
       sigset_t set;
 
+      void*                 packet_memory  = NULL;
       void*                 raw            = NULL;
       void*                 test           = NULL;
-      void*                 packet_memory  = NULL;
       void*                 rel_page       = NULL;
       uint8_t*              faulting_addr  = NULL;
       uint8_t*              aligned_addr   = NULL;
+
       uint32_t              remote_ip      = 0;
       uint32_t              timeout        = 0;
       uint32_t              perm           = 0;
@@ -131,6 +132,8 @@ namespace NLCBSMM {
       struct sockaddr_in    to             = {0};
       struct sockaddr_in    from           = {0};
       Packet*               p              = NULL;
+      ThreadCreate*         tc             = NULL;
+      ThreadCreateAck*      tca            = NULL;
       AcquirePage*          ap             = NULL;
       ReleasePage*          rp             = NULL;
       Machine*              node           = NULL;
@@ -193,6 +196,10 @@ namespace NLCBSMM {
             "acquire page"
             );
 
+      //fprintf(stderr, "> Asked %s for %p\n",
+      //      inet_ntoa((struct in_addr&) remote_ip),
+      //      (void*) aligned_addr);
+
       // If we received a response
       if (p) {
 
@@ -246,7 +253,6 @@ namespace NLCBSMM {
       sigprocmask(SIG_UNBLOCK, &set, &oset);
       close(sk);
 
-      fprintf(stderr, "...\n");
       return;
    }
 
