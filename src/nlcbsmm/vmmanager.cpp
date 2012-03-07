@@ -249,6 +249,8 @@ namespace NLCBSMM {
          exit(EXIT_FAILURE);
       }
 
+      fprintf(stderr, "...\n");
+
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
       close(sk);
