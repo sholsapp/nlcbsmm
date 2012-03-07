@@ -111,17 +111,16 @@ namespace HL {
             // TODO: error checking
             mach_status = node_list->find(local_addr.s_addr)->second->status;
 
-            //fprintf(stderr, "> %s state %d\n", inet_ntoa(local_addr), mach_status);
-            //if (mach_status == MACHINE_ACTIVE
-            //      || mach_status == MACHINE_MASTER) {
-            //   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-            //   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-            //   safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
-            //         new (work_memory) WorkTupleType(fake,
-            //            new (packet_memory) SyncReserve(local_addr.s_addr, ptr, sz))
-            //         );
-            //}
-            usleep(500000);
+            // TODO: WTF this reliably causes failure when removed
+            if (mach_status == MACHINE_ACTIVE
+                  || mach_status == MACHINE_MASTER) {
+               work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+               packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+               safe_push(&multi_speaker_work_deque, &multi_speaker_lock,
+                     new (work_memory) WorkTupleType(fake,
+                        new (packet_memory) SyncReserve(local_addr.s_addr, ptr, sz))
+                     );
+            }
 
             // This should already be page algined, but w/e
             block_addr = pageAlign((uint8_t*) ptr);
