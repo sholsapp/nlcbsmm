@@ -171,6 +171,8 @@ namespace NLCBSMM {
       perm  = page->protection;
       node  = tuple.second;
 
+      fprintf(stderr, "%p - permission(%x)\n", (void*) page->address, page->protection);
+
       remote_ip                   = node->ip_address;
       remote_addr.sin_family      = AF_INET;
       remote_addr.sin_addr.s_addr = remote_ip;
