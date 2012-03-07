@@ -16,11 +16,13 @@ namespace NLCBSMM {
          uint32_t address;
          uint32_t protection;
          uint32_t version;
+         uint32_t dirty;
 
          Page(uint32_t _address, uint32_t _protection) {
             address    = _address;
             protection = _protection;
             version    = 0;
+            dirty      = 0;
          }
 
    }__attribute__((packed));

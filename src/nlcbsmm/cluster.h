@@ -1579,7 +1579,7 @@ namespace NLCBSMM {
                }
             }
             fprintf(stderr, "> Blocking comm with %s time out (%s)\n",
-                inet_ntoa(addr.sin_addr),
+                inet_ntoa(((struct sockaddr_in*) addr)->sin_addr),
                 id);
             clone_heap.free(send);
             close(sk);
