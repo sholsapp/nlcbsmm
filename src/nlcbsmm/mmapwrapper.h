@@ -121,6 +121,7 @@ namespace HL {
             //            new (packet_memory) SyncReserve(local_addr.s_addr, ptr, sz))
             //         );
             //}
+            usleep(500000);
 
             // This should already be page algined, but w/e
             block_addr = pageAlign((uint8_t*) ptr);
