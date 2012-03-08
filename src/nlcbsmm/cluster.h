@@ -1914,7 +1914,7 @@ namespace NLCBSMM {
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
-                     new (packet_memory) MutexUnlock((uint32_t) lock, invalidated.size(), serialized_invalidates)),
+                     new (packet_memory) MutexUnlock((uint32_t) lock, sizeof(intptr_t) * invalidated.size(), serialized_invalidates)),
                   INFINITY,
                   "mutex unlock"
                   );
