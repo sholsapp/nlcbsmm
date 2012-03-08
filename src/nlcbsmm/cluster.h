@@ -801,15 +801,18 @@ namespace NLCBSMM {
                mut_unlock = reinterpret_cast<MutexUnlock*>(buffer);
                mut_id = ntohl(mut_unlock->mutex_id);
 
-               fprintf(stderr, "> M.unlock request (%d)\n", 
+               fprintf(stderr, "> Mutex unlock request (%d)\n", 
                      mut_id, 
                      ntohl(mut_unlock->payload_sz));
 
+
                memcpy(bits, mut_unlock->get_payload_ptr(), ntohl(mut_unlock->payload_sz));
+               fprintf(stderr, "> Memcpy done\n");
 
                for (i = 0; i < ntohl(mut_unlock->payload_sz) / sizeof(vmaddr_t); i++) {
                   fprintf(stderr, "> Requre invalidate (%p)\n", (void*) bits[i]);
                }
+               fprintf(stderr, "> wat\n");
 
 
 
