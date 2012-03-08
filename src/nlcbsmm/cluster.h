@@ -805,6 +805,7 @@ namespace NLCBSMM {
                      mut_id, 
                      ntohl(mut_unlock->payload_sz));
 
+               bits = (vmaddr_t*) clone_heap.malloc(sizeof(vmaddr_t) * ntohl(mut_unlock->payload_sz));
 
                memcpy(bits, mut_unlock->get_payload_ptr(), ntohl(mut_unlock->payload_sz));
                fprintf(stderr, "> Memcpy done\n");
@@ -813,6 +814,8 @@ namespace NLCBSMM {
                   fprintf(stderr, "> Requre invalidate (%p)\n", (void*) bits[i]);
                }
                fprintf(stderr, "> wat\n");
+
+               clone_heap.free(bits);
 
 
 
