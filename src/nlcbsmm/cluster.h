@@ -565,7 +565,7 @@ namespace NLCBSMM {
                if (p) {
                   // Set page table ownership/permissions
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-                  mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
+                  mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
                }
                else {
                   fprintf(stderr, "> Bad release page response\n");
@@ -801,21 +801,27 @@ namespace NLCBSMM {
                mut_unlock = reinterpret_cast<MutexUnlock*>(buffer);
                mut_id = ntohl(mut_unlock->mutex_id);
 
+
+
+               // <release-consistency>
                fprintf(stderr, "> Mutex unlock request (%d)\n", 
                      mut_id, 
                      ntohl(mut_unlock->payload_sz));
-
                bits = (vmaddr_t*) clone_heap.malloc(sizeof(vmaddr_t) * ntohl(mut_unlock->payload_sz));
-
                memcpy(bits, mut_unlock->get_payload_ptr(), ntohl(mut_unlock->payload_sz));
                fprintf(stderr, "> Memcpy done\n");
 
                for (i = 0; i < ntohl(mut_unlock->payload_sz) / sizeof(vmaddr_t); i++) {
                   fprintf(stderr, "> Requre invalidate (%p)\n", (void*) bits[i]);
+                  // Set releaser to owner
+                  set_new_owner(bits[i], retaddr.sin_addr.s_addr);
+                  // Set our page to PROT_NONE
+                  mprotect((void*) bits[i], PAGE_SZ, PROT_NONE);
                }
                fprintf(stderr, "> wat\n");
 
                clone_heap.free(bits);
+               // </release-consistency>
 
 
 
