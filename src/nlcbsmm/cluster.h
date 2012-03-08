@@ -482,6 +482,8 @@ namespace NLCBSMM {
 
             sockaddr_in            mut_holder     = {0};
 
+            vmaddr_t* bits = NULL;
+
 
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
@@ -798,7 +800,18 @@ namespace NLCBSMM {
             case MUTEX_UNLOCK_F:
                mut_unlock = reinterpret_cast<MutexUnlock*>(buffer);
                mut_id = ntohl(mut_unlock->mutex_id);
-               fprintf(stderr, "> Mutex unlock request (%d) payload (%d)\n", mut_id, ntohl(mut_unlock->payload_sz));
+
+               fprintf(stderr, "> M.unlock request (%d)\n", 
+                     mut_id, 
+                     ntohl(mut_unlock->payload_sz));
+
+               memcpy(bits, mut_unlock->get_payload_ptr(), ntohl(mut_unlock->payload_sz));
+
+               for (i = 0; i < ntohl(mut_unlock->payload_sz) / sizeof(vmaddr_t); i++) {
+                  fprintf(stderr, "> Requre invalidate (%p)\n", (void*) bits[i]);
+               }
+
+
 
                mutex_lock(&mutex_map_lock);
                if (mutex_map.count(mut_id) > 0) {
