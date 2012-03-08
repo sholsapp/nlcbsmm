@@ -173,15 +173,16 @@ namespace NLCBSMM {
       perm  = page->protection;
       node  = tuple.second;
 
-      fprintf(stderr, "> %p - permission(%x)\n", (void*) page->address, page->protection);
       if (node->ip_address == local_addr.s_addr) {
-         fprintf(stderr, "> %p invalidate - granting PROT_WRITE!\n", (void*) page->address);
+         fprintf(stderr, "> %p invalidated - granting PROT_WRITE!\n", (void*) page->address);
          if(mprotect((void*) page->address,
                   PAGE_SZ,
                   PROT_READ | PROT_WRITE) < 0) {
             fprintf(stderr, "> Fault: mprotect failed\n");
          }
-         // TODO: invalidate page
+         // Invalidate page
+         invalidated.push_back(page->address);
+
          return;
       }
 

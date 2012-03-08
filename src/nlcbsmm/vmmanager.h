@@ -165,6 +165,7 @@ namespace NLCBSMM {
    extern ThreadTableType       thread_map;
    extern MutexTableType        mutex_map;
    extern InvalidationTableType mutex_rc_map;
+   extern AddressListType       invalidated;
 
    // The work queues
    extern PacketQueueType uni_speaker_work_deque;

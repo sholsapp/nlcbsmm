@@ -564,7 +564,7 @@ namespace NLCBSMM {
                if (p) {
                   // Set page table ownership/permissions
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-                  mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
+                  mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
                }
                else {
                   fprintf(stderr, "> Bad release page response\n");
