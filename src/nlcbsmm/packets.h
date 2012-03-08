@@ -437,11 +437,13 @@ class MutexUnlock : public Packet {
 
       uint32_t mutex_id;
 
-      MutexUnlock(uint32_t _mutex_id) {
+      MutexUnlock(uint32_t _mutex_id, size_t _payload_sz, vmaddr_t* _bits) {
          sequence   = htonl(0);
-         payload_sz = htonl(0);
+         payload_sz = htonl(payload_sz);
          flag       = MUTEX_UNLOCK_F;
          mutex_id   = htonl(_mutex_id);
+         // Copy payload into packet
+         memcpy(this->get_payload_ptr(), (void*) _bits, _payload_sz);
       }
 
 }__attribute__((packed));

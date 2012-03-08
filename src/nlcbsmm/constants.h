@@ -61,6 +61,8 @@
 #define MACHINE_MIA     4
 #define MACHINE_MASTER  5
 
+typedef intptr_t vmaddr_t;
+
 /**
  *
  */

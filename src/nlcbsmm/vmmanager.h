@@ -28,11 +28,6 @@
 
 namespace NLCBSMM {
 
-   /**
-    * The type of a virtual memory address (32-bit value)
-    */
-   typedef uint32_t vmaddr_t;
-
    typedef
       FirstFitHeap<NlcbsmmMmapHeap<PAGE_TABLE_HEAP_START> > PageTableHeapType;
 

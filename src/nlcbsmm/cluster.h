@@ -1400,16 +1400,18 @@ namespace NLCBSMM {
          }
 
 
-         static void serialize_invalidates() {
-
+         static vmaddr_t* serialize_invalidates() {
+            int                       index    = 0;
+            vmaddr_t*                 bitfield = NULL;
             AddressListType::iterator itr;
-
-            for (itr = invalidated.begin(); itr != invalidated.end(); itr++) {
+            bitfield = (vmaddr_t*) clone_heap.malloc(sizeof(vmaddr_t) * invalidated.size());
+            for (index = 0, itr = invalidated.begin(); 
+                  itr != invalidated.end(); 
+                  itr++, index++) {
                fprintf(stderr, "invalidate: %p\n", (void*) (*itr));
+               bitfield[index] = (*itr);
             }
-
-            return;
-
+            return bitfield;
          }
 
 
@@ -1894,6 +1896,8 @@ namespace NLCBSMM {
             struct sockaddr_in  remote_addr    = {0};
             Packet*              p   = NULL;
 
+            vmaddr_t* serialized_invalidates = 0;
+
             fprintf(stderr, "%lld >> mutex_unlock (%s) invalidated (%d)\n", get_micro_clock(), local_ip, invalidated.size());
 
             //TODO: MEGA HACK, need to implement a get_master function
@@ -1903,14 +1907,14 @@ namespace NLCBSMM {
             remote_addr.sin_addr.s_addr = remote_ip;
             remote_addr.sin_port        = htons(UNICAST_PORT);
 
-            serialize_invalidates();
+            serialized_invalidates = serialize_invalidates();
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
-                     new (packet_memory) MutexUnlock((uint32_t) lock)),
+                     new (packet_memory) MutexUnlock((uint32_t) lock, invalidated.size(), serialized_invalidates)),
                   INFINITY,
                   "mutex unlock"
                   );
