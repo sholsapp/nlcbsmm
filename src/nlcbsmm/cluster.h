@@ -163,6 +163,9 @@ namespace NLCBSMM {
                   retaddr      = work->first;
                   pthread_work = &work->second;
 
+                  fprintf(stderr, "> pthread_work->stack_ptr = %p\n", (void*) pthread_work->stack_ptr);
+                  fprintf(stderr, "> pthread_work->arg = %p\n", (void*) pthread_work->arg);
+
                   // Start thread, get thread_id
                   if((thr_id =
                            clone((int (*)(void*)) pthread_work->func,
@@ -177,14 +180,12 @@ namespace NLCBSMM {
                         (void*) pthread_work->stack_ptr,
                         thr_id);
 
-                  // Don't timeout
-                  timeout = 10000000;
-
                   // Send thread_id to caller, wait for ThreadJoin
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                   p = persistent_blocking_comm(sk, (struct sockaddr*) &retaddr,
                         new (packet_memory) ThreadCreateAck(thr_id),
-                        timeout, "worker func - thread create ack");
+                        INFINITY, 
+                        "worker func - thread create ack");
 
                   // Check if received a ThreadJoin
                   if (p->get_flag() == THREAD_JOIN_F) {
@@ -196,8 +197,6 @@ namespace NLCBSMM {
                      }
 
                      fprintf(stderr, "> Thread %d waited for\n", thr_ret);
-
-                     // Sync pages with retaddr
 
                      // Indicate finished
                      direct_comm(retaddr,
@@ -750,27 +749,27 @@ namespace NLCBSMM {
                            packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                            // Send lock grant packet
                            safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
-                              // A new work tuple
-                              new (work_memory) WorkTupleType(retaddr,
-                                 // A new packet
-                                 new (packet_memory) MutexLockGrant(mut_id))
-                              );
+                                 // A new work tuple
+                                 new (work_memory) WorkTupleType(retaddr,
+                                    // A new packet
+                                    new (packet_memory) MutexLockGrant(mut_id))
+                                 );
                            cond_signal(&uni_speaker_cond);
                         }
                      }
                      else if (wait_queue->front().sin_addr.s_addr == retaddr.sin_addr.s_addr) {//TODO: COmpare port
                         //THIS IS FOR MUTEX_LOCK REQUES WHEN THE LOCK_GRANT IS LOST
-                     	// Allocate memory for the new work/packet
-                           work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
-                           packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-                           // Send lock grant packet
-                           safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
+                        // Allocate memory for the new work/packet
+                        work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
+                        packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
+                        // Send lock grant packet
+                        safe_push(&uni_speaker_work_deque, &uni_speaker_lock,
                               // A new work tuple
                               new (work_memory) WorkTupleType(retaddr,
                                  // A new packet
                                  new (packet_memory) MutexLockGrant(mut_id))
                               );
-                           cond_signal(&uni_speaker_cond);
+                        cond_signal(&uni_speaker_cond);
                      }
                      else {
                         fprintf(stderr, "Waiting: %d\n", wait_queue->size());
@@ -880,7 +879,7 @@ namespace NLCBSMM {
 
          static int multi_speaker(void* t) {
             sleep(1);
-           /**
+            /**
              * Initialize the multicast speaker socket and enter daemon mode.  The outer event
              * loop is responsible for determining "state" before entering an inner event loop,
              * which is responsible for implementing whatever behavior "state" might be.
@@ -991,8 +990,8 @@ namespace NLCBSMM {
 
 
          static int multi_listener(void* t) {
-            sleep(1); 
-           /**
+            sleep(1);
+            /**
              *
              */
             fprintf(stderr, "> multi-listener\n");
@@ -1393,9 +1392,9 @@ namespace NLCBSMM {
          static bool in_wait_queue(WaitQueue* queue, struct sockaddr_in addr) {
             WaitQueue::iterator itr;
             for (itr = queue->begin(); itr != queue->end(); itr++) {
-              if ((*itr).sin_addr.s_addr == addr.sin_addr.s_addr
-                   && (*itr).sin_port == addr.sin_port)
-                return true;
+               if ((*itr).sin_addr.s_addr == addr.sin_addr.s_addr
+                     && (*itr).sin_port == addr.sin_port)
+                  return true;
             }
             return false;
          }
@@ -1579,8 +1578,8 @@ namespace NLCBSMM {
                }
             }
             fprintf(stderr, "> Blocking comm with ?? time out (%s)\n",
-                //inet_ntoa(addr.sin_addr),
-                id);
+                  //inet_ntoa(addr.sin_addr),
+                  id);
             clone_heap.free(send);
             close(sk);
             return NULL;
@@ -1690,7 +1689,7 @@ namespace NLCBSMM {
 
             return;
          }
-         
+
          static uint32_t net_pthread_join(pthread_t thread_id) {
             /**
              * TODO: implement me
@@ -1708,13 +1707,11 @@ namespace NLCBSMM {
                   inet_ntoa((struct in_addr&) owner->sin_addr),
                   ntohs(owner->sin_port));
 
-            timeout = 1000000;
-
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) owner,
                   reinterpret_cast<Packet*>(
                      new (packet_memory) ThreadJoin()),
-                  timeout,
+                  INFINITY,
                   "thread join"
                   );
 
@@ -1849,14 +1846,12 @@ namespace NLCBSMM {
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
 
-            timeout = 100000;
-
             // Send a message to the master requesting the lock
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
                      new (packet_memory) MutexLockRequest((uint32_t) lock)),
-                  timeout,
+                  INFINITY,
                   "mutex lock request"
                   );
 
@@ -1897,15 +1892,11 @@ namespace NLCBSMM {
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
-
-            timeout = 100000;
-
-            // Send a message to the master to unlock the given lock
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
                      new (packet_memory) MutexUnlock((uint32_t) lock)),
-                  timeout,
+                  INFINITY,
                   "mutex unlock"
                   );
 
@@ -1918,6 +1909,9 @@ namespace NLCBSMM {
                }
                // This was returned to us, we're done with it
                clone_heap.free((void*)p);
+
+               // Clear the list (this is per-process local data)
+               invalidated.clear();
             }
             else {
                fprintf(stderr, "> Bad mutex unlock response\n");

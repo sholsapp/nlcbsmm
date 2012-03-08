@@ -71,6 +71,12 @@ void mm(int me_no, int noproc, int n, double** a, double** b, double** c) {
 
 void* worker(void *arg) {
    parm* p = (parm*) arg;
+   fprintf(stderr," p->id = %d\n", p->id);
+   fprintf(stderr, "p->noproc = %d\n", p->noproc);
+   fprintf(stderr, "p->dim = %d\n", p->dim);
+   fprintf(stderr, "p->a = %p\n", p->a);
+   fprintf(stderr, "p->b = %p\n", p->b);
+   fprintf(stderr, "p->c = %p\n", p->c);
    mm(p->id, p->noproc, p->dim, (p->a), (p->b), (p->c));
    return NULL;
 }
