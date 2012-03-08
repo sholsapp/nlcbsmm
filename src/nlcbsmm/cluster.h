@@ -798,7 +798,7 @@ namespace NLCBSMM {
             case MUTEX_UNLOCK_F:
                mut_unlock = reinterpret_cast<MutexUnlock*>(buffer);
                mut_id = ntohl(mut_unlock->mutex_id);
-               fprintf(stderr, "Mutex unlock request (%d)\n", mut_id);
+               fprintf(stderr, "Mutex unlock request (%d) payload (%d)\n", mut_id, ntohl(mut_unlock->payload_sz));
 
                mutex_lock(&mutex_map_lock);
                if (mutex_map.count(mut_id) > 0) {
