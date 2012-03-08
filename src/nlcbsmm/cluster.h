@@ -564,7 +564,7 @@ namespace NLCBSMM {
                if (p) {
                   // Set page table ownership/permissions
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-                  mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
+                  mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
                }
                else {
                   fprintf(stderr, "> Bad release page response\n");
@@ -1886,12 +1886,10 @@ namespace NLCBSMM {
             struct sockaddr_in  remote_addr    = {0};
             Packet*              p   = NULL;
 
-            fprintf(stderr, "%lld >> mutex_unlock(%s)\n", get_micro_clock(), local_ip);
+            fprintf(stderr, "%lld >> mutex_unlock (%s) invalidated (%d)\n", get_micro_clock(), local_ip, invalidated.size());
 
             //TODO: MEGA HACK, need to implement a get_master function
             remote_ip = pt_owner;
-
-            fprintf(stderr, ">>>> send unlock to %s\n", inet_ntoa((struct in_addr&) remote_ip));
 
             remote_addr.sin_family      = AF_INET;
             remote_addr.sin_addr.s_addr = remote_ip;
