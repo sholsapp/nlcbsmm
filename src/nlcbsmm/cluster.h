@@ -1400,6 +1400,19 @@ namespace NLCBSMM {
          }
 
 
+         static void serialize_invalidates() {
+
+            AddressListType::iterator itr;
+
+            for (itr = invalidated.begin(); itr != invalidated.end(); itr++) {
+               fprintf(stderr, "invalidate: %p\n", (void*) (*itr));
+            }
+
+            return;
+
+         }
+
+
          static uint32_t new_comm(uint32_t port=0, bool print=false) {
             /**
              * Takes about 6 microseconds
@@ -1889,6 +1902,8 @@ namespace NLCBSMM {
             remote_addr.sin_family      = AF_INET;
             remote_addr.sin_addr.s_addr = remote_ip;
             remote_addr.sin_port        = htons(UNICAST_PORT);
+
+            serialize_invalidates();
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
