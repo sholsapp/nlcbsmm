@@ -439,7 +439,7 @@ class MutexUnlock : public Packet {
 
       MutexUnlock(uint32_t _mutex_id, size_t _payload_sz, vmaddr_t* _bits) {
          sequence   = htonl(0);
-         payload_sz = htonl(payload_sz);
+         payload_sz = htonl(_payload_sz);
          flag       = MUTEX_UNLOCK_F;
          mutex_id   = htonl(_mutex_id);
          // Copy payload into packet
