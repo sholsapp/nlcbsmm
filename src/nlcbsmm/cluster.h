@@ -566,12 +566,12 @@ namespace NLCBSMM {
 
                if (p) {
                   // Set page table ownership/permissions, need a lock free version
-                  Machine* mach = get_worker(ip);
+                  Machine* mach = get_worker(retaddr.sin_addr.s_addr);
       		  if (mach) {
                      (*page_table)[page_addr].second = mach;
                   }
                   else {
-                     fprintf(stderr, "> Failed to get worker (%d)\n", ip);
+                     fprintf(stderr, "> Failed to get worker (%d)\n", retaddr.sin_addr.s_addr);
                   }
                   mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
                }

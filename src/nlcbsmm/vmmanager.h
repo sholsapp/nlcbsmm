@@ -225,6 +225,7 @@ namespace NLCBSMM {
    //void*              clone_heap_malloc(uint32_t sz);
    //void               clone_heap_free(void* addr);
 
+   Machine* get_worker(uint32_t ip); 
    PageTableHeapType* get_pt_heap(mutex* m);
    uint32_t           get_available_worker();
    void               signal_handler(int signo, siginfo_t* info, void* contex);
