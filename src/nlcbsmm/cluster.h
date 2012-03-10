@@ -553,6 +553,10 @@ namespace NLCBSMM {
                //      inet_ntoa(retaddr.sin_addr),
                //      (void*) page_addr);
 
+               // Set page table ownership/permissions
+               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+               mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
+
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
 
@@ -562,14 +566,17 @@ namespace NLCBSMM {
                      5,
                      "release page");
 
-               if (p) {
+              /* if (p) {
                   // Set page table ownership/permissions
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
                   mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
                }
                else {
                   fprintf(stderr, "> Bad release page response\n");
-               }
+               }*/
+               if (!p) {
+                  fprintf(stderr, "> Bad release page response\n");
+	       }
 
                clone_heap.free(p);
 
