@@ -553,9 +553,7 @@ namespace NLCBSMM {
                //      inet_ntoa(retaddr.sin_addr),
                //      (void*) page_addr);
 
-               // Set page table ownership/permissions
-               set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-               mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
+               mutex_lock(&pt_lock);
 
                packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
                rp            = new (packet_memory) ReleasePage(page_addr);
@@ -566,17 +564,21 @@ namespace NLCBSMM {
                      5,
                      "release page");
 
-              /* if (p) {
-                  // Set page table ownership/permissions
-                  set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+               if (p) {
+                  // Set page table ownership/permissions, need a lock free version
+                  Machine* mach = get_worker(ip);
+      		  if (mach) {
+                     (*page_table)[page_addr].second = mach;
+                  }
+                  else {
+                     fprintf(stderr, "> Failed to get worker (%d)\n", ip);
+                  }
                   mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
                }
                else {
                   fprintf(stderr, "> Bad release page response\n");
-               }*/
-               if (!p) {
-                  fprintf(stderr, "> Bad release page response\n");
-	       }
+               }
+               mutex_unlock(&pt_lock);
 
                clone_heap.free(p);
 
