@@ -15,11 +15,11 @@
 #
 SHELL = /bin/sh
 
-MAIN  = NLCBSMM
+MAIN  = nlcbsmm
 
-TEXFILES = NLCBSMM.tex 
+TEXFILES = nlcbsmm.tex 
 
-BIBFILES = NLCBSMM
+BIBFILES = nlcbsmm
 
 LATEX   = latex
 

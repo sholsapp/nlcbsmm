@@ -1,0 +1,68 @@
+\section{System Design}
+
+The \projname{} system presented in this paper is a software distributed shared memory systems.  Like Treadmarks in \cite{Amza:1996:TSM:226705.226708,Keleher:1994:TDS:1267074.1267084}, the \projname{} system is implemented entirely in user-space, making complicated kernel-based modifications unnecessary.  The \projname{} system maintains an unstructured memory region.  In fact, it makes no modifications to the memory structure used by the underlying application unless otherwise noted.  This allows the \projname{} system to be used by any application without the need for source code modification, as is the case in some type-specific coherence systems that may require annotations to label memory.  As research has shown, lazy release consistency is an ideal memory coherence model for SDSM systems.  As such, the \projname{} system will be designed to exhibit a lazy release memory coherence model.  With that said, the \projname{} system will be able to exhibit other memory coherence models, depending on what application synchronization primitives are replaced.
+
+This chapter discusses the assumptions, design considerations, and design decisions of the \projname{} system.  The implementation of the design presented in this chapter is the subject of future chapters.
+
+\subsection{Assumptions}
+
+There are many assumptions that were necessary to make for implementation reasons.  The following is a discussion of each of those assumptions, as well as the a brief discussion regarding why the assumption was necessary.
+
+\begin{description}
+\item[Operating System] \hfill \\
+The \projname{} system requires that the distributed system be run on identical operating systems.  This is partly due to the system's reliance on the application binary (e.g., exported symbols) and program loader (e.g., placement of loadable segments). 
+
+\item[Address Space Requirements] \hfill \\
+The \projname{} system makes extensive use of virtual memory.  For non-trivial target applications running on a 32-bit memory addressed operating system, memory may become exhausted.  As such, the \projname{} system requires running on a 64-bit memory addressed operating system.  This requirement is not necessary, but highly desirable.
+
+\item[Threading Library Requirements] \hfill \\
+ The \projname{} system is designed to distribute work across multiple execution cores.  The only feasible way to do this is to require that the target application be written using a threading library.  The \projname{} system requires that the target application use the \verb,pthread, library, and also assumes that the target application is properly written using appropriate \verb,pthread, provided synchronization primitives.
+
+\item[Compilation Requirements] \hfill \\
+The \projname{} system is a shared library.  As such, the target application must be linked with and loaded with the \projname{} library.  This allows \projname{} to replace function definitions for important functions like \verb,pthread_create, and \verb,malloc,.
+\end{description}
+
+
+\subsection{Virtual Memory Management Design}
+
+Typical virtual memory management (VMM) systems operate in kernel-space, hiding virtually all aspects of memory management to the application programmer.  For many types of applications this is permissible, and even preferred.  However, for a SDSM system built in user-space, the transparent management of memory is a problem that must be addressed by emulating its behavior in user-space.
+
+Running a VMM in user-space is non-trivial and requires understanding and control of many system-specific phenomena.  The understanding and control required is compounded when more than one process running separate address spaces are expected to use the same VMM.  These challenges and system-specific phenomena are the topic of this section.
+
+\subsubsection{Address Space Utilization}
+Virtual memory fools application programs to believe the program has access to a contiguous range of memory.  The system provided VMM does this by mapping process identification and virtual addresses to available physical addresses located in physical memory via lookup tables like the \em page table\em.  This is done transparently.  That is, an application never sees or requires the address of a physical page of memory.  Rather, these tasks are that of the underlying kernel.  For applications that wish to manage memory themselves or for other applications, this is problematic because the underlying placement of memory is invisible to the application.  This makes synchronizing memory between multiple processes challenging.
+
+The strategy taken the \projname{} system is to leave the system provided VMM in place and add an additional user-space VMM to the application program.  This has the advantage of allowing one to record the placement of virtual pages, while leaving the task of mapping the virtual page into the underlying system's physical memory.  The truth is, for a SDSM system one does not care what physical memory is being used.
+
+Using this design, the \projname{} system can broadcast what memory it has available in each of the nodes' virtual memory without the need to know about each nodes' underlying physical memory.  It is the task of the user-space VMM to then synchronize available memory and memory permissions to participating nodes.
+
+\subsubsection{Address Space Synchronization}
+
+We have assumed that the \projname{} system is compiled as a shared library, and that the target application is linked and loaded with this shared library.  As a result, the library code exists in the same address space as the target application during the lifetime of the application.  This has several non-obvious implications that make building a distributed VMM difficult.  
+
+A naive VMM design places \projname{} heap allocated memory in the target application's heap area.  This has the effect of mixing \projname{} heap allocated memory with the target application's heap allocated memory.  The problem of deciphering what memory is belongs to \projname{} versus what memory is belongs to the target application is difficult.  This problem is compounded when one considers that \projname{}'s and the target application's heap allocated memory are mixed on a single memory unit.  Additionally, heap addresses tend to differ between processes which necessitate tedious memory remapping.  This makes synchronization virtually impossible.
+
+Therefore, the first challenge is that of enforcing a clean separation of \projname{} heap allocated memory from the target application's heap allocated memory.  By enforcing a clean separation of \projname{} from the target application, the problem of synchronization is far less difficult.  Using this design, \projname{} may maintain a VMM in a separate region of memory that can be synchronized with other \projname{} instances in the cluster.  Additionally, this allows us to fix critical \projname{} memory addresses in memory.  Because we have assumed we're running the same target application on the same underlying architecture, we can use fixed addresses and offsets to choose a safe area for \projname{}'s heap.  Lastly, because an entire region of memory is being synchronized between projects, objects like those in the Standard Template Library can be used between processes.  This makes building complex data structures simple.
+
+\subsubsection{Fault Resolution}
+
+A distributed node, having been alerted to the shared memory mappings of the network cluster, needs a mechanism to access the memory that may not be mapped into its own virtual memory.  Functionally, this allows a distributed node to read and write memory that another distributed node has mapped into its own virtual memory address space.
+
+To achieve this, Linux signal handling tools may be employed to detect and resolve memory access attempts.  For example, one may detect memory accesses by using the \verb,mprotect, system call to set access permissions on memory pages.  Furthermore, illegal accesses to these memory pages will result in the generation of a \verb,SIGSEGV, signal.  By designing a signal handler for \verb,SIGSEGV, one may enforce permissions on memory.  Additionally, one may even resolve the illegal memory access by remapping memory and allowing the offending instruction to \em try \em access memory again.  Ideally, after remapping memory, the offending instruction will execute without illegally accessing memory.  This strategy is identical to the strategy used by Treadmarks in \cite{Keleher:1994:TDS:1267074.1267084}.
+
+\subsection{Network Cluster Coordinator}
+
+\subsubsection{Bootstrapping}
+% Make sure a program halts
+% Make sure a program has duplicate address space
+
+
+\subsubsection{Cluster Coordination}
+% Make sure a networked node can run a thread
+
+\subsubsection{Coherence Semantics}
+% Make sure that memory coherence semantics are enforced
+% Talk about pthreads and synchronizations primitives used -- how does this relate to coherence semantics
+
+\subsection{Design Summary}
+% Relate this system to those discussed in related works.  E.g., this a system that doesn't organize it's memory into types, uses lazy-release consistency, etc...
