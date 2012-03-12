@@ -10,7 +10,7 @@ There are many assumptions that were necessary to make for implementation reason
 
 \begin{description}
 \item[Operating System] \hfill \\
-The \projname{} system requires that the distributed system be run on identical operating systems.  This is partly due to the system's reliance on the application binary (e.g., exported symbols) and program loader (e.g., placement of loadable segments). 
+The \projname{} system requires that the distributed system be run on identical operating systems.  This is partly due to the system's reliance on the application binary (e.g., exported symbols) and program loader (e.g., placement of loadable segments).
 
 \item[Address Space Requirements] \hfill \\
 The \projname{} system makes extensive use of virtual memory.  For non-trivial target applications running on a 32-bit memory addressed operating system, memory may become exhausted.  As such, the \projname{} system requires running on a 64-bit memory addressed operating system.  This requirement is not necessary, but highly desirable.
@@ -53,12 +53,19 @@ To achieve this, Linux signal handling tools may be employed to detect and resol
 \subsection{Network Cluster Coordinator}
 
 \subsubsection{Bootstrapping}
-% Make sure a program halts
-% Make sure a program has duplicate address space
+Bootstrapping a distributed shared memory system is a non-trivial task that requires careful handling of several items closely related to the underlying system.  The most important tasks include the loading of the target-application and verification and comparison of address spaces features.  Loading an application designed to run on a single machine is a trivial problem where most system-specific intricacies are hidden from the application programmer by their system-provided toolchain.  However, loading an application designed to run on a single machine on a cluster of machines is non-trivial.
 
+Because of the assumptions that the \projname{} system maintains in regards to compilation requirements and operating system similiarity, we designed \projname{} in a fashion that allows us to run a \em single \em application binary on each networked machine.  This \em single \em application binary contains all code to operate as both a master and a worker.  This application binary is compiled, linked and loaded with the same compiler toolchain and and loaded on identical architectures.  This has several beneficial side-effects.  Firstly, a single application is distributed between the nodes.  Secondly, the object file on disk is identical.  Because the same toolchain and operating systems is required, the loaded process image guarantees address space uniformity: loadable segments share the same addresses.  The only items that aren't guaranteed to be identical is the dynamic linker's placement choices for shared libraries.  However, in practice we've seen that they are similiar enough.  We use heuristics to identify where process-specific shared libraries exist and take measures to ensure that each process is aware of the placement of other processes' shared libraries.
+
+Another non-obvious challenge that the bootstrapping design must address is a facility to hault the target-application until a message or signal is passed to it.  Applications designed to run on a single machine need not worry about this design issue because once an application is loaded it is ready to run code -- presumably its \verb,main, entrypoint.  This is not the case in a distributed system.  The \projname{} bootstrapping system is tasked with determining a master node, waiting for worker nodes to join and initialize themselves, and lastly, signalling a \em single \em target-application to call its entry point.
 
 \subsubsection{Cluster Coordination}
-% Make sure a networked node can run a thread
+There are several networking facilities that the \projname{} system must be able to support.  These facilities are a combination of multicast and unicast communication styles.  However, the ability to communicate with other nodes is a trivial problem.  Instead, the task of the cluster coordinator is really to detect \em when \em certain networking events should happen.  For example, \em when \em should a master node synchronize its data with a new worker or \em when \em should a master create or join threads on a worker node are events that the cluster coordinator must identify.
+
+Because of the assumption that the target-application is a \verb,pthread, based program linked with the \projname{} library, we can make use of several system tricks to help identify interesting events.  First, the \projname{} library can make use of symbol manipulation to replace the implementations of functions like \verb,pthread_create, or \verb,pthread_join, with different implementations with stronger linkage.  Second, the \projname{} system can make use of allocator hooks to instrument or completely replace the implementation of \verb,malloc, and \verb,free,.  Combining these strategies provides a solid foundation to populate an event queue capable of powering a SDSM system.
+
+The \projname{} system requires an event-driven networking infrastructure to communicate the events previously described.  We found that using a mixture of multicast and unicast datagrams made the implementation most straight-forward.  Furthermore, we found that using a single client-server combination was inappropriate, and opted to maintain multiple servers per-process.  Among other reasons, using this design the \projname{} system is capable of performing blocking work without halting the servers responsible for listening and queueing important events in the cluster.
+
 
 \subsubsection{Coherence Semantics}
 % Make sure that memory coherence semantics are enforced

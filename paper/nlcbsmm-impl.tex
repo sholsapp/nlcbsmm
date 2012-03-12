@@ -5,11 +5,15 @@ Talk about process structure and define all of our vocabulary we're using in thi
 
 \subsection{Virtual Memory Management}
 \subsubsection{Page Table}
-Talk about \verb,node_list, and \verb,page_table,.
+Talk about \verb,node_list, and \verb,page_table,.  Talk about how we can cast it as a \verb,std::map, and why we use placement new (mention shared libraries being loaded into random addresses, so we needed a fixed place to put all this stuff).
+
 \subsubsection{Fault Handling}
 
 \subsection{Cluster Coordinator}
+
 \subsubsection{Bootstrapping}
+Talk about the auto-configuring cluster.  Talk about how we verified address spaces.  Talk about sync'ing the page table.
+
 \subsubsection{Communication}
 \subsubsection{Coherence Protocol}
 
