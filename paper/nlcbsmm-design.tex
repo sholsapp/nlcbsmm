@@ -1,22 +1,21 @@
 \section{System Design}
+\label{system-design}
 
-The \projname{} system presented in this paper is a software distributed shared memory systems.  Like Treadmarks in \cite{Amza:1996:TSM:226705.226708,Keleher:1994:TDS:1267074.1267084}, the \projname{} system is implemented entirely in user-space, making complicated kernel-based modifications unnecessary.  The \projname{} system maintains an unstructured memory region.  In fact, it makes no modifications to the memory structure used by the underlying application unless otherwise noted.  This allows the \projname{} system to be used by any application without the need for source code modification, as is the case in some type-specific coherence systems that may require annotations to label memory.  As research has shown, lazy release consistency is an ideal memory coherence model for SDSM systems.  As such, the \projname{} system will be designed to exhibit a lazy release memory coherence model.  With that said, the \projname{} system will be able to exhibit other memory coherence models, depending on what application synchronization primitives are replaced.
+The \projname{} system presented in this paper is a software distributed shared memory systems.  Like Treadmarks in \cite{Amza:1996:TSM:226705.226708,Keleher:1994:TDS:1267074.1267084}, the \projname{} system is implemented entirely in user-space, making complicated kernel-based modifications unnecessary.  The \projname{} system features a centralized manager and is designed to use the respective servers presented by Li and Hudak in \cite{Li:1989:MCS:75104.75105}.  The \projname{} system maintains an unstructured memory region.  In fact, it makes no modifications to the memory structure used by the underlying application unless otherwise noted.  This allows the \projname{} system to be used by any application without the need for source code modification, as is the case in some type-specific coherence systems that may require annotations to label memory.  Research has shown that lazy release consistency is an ideal memory coherence model for SDSM systems.  As such, the \projname{} system will be designed to exhibit a lazy release memory coherence model.  For comparison, the \projname{} system will be able to exhibit other memory coherence models, too, depending on what application synchronization primitives are used.
 
 This chapter discusses the assumptions, design considerations, and design decisions of the \projname{} system.  The implementation of the design presented in this chapter is the subject of future chapters.
 
 \subsection{Assumptions}
+\label{assumptions}
 
-There are many assumptions that were necessary to make for implementation reasons.  The following is a discussion of each of those assumptions, as well as the a brief discussion regarding why the assumption was necessary.
+There are several assumptions that were necessary to make for implementation reasons.  The following is a discussion of each of those assumptions, as well as a brief discussion regarding why the assumption was necessary.
 
 \begin{description}
 \item[Operating System] \hfill \\
-The \projname{} system requires that the distributed system be run on identical operating systems.  This is partly due to the system's reliance on the application binary (e.g., exported symbols) and program loader (e.g., placement of loadable segments).
-
-\item[Address Space Requirements] \hfill \\
-The \projname{} system makes extensive use of virtual memory.  For non-trivial target applications running on a 32-bit memory addressed operating system, memory may become exhausted.  As such, the \projname{} system requires running on a 64-bit memory addressed operating system.  This requirement is not necessary, but highly desirable.
+The \projname{} system requires that the distributed system be run on identical operating systems.  This is partly due to the system's reliance on the application binary (e.g., exported symbols) and program loader (e.g., placement of loadable segments).  This assumption assumes that the same compilation toolchain is used on each member of the cluser.
 
 \item[Threading Library Requirements] \hfill \\
- The \projname{} system is designed to distribute work across multiple execution cores.  The only feasible way to do this is to require that the target application be written using a threading library.  The \projname{} system requires that the target application use the \verb,pthread, library, and also assumes that the target application is properly written using appropriate \verb,pthread, provided synchronization primitives.
+ The \projname{} system is designed to distribute work across multiple execution cores.  The only feasible way to do this is to require that the target application be written using a threading library.  The \projname{} system requires that the target application use the \verb,pthread, library, and also assumes that the target application is properly written using appropriate \verb,pthread, provided synchronization primitives like \verb,pthread_mutex,.  Currently, the \projname{} system only supports \verb,pthread_mutex,.
 
 \item[Compilation Requirements] \hfill \\
 The \projname{} system is a shared library.  As such, the target application must be linked with and loaded with the \projname{} library.  This allows \projname{} to replace function definitions for important functions like \verb,pthread_create, and \verb,malloc,.
@@ -24,6 +23,7 @@ The \projname{} system is a shared library.  As such, the target application mus
 
 
 \subsection{Virtual Memory Management Design}
+\label{vmm-design}
 
 Typical virtual memory management (VMM) systems operate in kernel-space, hiding virtually all aspects of memory management to the application programmer.  For many types of applications this is permissible, and even preferred.  However, for a SDSM system built in user-space, the transparent management of memory is a problem that must be addressed by emulating its behavior in user-space.
 
@@ -51,6 +51,7 @@ A distributed node, having been alerted to the shared memory mappings of the net
 To achieve this, Linux signal handling tools may be employed to detect and resolve memory access attempts.  For example, one may detect memory accesses by using the \verb,mprotect, system call to set access permissions on memory pages.  Furthermore, illegal accesses to these memory pages will result in the generation of a \verb,SIGSEGV, signal.  By designing a signal handler for \verb,SIGSEGV, one may enforce permissions on memory.  Additionally, one may even resolve the illegal memory access by remapping memory and allowing the offending instruction to \em try \em access memory again.  Ideally, after remapping memory, the offending instruction will execute without illegally accessing memory.  This strategy is identical to the strategy used by Treadmarks in \cite{Keleher:1994:TDS:1267074.1267084}.
 
 \subsection{Network Cluster Coordinator}
+\label{network-stack-design}
 
 \subsubsection{Bootstrapping}
 Bootstrapping a distributed shared memory system is a non-trivial task that requires careful handling of several items closely related to the underlying system.  The most important tasks include the loading of the target-application and verification and comparison of address spaces features.  Loading an application designed to run on a single machine is a trivial problem where most system-specific intricacies are hidden from the application programmer by their system-provided toolchain.  However, loading an application designed to run on a single machine on a cluster of machines is non-trivial.
@@ -68,8 +69,14 @@ The \projname{} system requires an event-driven networking infrastructure to com
 
 
 \subsubsection{Coherence Semantics}
-% Make sure that memory coherence semantics are enforced
-% Talk about pthreads and synchronizations primitives used -- how does this relate to coherence semantics
+One of the most important features the \projname{} system must support is a weak memory coherency model.  Though a DSM system may operate correctly using a stricter coherency model, efficiency and communication overhead become serious concerns.  Supporting a weak coherency model maximizes efficiency by minimizing the communication overhead involved in maintaining a global address space.
 
-\subsection{Design Summary}
-% Relate this system to those discussed in related works.  E.g., this a system that doesn't organize it's memory into types, uses lazy-release consistency, etc...
+To implement such a coherency model, the \projname{} system needs to know certain information about the access patterns the target-application exhibits.  In systems like Munin~\cite{Keleher:1992:LRC:139669.139676, Bennett:1990:MDS:99163.99182, Carter:1991:IPM:121132.121159, Zwaenepoel:1992:MDS:134397.135235}, this is done through memory annotations.  This model was considered too restrictive for \projname{}, as it requires source code annotations or an intelligent runtime system to categorize memory accesses.  Because of the assumption that the target-application is a \verb,pthread, based program, we can exploit synchronization primitives like \verb,pthread_mutex,s to enforce a weaker consistency model.  
+
+A weak consistency model can be designed in \projname{} by intercepting \verb,pthread_mutex_lock, and \verb,pthread_mutex_unlock,.  When a worker node acquires a lock and receives confirmation that the lock was acquired from the central manager, that worker can record what pages are dirtied during its execution.  Upon releasing the lock, that worker can transmit what pages it has invalidated to the central manager.  The central manager can then lazily propagate these invalidated pages to future acquirers of the same mutex.  This approach hangs program correctness on the locking used in the application.
+
+This approach requires no \em additional \em source code annotations.  We feel that assuming correctly written applications is a reasonable assumption.  There are several interesting caveats that must be taken into consideration when determining what types of applications are correctly written.  For example, most \verb,pthread, based applications can make the assumption that the threads are running within the same address space on the same machine.  This assumption often leads to a program that allows threads to read or write memory concurrently without the use of locks or barriers, as long as those threads are not reading and writing the \em same \em memory concurrently.  One practical example of this type of application is a \verb,pthread,-enabled version of matrix multiply.  Running this type of application on a DSM will be inefficient because of the potential for the threads to thrash over the ownership of a memory page.  Applications that do not make this assumption and use locks and barriers to synchronize read and write accesses to memory will realize the full power of the weaker consistency models.
+
+
+
+
