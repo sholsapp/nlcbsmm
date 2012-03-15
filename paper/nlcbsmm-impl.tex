@@ -122,5 +122,39 @@ By intercepting \verb,pthread_mutex_unlock, we were able to send messages to the
 As previously mentioned, the handling of \verb,pthread_mutex_lock, and \verb,pthread_mutex_unlock, can be used to implement a lazy release consistency (LRC) coherency model.  This section is a discussion of how the \projname{} system implements this.
 
 \subsubsection{Types}
-\subsubsection{Architecture}
+We chose to implement an event-driven central lock manager.  During testing, the lock manager is the same as the central manager -- or master -- node.  This manager maintains several local data structures that map lock identification -- initialized with \verb,pthread_mutex_init, calls -- to lock owner.  This data structure has the following type.
+
+\begin{verbatim}
+typedef
+  std::deque<address,
+  CloneAllocator >
+     WaitQueue;
+
+typedef
+  std::map<vmaddr, WaitQueue,
+  std::less<vmaddr>,
+  CloneAllocator >
+     MutexTable;
+\end{verbatim}
+
+These types map a mutex -- internally represented as a virtual memory address -- to a \verb,WaitQueue,.  A \verb,WaitQueue, is a list of nodes that are waiting for the lock.  Internally, nodes in the queue are represented by the binary form of their internet address.  If a reference to the \verb,Machine, object is required this binary internet address can be used to find it.
+
+\subsubsection{Implementation}
+
+The central manager maintains what locks exist in the application and who currently has the lock.  This simplifies the task of synchronization.
+
+\paragraph{Acquire}
+Locks are awarded in a FIFO nature.  After a mutex variable has been initialized, nodes may acquire a lock on the mutex by sending a mutex acquire message to the central manager.  This network transaction blocks the sending node.  The central manager is then tasked with determining if the requested lock can be granted to the sending node.  This is done by checking the \verb,MutexTable, indexed with the address of the mutex variable.  One of two events may happen at this point in time.  In the case that the central manager discovers that no other node currently holds the lock, the manager may award the lock to the sending node by sending an appropriate message to the node attempting to acquire the lock.  In the case that the central manager discovers that another node currently holds the lock, the manager must add the node attempting to acquire the lock to the \verb,WaitQueue, for that particular mutex variable.  In both cases, the central manager can resolve the request in a non-blocking manner.
+
+\paragraph{Release}
+After a node acquires a lock, it must release that lock.  This is done by notifying the central lock manager.  When a manager receives a lock release message, it must take the following actions.  In the case that there is no one currently waiting for the lock, the central manager can mark the mutex variable unused and quit.  In the case that there is another node currently waiting for the lock, the central manager can send a lock grant to the waiting node.  This, like the acquire event, can be handled in a non-blocking manner on the central manager.
+
+\paragraph{Coherency}
+At this point, we have described a SDSM system that exhibits \em strict consistency\em.  This system executes correctly, but performs poorly for the following reason.  The system has no concept of read-only pages of memory.  In fact, the system only understands the concept of ownership: a node either owns or does not own a page.  When a node loses access to a page, it loses \em all \em access to the page -- that is, the memory region is set to \verb,PROT_NONE, with \verb,mprotect(2),.  Subsequent reads or writes to that page will generate another fault.  This approach requires many messages and closely resembes thrashing.  Additionally, the problem worsens as the number of nodes grows.  However, this coherency model requires no locks or synchronization primitives to execute correctly.
+
+To alleviate the problem, we implement a LRC model by introducing a more sophisticated signal handler.  The new signal handler is capable of detecting when pages are modified or \em dirtied\em.  When a page is modified by node $p$, the system must guarantee node $q$ sees the new version of the page upon the next access following a synchronization event.  Assuming a program is correctly written with lock variables, this can be done by propagating what pages were modified in the message for \verb,pthread_mutex_unlock,.  In this way, synchronization events are lock acquire and release messages.  By this method, the central lock manager is informed of what pages are currently in a modified state.  This implies that the node that issued the lock release message is the current owner, as that node is the node that last wrote to the page.  When a new node performs a \verb,pthread_mutex_lock,, the central lock manager can inform the node of what pages the old owner modified.  This must happen before the new node accesses the page.  We can insure this by setting dirtied pages' memory protections to \verb,PROT_NONE, on the new node.  The new node can then fault in only the pages that the previous owner dirtied.  Additionally, this happens only when the new owner accesses that page -- lazily propagating the new page to the new node at the time of access.  This approach uses significantly less messages, performs correctly and performs significantly quicker than the syste that exhibits \em strict consistency\em.
+
+
+
+
 
