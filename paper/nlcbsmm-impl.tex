@@ -88,16 +88,39 @@ After the fault is resolved,  the offending instruction can be re-executed.
 \subsection{Cluster Coordinator}
 \label{cluster-coordinator}
 
-Talk about high level stuff.
+The \projname{} system features several networking daemons to power the SDSM system.  These daemons include two network servers consisting of listeners for unicast and multicast traffic and two network clients consisting of speakers for unicast and multicast traffic.  The speakers are powered by a pool of threads and a work queue.  This work queue is a data structure populated by event handling code in the system.  For example, as discussed in previous sections, new definitions of \verb,malloc,, \verb,free,, and \verb,pthread, library functions usually push work onto these work queues.  These networking facilities provide a solid foundation for distributing messages and passively communicating with other nodes of the cluster.
+
+We found that passively communicating certain events in the system was insufficient for maintaining a global address space.  These events include those like handing a fault or allocating new memory in the global address space.  We found that for these events, a blocking form of communication was necessary.  To accomodate this requirement, we added a networking suite that allowed blocking events to spawn a new network listener and speaker, this time one capable of blocking.  This new listener and speaker can block until a fault is resolved or an acknolwedgement is received without blocking the primary network stacks.
 
 \subsubsection{Bootstrapping}
-Talk about the auto-configuring cluster.  Talk about how we verified address spaces.  Talk about sync'ing the page table.
 
-\subsubsection{Communication}
-Talk about the network stacks.
-
-\subsubsection{Coherence Protocol}
-Talk about lazy release consistency.
+Bootstrapping the cluster was a non-trivial problem.  We shyed away from complicated configuration and manifest files by implementing multicast listeners in each of the nodes.  This multicast listener was capable of auto-detecting other nodes in the cluster with a heartbeat.  Upon joining the cluster, a centralized manager welcomes the new node with a three-way handshake.  Upon successful completion of the handshake -- which involves verification of the joining node's address space -- the joining node is sent the current version of the page table region.  Afterwards, the new node is ready to receive work.
 
 \subsection{Threading}
-Talk about \verb,pthread, code that we replaced and why. 
+One of those important feature of the \projname{} system are the new definitions provided for the \verb,pthread, library.  These features alone are the sole source of important \em events \em in the system.  This section is a discussion of each of the functions replaced.  Lastly, we discuss how these functions can be used to implement new memory coherence models in SDSM systems.
+
+\begin{description}
+\item[pthread\_create] \hfill \\
+By intercepting and replacing \verb,pthread_create, we were able to prevent new threads from being created locally -- presumably on the master node -- and instead send a message to a remote node to create the thread there.  This was possible because the remote node shared an identical address space.  The loadable segment that matters in this case is the \verb,.text, section which holds all of the process's executable code.  Because this segment is identical, a function pointer can be passed in the message.  The receiving node can use this function pointer to create a local thread using \verb,clone(2),.  A thread identifier is returned to the node who issued the create message.  Any memory pages that this thread illegally accesses during exeuting will be faulted to the local node running the thread.
+
+\item[pthread\_join] \hfill \\
+By intercepting and replacing \verb,pthread_join, we were able to prevent a parent thread from continuing to execute until all children threads have been waited for.  This event causes the master thread to send a message to the node executing this thread.  The node can be discovered by querying local data structures that maintain a mapping of thread identifier to internet address.  The child node -- the one executing the thread -- can then call the real \verb,waitpid, call to wait for the \verb,clone(2), thread.
+
+\item[pthread\_mutex\_init] \hfill \\
+Though not necessary, we found that intercepting and replacing \verb,pthread_mutex_init, was convenient for building data structures on the central manager.  When a mutex is initialized, a message can be sent to the centralized manager notifying it that a new mutex has been created.  The address of this mutex can then be stored and used by the central manager -- or master -- to lookup future requests to that mutex.  We assume that properly written \verb,pthread, applications initialize any mutex variables with \verb,pthread_mutex_init,.
+
+\item[pthread\_mutex\_lock] \hfill \\
+By intercepting \verb,pthread_mutex_lock, we were able to send messages to the centralized manager requesting lock access to a mutex variable.  This call blocks until the lock has been granted.  This function has special semantics in regard to the coherency protocol.  The handling of this function is explained in greater detail in section \ref{coherency-protocol}.
+
+\item[pthread\_mutex\_unlock] \hfill \\
+By intercepting \verb,pthread_mutex_unlock, we were able to send messages to the centralized manager indicating that a thread no longer needs lock access to a mutex variable.  This call does not block.  This function has special semantics in regard to the coherency protocol.   The handling of this function is explained in greater detail in section \ref{coherency-protocol}.
+\end{description}
+
+\subsection{Coherence Protocol}
+\label{coherency-protocol}
+
+As previously mentioned, the handling of \verb,pthread_mutex_lock, and \verb,pthread_mutex_unlock, can be used to implement a lazy release consistency (LRC) coherency model.  This section is a discussion of how the \projname{} system implements this.
+
+\subsubsection{Types}
+\subsubsection{Architecture}
+
