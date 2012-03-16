@@ -2,7 +2,22 @@
 
 In this section we show how long it takes to resolve a fault over the network and we compare \projname{} to \verb,malloc, in several tests.
 
-\subsection{Fault duration}
+\subsection{Fault Handling}
+
+There are two distinct types of faults that the \projname{} system resolves.  First, is a \em read \em fault which involves resolving a page fault that a node currently has no access to (e.g., the page permission is \verb,PROT_NONE,).  These faults involve a network message, and take significantly longer to resolve.  These faults resemble disk faults in traditional memory systems.  Second, is a \em write \em fault used for detecting when pages are dirtied.  This fault is handled quickly, and involves a minimal overhead.  No networking messages are required to resolve these types of faults.
+
+\begin{table}[htb]
+\centering
+\begin{tabular}{|l | l | l | l |}
+\hline
+\bf{Fault Type} & \bf{Time} \\
+\hline
+\bf{Read} & 3.000 ms\\
+\bf{Write} & 0.045 ms\\
+\hline
+\end{tabular}
+\caption{Average metrics for resolving read and write faults.}
+\end{table}
 
 \subsection{Access Patterns}
 
