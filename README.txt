@@ -24,9 +24,12 @@ or process migration using a modified pthread interface, NLCBSMM enables appli-
 -cations to link with a modified libhoard.so to run on the distributed system 
 with no modifications to the original application.
 
-Boom.
 
-Linux support only.
+Currently, the NLCBSMM system only works on Linux-x86 platforms.
+
+To compile the library, goto "src/" and type "make".
+
+To compile a test application, goto "experiments/benchmark" and type "make test".  This should yield several test benchmarks with the tags "-hoard" or "-malloc" to ndicate what allocator the application is using.
 
 
 *******************************************************************************
