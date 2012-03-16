@@ -27,8 +27,9 @@ In our analysis, we discuss various memory coherence models and their applicabil
 
 \section{Introduction}
 
-Talk about what we did.
+Distributed shared memory (DSM) systems allow many physically seperate processes to see identical address spaces.  This allows the processes to use shared memory techniques to pass messages through memory rather than sending messages to specific processes.  DSM is also good for processing large complex data sets without having to replicate the entire data set on every node processing data.  Only the data that is currently being worked on has to be present physically on the machine.  We decided to implement a software distributed shared memory (SDSM) in user-space because this allowed us to not have to modify the OS kernel.  This way \projname{} can be used on a large variety of systems.  
 
+The rest of the paper is organized as follows.  Section 2 provides some background and discusses related work to our project.  Section 3 provides a discussion of memory consistency models and most importantly presents the idea of release consistency.  Section 4 presents the design of our project along with the assumptions that were made.  Section 5 describes the implementation of \projname{}.  Finally, section 6 presents a comparison of \projname{} to \verb,malloc, along with results on how long network faults take.
 
 \input{nlcbsmm-background.tex}
 \input{nlcbsmm-design.tex}
