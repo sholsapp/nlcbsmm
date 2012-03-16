@@ -47,24 +47,27 @@ The program used to test was a matrix multiplication program from Stanford.
 
 \subsubsection{Fixed matrix size, varying number of threads}
 
-In this test we kept the matrix size fixed at 200x200 and we varied the number of worker threads between 1 and 4.
+In this test we kept the matrix size fixed at 200x200 and we varied the number of worker threads between 1 and 4. The results for this test are found in Figure's \ref{malloc-fixed-matrix}, \ref{hoard-pc-fixed-matrix} and \ref{hoard-rc-fixed-matrix}.
 
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{images/malloc-fixed-matrix.eps}
 \caption{Malloc: The x axis the number of threads used. The y axis is time to run the test in microseconds.}
+\label{malloc-fixed-matrix}
 \end{figure}
 
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{images/mmult-lh-fixed-size.eps}
 \caption{\projname{} with processor consistency: The x axis the number of threads used. The y axis is time to run the test in microseconds.}
+\label{hoard-pc-fixed-matrix}
 \end{figure}
 
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{images/mmlh-fixed-size.eps}
 \caption{\projname{} with release consistency: The x axis is matrix size. For example, 100 refers to multiplying 2 100x100 matrices. The y axis is time to run the test in microseconds.}
+\label{hoard-rc-fixed-matrix}
 \end{figure}
 
 The system allocator, \verb,malloc(3), vastly outperforms \projname{} with processor consistency no matter how many threads are used.  This has to do with not having read-only pages.  Every time a worker needs to do work it invalidates all other workers copies of that page.  This ends up with the workers thrashing over pages.  It was expected when we began this test that \projname{} with processor consistency would yield worse results as the number of threads increased because of the trashing issues.
@@ -73,24 +76,27 @@ Using a LRC coherency model, \projname{} achieves much better performance than p
 
 \subsubsection{Fixed thread count, varying matrix size}
 
-In this test we kept the number of worker threads fixed at 4 and we varied the matrix size.
+In this test we kept the number of worker threads fixed at 4 and we varied the matrix size. The results for this test are found in Figure's \ref{malloc-fixed-thread}, \ref{hoard-pc-fixed-thread} and \ref{hoard-rc-fixed-thread}.
 
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{images/malloc-fixed-thread.eps}
 \caption{Malloc: The x axis is matrix size. For example, 100 refers to multiplying 2 100x100 matrices. The y axis is time to run the test in microseconds.}
+\label{malloc-fixed-thread}
 \end{figure}
 
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{images/mmult-lh-fixed-thread.eps}
 \caption{\projname{} with processor consistency: The x axis is matrix size. For example, 100 refers to multiplying 2 100x100 matrices. The y axis is time to run the test in microseconds.}
+\label{hoard-pc-fixed-thread}
 \end{figure}
 
 \begin{figure}[!h]
 \centering
 \includegraphics[scale=0.40]{images/mmlh-fixed-threads.eps}
 \caption{\projname{} with release consistency: The x axis is matrix size. For example, 100 refers to multiplying 2 100x100 matrices. The y axis is time to run the test in microseconds.}
+\label{hoard-rc-fixed-thread}
 \end{figure}
 
 Again, like in the previous test \verb,malloc, vastly outperforms \projname{} with processor consistency at any matrix size. \projname{} with processor consistency gets hit hard by not having read only pages. It ends up transferring the 2 matrices being multiplied a ton thereby having a horrific runtime.
