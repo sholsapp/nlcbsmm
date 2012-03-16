@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Fixed thread count, varying matrix size, release consistency</title>
+    <link href="layout.css" rel="stylesheet" type="text/css">
+    <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
+    <script language="javascript" type="text/javascript" src="./js/jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="./js/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="./js/jquery.flot.symbol.js"></script>
+ </head>
+ <body>
+    <h1>Fixed thread count of 4, varied matrix sizes of 100,200,400,700</h1>
+
+    <div id="placeholder" style="width:600px;height:300px"></div>
+
+    <p>The Y-axis describes time in microseconds.  The X-axis describes the size of the matrix.</p>
+    <p>yellow:mmult-lock-hoard, release consistency</p>
+<script type="text/javascript">
+$(function () {
+
+    var data = [
+        { data: [ 
+ [100, 2555980  ],
+  [200, 6684377  ],
+  [400, 21855806  ],
+  [700, 65937288  ],
+], points: { symbol: "square" } }
+    ];
+
+    $.plot($("#placeholder"), data, {
+        series: { lines: { show: true, radius: 1 } },
+        grid: { hoverable: true }
+    });
+});
+</script>
+
+ </body>
+</html>
