@@ -5,11 +5,11 @@ namespace NLCBSMM {
 
    class PthreadWork {
       public:
-         intptr_t func;
-         intptr_t arg;
-         intptr_t stack_ptr;
+         uint32_t func;
+         uint32_t arg;
+         uint32_t stack_ptr;
 
-         PthreadWork(intptr_t _func, intptr_t _arg, intptr_t _stack_ptr) :
+         PthreadWork(uint32_t _func, uint32_t _arg, uint32_t _stack_ptr) :
             func(_func),
             arg(_arg),
             stack_ptr(_stack_ptr) {}

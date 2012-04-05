@@ -90,11 +90,11 @@ namespace NLCBSMM {
    MachineTableType* node_list;
    PageTableType*    page_table;
 
-   intptr_t _start_page_table = 0;
-   intptr_t _end_page_table   = 0;
-   intptr_t _uuid             = 0;
-   intptr_t _next_uuid        = 1;
-   intptr_t next_addr         = 0;
+   uint32_t _start_page_table = 0;
+   uint32_t _end_page_table   = 0;
+   uint32_t _uuid             = 0;
+   uint32_t _next_uuid        = 1;
+   uint32_t next_addr         = 0;
 }
 
 // The implementation of utility functions defined in this file

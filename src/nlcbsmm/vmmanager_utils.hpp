@@ -199,7 +199,7 @@ namespace NLCBSMM {
    }
 
 
-   void set_new_owner(intptr_t page_addr, uint32_t ip) {
+   void set_new_owner(uint32_t page_addr, uint32_t ip) {
       /**
        *
        */
