@@ -46,9 +46,9 @@
  * Networking constants
  */
 
-#define UNICAST_PORT                 60000
-#define MULTICAST_PORT               60001
-#define MULTICAST_GRP                "225.0.0.6"
+#define UNICAST_PORT                 50000
+#define MULTICAST_PORT               50001
+#define MULTICAST_GRP                "225.0.0.5"
 
 #define PACKET_HEADER_SZ             256
 #define PACKET_MAX_PAYLOAD_SZ        8192
