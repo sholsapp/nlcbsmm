@@ -616,7 +616,7 @@ namespace NLCBSMM {
                break;
 
             case SYNC_DONE_F:
-               //fprintf(stderr, "> sync done\n");
+               fprintf(stderr, "> sync done\n");
 
                // TODO: error checking
                mutex_lock(&node_list_lock);
