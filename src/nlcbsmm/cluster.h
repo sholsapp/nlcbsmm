@@ -485,12 +485,13 @@ namespace NLCBSMM {
             vmaddr_t* bits = NULL;
 
 
+
             // Generic packet data (type/payload size/payload)
             p           = reinterpret_cast<Packet*>(buffer);
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<uint8_t*>(p->get_payload_ptr());
 
-            //fprintf(stderr, "> received a packet (%x)\n", p->get_flag());
+            fprintf(stderr, "> received a packet (%x)\n", p->get_flag());
 
             switch (p->get_flag()) {
 
