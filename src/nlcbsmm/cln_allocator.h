@@ -101,8 +101,6 @@ namespace NLCBSMM {
             //   << " at: " << (void*)p << std::endl;
             // The heap is coupled global variabled -- must be defined!
             //mutex_lock(&clone_heap_lock);
-            // Make warning go away
-            num = num;
             clone_heap.free((void*) p);
             //mutex_unlock(&clone_heap_lock);
          }

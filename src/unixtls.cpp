@@ -170,7 +170,7 @@ extern "C" void pthread_exit (void *value_ptr) {
    // A pointer to the library version of pthread_exit.
    static pthread_exit_function real_pthread_exit =
       reinterpret_cast<pthread_exit_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+      (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
    // Do necessary clean-up of the TLAB and get out.
    exitRoutine();
@@ -202,7 +202,7 @@ extern "C" int pthread_create (pthread_t *thread,
    // A pointer to the library version of pthread_create.
    static pthread_create_function real_pthread_create =
       reinterpret_cast<pthread_create_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+      (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
    if (!anyThreadCreated)
       anyThreadCreated = 1;
@@ -236,7 +236,7 @@ extern "C" int pthread_join (pthread_t thread,
    // A pointer to the library version of pthread_join.
    static pthread_join_function real_pthread_join =
       reinterpret_cast<pthread_join_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+      (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
    ClusterCoordinator::net_pthread_join(thread);
 
@@ -257,7 +257,7 @@ extern "C" int pthread_mutex_init (pthread_mutex_t *mutex,
    // A pointer to the library version of pthread_mutex_init.
    static pthread_mutex_init_function real_pthread_mutex_init =
       reinterpret_cast<pthread_mutex_init_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+      (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
 
    // TODO: What if a non-master node calls pthread_mutex_init?  Need to trasmit data to master
@@ -289,7 +289,7 @@ extern "C" int pthread_mutex_destroy (pthread_mutex_t *mutex) {
    // A pointer to the library version of pthread_join.
    static pthread_mutex_destroy_function real_pthread_mutex_destroy =
       reinterpret_cast<pthread_mutex_destroy_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+      (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
    fprintf(stderr, "> pthread_mutex_destory\n");
 
@@ -312,7 +312,7 @@ extern "C" int pthread_mutex_lock (pthread_mutex_t *mutex) {
    //  and this messes with library _init functions and _ctors.
    //static pthread_mutex_lock_function real_pthread_mutex_lock =
    //   reinterpret_cast<pthread_mutex_lock_function>
-   //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+   //   (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
    // Don't call NLCBSMM code until NLCBSMM has been loaded into memory.
    //   This happens when libstdc++ loads before NLCBSMM
@@ -336,7 +336,7 @@ extern "C" int pthread_mutex_unlock (pthread_mutex_t *mutex) {
    //  and this messes with library _init functions and _ctors.
    //static pthread_mutex_unlock_function real_pthread_mutex_unlock =
    //   reinterpret_cast<pthread_mutex_unlock_function>
-   //   (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+   //   (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
    // Don't call NLCBSMM code until NLCBSMM has been loaded into memory.
    //   This happens when libstdc++ loads before NLCBSMM
@@ -359,7 +359,7 @@ extern "C" int pthread_mutex_trylock (pthread_mutex_t *mutex) {
    // A pointer to the library version of pthread_join.
    static pthread_mutex_trylock_function real_pthread_mutex_trylock =
       reinterpret_cast<pthread_mutex_trylock_function>
-      (reinterpret_cast<intptr_t>(dlsym (RTLD_NEXT, fname)));
+      (reinterpret_cast<uint32_t>(dlsym (RTLD_NEXT, fname)));
 
    fprintf(stderr, "> pthread_mutex_trylock\n");
 

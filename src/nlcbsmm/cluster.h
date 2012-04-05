@@ -138,10 +138,6 @@ namespace NLCBSMM {
             selflen = sizeof(struct sockaddr_in);
             addrlen = sizeof(struct sockaddr_in);
 
-
-            // Make warning go away
-            arg = arg;
-
             while(1) {
 
                // If there is no work in the queue
@@ -349,9 +345,6 @@ namespace NLCBSMM {
             Packet*                p      = NULL;
             UnicastJoinAcceptance* uja    = NULL;
             WorkTupleType*         work   = NULL;
-
-            // Make warning go away
-            t = t;
 
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
@@ -1793,7 +1786,7 @@ namespace NLCBSMM {
             ThreadCreate*    tc  = NULL;
             ThreadCreateAck* tca = NULL;
 
-            fprintf(stderr, "%d >> pthread_create(%s) func(%p) arg(%p)\n", get_micro_clock(), local_ip, start_routine, arg);
+            fprintf(stderr, "%lld >> pthread_create(%s) func(%p) arg(%p)\n", get_micro_clock(), local_ip, start_routine, arg);
 
             remote_ip = get_available_worker();
 
