@@ -57,7 +57,7 @@ namespace HL {
                // Alert NLCBSMM of new memory
                init_nlcbsmm_memory(ptr, sz);
                // Increment the next address the allocator may pull from
-               next_addr = (uint32_t) (((uint8_t*) next_addr) + sz);
+               next_addr = (intptr_t) (((uint8_t*) next_addr) + sz);
                mutex_unlock(&pt_owner_lock);
                return ptr;
             }
@@ -76,8 +76,8 @@ namespace HL {
 
             fprintf(stderr, "> NLCBSMM memory init %p(%d)\n", (void*) ptr, sz);
 
-            uint32_t page_count  = 0;
-            uint32_t mach_status = 0;
+            int page_count  = 0;
+            int mach_status = 0;
             uint8_t* block_addr  = NULL;
             uint8_t* page_addr   = NULL;
             void* work_memory    = NULL;
@@ -102,7 +102,7 @@ namespace HL {
                fprintf(stderr, "> Adding %s to node list\n", inet_ntoa(local_addr));
                raw = pt_heap->malloc(sizeof(Machine));//BAD:)
                node_list->insert(
-                     std::pair<uint32_t, Machine*>(
+                     std::pair<int, Machine*>(
                         local_addr.s_addr,
                         new (raw) Machine(local_addr.s_addr))
                      );
@@ -131,10 +131,10 @@ namespace HL {
                //fprintf(stderr, "Superblock (%p) - Page (%p)\n", block_addr, page_addr);
                raw = pt_heap->malloc(sizeof(Page));
                page_table->insert(
-                     std::pair<uint32_t, PageTableElementType>((uint32_t) page_addr,
+                     std::pair<intptr_t, PageTableElementType>((intptr_t) page_addr,
                         PageTableElementType(
                            // A new page
-                           new (raw) Page((uint32_t) page_addr, 0xD010101D),
+                           new (raw) Page((intptr_t) page_addr, 0xD010101D),
                            // Pointer to this machine (in the node list)
                            node_list->find(local_addr.s_addr)->second
                            ))

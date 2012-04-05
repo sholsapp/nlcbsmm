@@ -23,7 +23,7 @@ namespace NLCBSMM {
             /**
              * Destructor
              */
-            uint32_t pid = 0;
+            int pid = 0;
 
             if((pid = waitpid(multi_speaker_thread_id, NULL,  __WCLONE)) == -1) {
                perror("wait error");
@@ -47,7 +47,7 @@ namespace NLCBSMM {
             /**
              *
              */
-            uint32_t region_sz = 0;
+            size_t region_sz = 0;
             void*    page_ptr  = NULL;
 
             // How big is the region we're sync'ing?
@@ -126,12 +126,12 @@ namespace NLCBSMM {
             Packet*         p                   = NULL;
             GenericPacket*  g                   = NULL;
             void*           packet_memory       = NULL;
-            uint32_t        sk                  =  0;
-            uint32_t        thr_id              =  0;
-            uint32_t        thr_ret             =  0;
-            uint32_t        addrlen             =  0;
-            uint32_t        selflen             =  0;
-            uint32_t        timeout             =  0;
+            int        sk                  =  0;
+            int        thr_id              =  0;
+            int        thr_ret             =  0;
+            socklen_t        addrlen             =  0;
+            socklen_t        selflen             =  0;
+            int        timeout             =  0;
             struct          sockaddr_in self    = {0};
             struct          sockaddr_in retaddr = {0};
 
@@ -340,7 +340,7 @@ namespace NLCBSMM {
             sleep(1);
             fprintf(stderr, "> uni-speaker\n");
 
-            uint32_t               sk     = 0;
+            int               sk     = 0;
             struct sockaddr_in     addr   = {0};
             Packet*                p      = NULL;
             UnicastJoinAcceptance* uja    = NULL;
@@ -396,10 +396,10 @@ namespace NLCBSMM {
             fprintf(stderr, "> uni-listener\n");
 
             uint8_t* packet_buffer    = NULL;
-            uint32_t sk               =  0;
-            uint32_t nbytes           =  0;
-            uint32_t addrlen          =  0;
-            uint32_t yes              =  1;
+            int sk               =  0;
+            int nbytes           =  0;
+            socklen_t addrlen          =  0;
+            int yes              =  1;
             struct   ip_mreq mreq     = {0};
             struct   sockaddr_in addr = {0};
 
@@ -439,7 +439,7 @@ namespace NLCBSMM {
          }
 
 
-         static void uni_listener_event_loop(void* buffer, uint32_t nbytes, struct sockaddr_in retaddr) {
+         static void uni_listener_event_loop(void* buffer, int nbytes, struct sockaddr_in retaddr) {
             /**
              *
              */
@@ -468,13 +468,13 @@ namespace NLCBSMM {
             void*                  func           = NULL;
             void*                  arg            = NULL;
             void*                  test           = NULL;
-            uint32_t               i              = 0;
-            uint32_t               region_sz      = 0;
-            uint32_t               payload_sz     = 0;
-            uint32_t               page_addr      = 0;
-            uint32_t               thr_id         = 0;
-            uint32_t               thr_stack_sz   = 0;
-            uint32_t               mut_id         = 0;
+            int               i              = 0;
+            size_t               region_sz      = 0;
+            size_t               payload_sz     = 0;
+            intptr_t               page_addr      = 0;
+            int               thr_id         = 0;
+            size_t               thr_stack_sz   = 0;
+            int               mut_id         = 0;
 
             Machine*               node           = NULL;
             Page*                  page           = NULL;
@@ -678,9 +678,9 @@ namespace NLCBSMM {
                thread_work_memory = clone_heap.malloc(sizeof(ThreadWorkType));
                safe_thread_push(&thread_deque, &thread_deque_lock,
                      new (thread_work_memory) ThreadWorkType(retaddr,
-                        PthreadWork((uint32_t) func,
-                           (uint32_t) arg,
-                           (uint32_t) thr_stack_ptr)));
+                        PthreadWork((intptr_t) func,
+                           (intptr_t) arg,
+                           (intptr_t) thr_stack_ptr)));
                // Signal unicast speaker there is queued work
                cond_signal(&thread_cond);
 
@@ -916,8 +916,8 @@ namespace NLCBSMM {
 
             void*               buffer = NULL;
             size_t              psz    = 0;
-            uint32_t            sk     = 0;
-            uint32_t            cnt    = 0;
+            int            sk     = 0;
+            int            cnt    = 0;
             struct ip_mreq      mreq   = {0};
             struct sockaddr_in  addr   = {0};
             Packet*             p      = NULL;
@@ -1022,10 +1022,10 @@ namespace NLCBSMM {
             fprintf(stderr, "> multi-listener\n");
 
             uint8_t  *packet_buffer      = NULL;
-            uint32_t sk                  =  0;
-            uint32_t nbytes              =  0;
-            uint32_t addrlen             =  0;
-            uint32_t yes                 =  1;
+            int sk                  =  0;
+            int nbytes              =  0;
+            socklen_t addrlen             =  0;
+            int yes                 =  1;
             struct   ip_mreq mreq        = {0};
             struct   sockaddr_in addr    = {0};
 
@@ -1083,7 +1083,7 @@ namespace NLCBSMM {
          }
 
 
-         static void multi_listener_event_loop(void* buffer, uint32_t nbytes) {
+         static void multi_listener_event_loop(void* buffer, int nbytes) {
             /**
              * Process the packet in buffer (which is nbytes long) and take appropriate
              * action (if applicable).
@@ -1101,11 +1101,11 @@ namespace NLCBSMM {
             void*                  test           = NULL;
             void*                  raw            = NULL;
             char*                  payload_buf    = NULL;
-            uint32_t               payload_sz     = 0;
-            uint32_t               ip             = 0;
-            uint32_t               start_addr     = 0;
-            uint32_t               memory_sz      = 0;
-            uint32_t               page_addr      = 0;
+            size_t              payload_sz     = 0;
+            int               ip             = 0;
+            intptr_t               start_addr     = 0;
+            size_t               memory_sz      = 0;
+            intptr_t               page_addr      = 0;
             struct sockaddr_in     retaddr        = {0};
             struct in_addr         addr           = {0};
 
@@ -1127,9 +1127,9 @@ namespace NLCBSMM {
                if (_uuid == 0) {
 
                   // Verify request's address space requirements
-                  if ((uint32_t) global_main() == ntohl(mjp->main_addr)
-                        && (uint32_t) global_end() == ntohl(mjp->end_addr)
-                        && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
+                  if ((intptr_t) global_main() == ntohl(mjp->main_addr)
+                        && (intptr_t) global_end() == ntohl(mjp->end_addr)
+                        && (intptr_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
                      addr.s_addr = ip = ntohl(mjp->ip_address);
 
@@ -1139,7 +1139,7 @@ namespace NLCBSMM {
                      raw = pt_heap->malloc(sizeof(Machine));//BAD
                      mutex_lock(&node_list_lock);
                      node_list->insert(
-                           std::pair<uint32_t, Machine*>(
+                           std::pair<int, Machine*>(
                               ip,
                               new (raw) Machine(ip))
                            );
@@ -1253,10 +1253,10 @@ namespace NLCBSMM {
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  page_data      = NULL;
-            uint32_t               region_sz      = 0;
-            uint32_t               page_addr      = 0;
-            uint32_t               i              = 0;
-            uint32_t               timeout        = 0;
+            size_t               region_sz      = 0;
+            intptr_t               page_addr      = 0;
+            int               i              = 0;
+            int               timeout        = 0;
 
             struct sockaddr_in     addr           = {0};
 
@@ -1299,7 +1299,7 @@ namespace NLCBSMM {
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
-               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+               page_addr = reinterpret_cast<intptr_t>(page_ptr + i);
                page_data = reinterpret_cast<void*>(page_ptr + i);
 
                // If this page has non-zero contents
@@ -1355,9 +1355,9 @@ namespace NLCBSMM {
             void*                  packet_memory  = NULL;
             void*                  work_memory    = NULL;
             void*                  page_data      = NULL;
-            uint32_t               region_sz      = 0;
-            uint32_t               page_addr      = 0;
-            uint32_t               i              = 0;
+            size_t               region_sz      = 0;
+            intptr_t               page_addr      = 0;
+            int               i              = 0;
 
             // Respond to the other server's listener
             retaddr.sin_port = htons(UNICAST_PORT);
@@ -1377,7 +1377,7 @@ namespace NLCBSMM {
             // Queue work to send page table
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
-               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+               page_addr = reinterpret_cast<intptr_t>(page_ptr + i);
                page_data = reinterpret_cast<void*>(page_ptr + i);
 
                // If this page has non-zero contents
@@ -1440,12 +1440,12 @@ namespace NLCBSMM {
          }
 
 
-         static uint32_t new_comm(uint32_t port=0, bool print=false) {
+         static int new_comm(int port=0, bool print=false) {
             /**
              * Takes about 6 microseconds
              */
-            uint32_t sk               =  0;
-            uint32_t selflen          =  0;
+            int sk               =  0;
+            socklen_t selflen          =  0;
             struct   sockaddr_in self = {0};
 
             uint64_t start, end;
@@ -1479,11 +1479,11 @@ namespace NLCBSMM {
              */
             void*    ptr              = NULL;
             uint8_t* rec_buffer       = NULL;
-            uint32_t sk               =  0;
-            uint32_t nbytes           =  0;
-            uint32_t addrlen          =  0;
-            uint32_t selflen          =  0;
-            uint32_t ret              =  0;
+            int sk               =  0;
+            int nbytes           =  0;
+            socklen_t addrlen          =  0;
+            socklen_t selflen          =  0;
+            int ret              =  0;
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
 
@@ -1510,15 +1510,15 @@ namespace NLCBSMM {
          }
 
 
-         static Packet* persistent_blocking_comm(uint32_t sk, struct sockaddr* to, Packet* packet, uint32_t timeout, const char* id) {
+         static Packet* persistent_blocking_comm(int sk, struct sockaddr* to, Packet* packet, int timeout, const char* id) {
             /**
              *
              */
             uint8_t* rec_buffer       = NULL;
-            uint32_t nbytes           =  0;
-            uint32_t addrlen          =  0;
-            uint32_t selflen          =  0;
-            uint32_t ret              =  0;
+            int nbytes           =  0;
+            socklen_t addrlen          =  0;
+            socklen_t selflen          =  0;
+            int ret              =  0;
 
             addrlen = sizeof(struct sockaddr);
 
@@ -1560,17 +1560,17 @@ namespace NLCBSMM {
          }
 
 
-         static Packet* blocking_comm(struct sockaddr* addr, Packet* send, uint32_t timeout, const char* id) {
+         static Packet* blocking_comm(struct sockaddr* addr, Packet* send, int timeout, const char* id) {
             /**
              *
              */
             void*    ptr              = NULL;
             uint8_t* rec_buffer       = NULL;
-            uint32_t sk               =  0;
-            uint32_t nbytes           =  0;
-            uint32_t addrlen          =  0;
-            uint32_t selflen          =  0;
-            uint32_t ret              =  0;
+            int sk               =  0;
+            int nbytes           =  0;
+            socklen_t addrlen          =  0;
+            socklen_t selflen          =  0;
+            int ret              =  0;
             //struct   sockaddr_in addr = {0};
             struct   sockaddr_in self = {0};
             Packet*  p                = NULL;
@@ -1633,11 +1633,11 @@ namespace NLCBSMM {
              */
             uint8_t* send_buffer      = NULL;
             uint8_t* rec_buffer       = NULL;
-            uint32_t sk               =  0;
-            uint32_t nbytes           =  0;
-            uint32_t addrlen          =  0;
-            uint32_t selflen          =  0;
-            uint32_t timeout          =  0;
+            int sk               =  0;
+            int nbytes           =  0;
+            socklen_t addrlen          =  0;
+            socklen_t selflen          =  0;
+            int timeout          =  0;
             struct   sockaddr_in addr = {0};
             struct   sockaddr_in self = {0};
 
@@ -1730,13 +1730,13 @@ namespace NLCBSMM {
             return;
          }
 
-         static uint32_t net_pthread_join(pthread_t thread_id) {
+         static int net_pthread_join(pthread_t thread_id) {
             /**
              * TODO: implement me
              */
             void*               packet_memory  = NULL;
             void*               work_memory    = NULL;
-            uint32_t            timeout        = 0;
+            int            timeout        = 0;
             struct sockaddr_in* owner          = NULL;
             Packet*             p              = NULL;
 
@@ -1768,7 +1768,7 @@ namespace NLCBSMM {
          }
 
 
-         static uint32_t net_pthread_create(threadFunctionType start_routine, void* arg) {
+         static int net_pthread_create(threadFunctionType start_routine, void* arg) {
             /**
              *
              */
@@ -1776,10 +1776,10 @@ namespace NLCBSMM {
             void*               work_memory    = NULL;
             void*               raw            = NULL;
             void*               thr_stack      = NULL;
-            uint32_t            thr_stack_sz   = 0;
-            uint32_t            remote_ip      = 0;
-            uint32_t            timeout        = 0;
-            uint32_t            thr_id         = 0;
+            size_t            thr_stack_sz   = 0;
+            int            remote_ip      = 0;
+            int            timeout        = 0;
+            int            thr_id         = 0;
             struct sockaddr_in  remote_addr    = {0};
 
             Packet*          p   = NULL;
@@ -1845,7 +1845,7 @@ namespace NLCBSMM {
 
                   // Save (retaddr -> thr_id) for joining later
                   thread_map.insert(
-                        std::pair<uint32_t, struct sockaddr>
+                        std::pair<int, struct sockaddr>
                         (thr_id, *((struct sockaddr*) &remote_addr)));
 
                }
@@ -1863,12 +1863,12 @@ namespace NLCBSMM {
             return thr_id;
          }
 
-         static uint32_t net_pthread_mutex_lock(pthread_mutex_t *lock) {\
+         static int net_pthread_mutex_lock(pthread_mutex_t *lock) {\
             void*               packet_memory  = NULL;
             void*               work_memory    = NULL;
             void*               raw            = NULL;
-            uint32_t            remote_ip      = 0;
-            uint32_t            timeout        = 0;
+            int            remote_ip      = 0;
+            int            timeout        = 0;
             struct sockaddr_in  remote_addr    = {0};
             Packet*              p   = NULL;
 
@@ -1890,7 +1890,7 @@ namespace NLCBSMM {
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
-                     new (packet_memory) MutexLockRequest((uint32_t) lock)),
+                     new (packet_memory) MutexLockRequest((intptr_t) lock)),
                   INFINITY,
                   "mutex lock request"
                   );
@@ -1912,12 +1912,12 @@ namespace NLCBSMM {
             return 0;
          }
 
-         static uint32_t net_pthread_mutex_unlock(pthread_mutex_t *lock) {
+         static int net_pthread_mutex_unlock(pthread_mutex_t *lock) {
             void*               packet_memory  = NULL;
             void*               work_memory    = NULL;
             void*               raw            = NULL;
-            uint32_t            remote_ip      = 0;
-            uint32_t            timeout        = 0;
+            int            remote_ip      = 0;
+            int            timeout        = 0;
             struct sockaddr_in  remote_addr    = {0};
             Packet*              p   = NULL;
 
@@ -1939,7 +1939,7 @@ namespace NLCBSMM {
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
-                     new (packet_memory) MutexUnlock((uint32_t) lock, sizeof(uint32_t) * invalidated.size(), serialized_invalidates)),
+                     new (packet_memory) MutexUnlock((intptr_t) lock, sizeof(intptr_t) * invalidated.size(), serialized_invalidates)),
                   INFINITY,
                   "mutex unlock"
                   );
@@ -1964,7 +1964,7 @@ namespace NLCBSMM {
             return 0;
          }
 
-         static uint32_t select_call(int socket, int seconds, int useconds) {
+         static int select_call(int socket, int seconds, int useconds) {
             /**
              *
              */
@@ -1978,12 +1978,12 @@ namespace NLCBSMM {
          }
 
       private:
-         uint32_t multi_speaker_thread_id;
-         uint32_t multi_listener_thread_id;
-         uint32_t uni_speaker_thread_id;
-         uint32_t uni_listener_thread_id;
+         int multi_speaker_thread_id;
+         int multi_listener_thread_id;
+         int uni_speaker_thread_id;
+         int uni_listener_thread_id;
 
-         uint32_t worker0_thread_id;
+         int worker0_thread_id;
    };
 }
 

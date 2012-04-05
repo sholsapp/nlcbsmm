@@ -45,12 +45,12 @@ class Packet {
     *
     */
    public:
-      uint32_t get_sequence() {
-         return ntohl(((uint32_t*) this)[0]);
+      int get_sequence() {
+         return ntohl(((int*) this)[0]);
       }
 
-      uint32_t get_payload_sz() {
-         return ntohl(((uint32_t*) this)[1]);
+      int get_payload_sz() {
+         return ntohl(((int*) this)[1]);
       }
 
       uint8_t get_flag() {
@@ -73,11 +73,11 @@ class MulticastHeartbeat : public Packet {
     * When a multicast thread has no work, its heart beats.
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
-      uint32_t flags;
+      int sequence;
+      int payload_sz;
+      int flags;
 
-      MulticastHeartbeat(uint32_t user_length) {
+      MulticastHeartbeat(int user_length) {
          sequence   = htonl(0);
          payload_sz = htonl(user_length);
          flags      = MULTICAST_HEARTBEAT_F;
@@ -92,17 +92,17 @@ class MulticastJoin : public Packet {
     * if this node is the first (e.g., master node)).
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t ip_address;
+      int ip_address;
 
-      uint32_t main_addr;
-      uint32_t end_addr;
-      uint32_t prog_break_addr;
+      intptr_t main_addr;
+      intptr_t end_addr;
+      intptr_t prog_break_addr;
 
-      MulticastJoin(uint32_t _ip_address, 
+      MulticastJoin(int _ip_address, 
             uint8_t* _main_addr, 
             uint8_t* _end_addr, 
             uint8_t* _prog_break_addr) {
@@ -113,9 +113,9 @@ class MulticastJoin : public Packet {
          payload_sz      = htonl(0);
          flag            = MULTICAST_JOIN_F;
          ip_address      = htonl(_ip_address);
-         main_addr       = htonl(reinterpret_cast<uint32_t>(_main_addr));
-         end_addr        = htonl(reinterpret_cast<uint32_t>(_end_addr));
-         prog_break_addr = htonl(reinterpret_cast<uint32_t>(_prog_break_addr));
+         main_addr       = htonl(reinterpret_cast<intptr_t>(_main_addr));
+         end_addr        = htonl(reinterpret_cast<intptr_t>(_end_addr));
+         prog_break_addr = htonl(reinterpret_cast<intptr_t>(_prog_break_addr));
       }
 }__attribute__((packed));
 
@@ -125,14 +125,14 @@ class OwnerUpdate : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
-      uint32_t flags;
+      int sequence;
+      int payload_sz;
+      int flags;
 
-      uint32_t ip;
-      uint32_t page_addr;
+      int ip;
+      intptr_t page_addr;
 
-      OwnerUpdate(uint32_t _ip, uint32_t _page_addr) {
+      OwnerUpdate(int _ip, intptr_t _page_addr) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flags      = MULTICAST_OWNER_UPDATE_F;
@@ -150,14 +150,14 @@ class UnicastJoinAcceptance : public Packet {
     * to the cluster, and assigns the new node a unique identifier.
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t start_page_table;
-      uint32_t end_page_table;
-      uint32_t uuid;
-      uint32_t pt_owner;
+      intptr_t start_page_table;
+      intptr_t end_page_table;
+      int uuid;
+      int pt_owner;
 
       UnicastJoinAcceptance() {}
 
@@ -168,11 +168,11 @@ class UnicastJoinAcceptance : public Packet {
          this->set_flag(UNICAST_JOIN_ACCEPT_ACK_F);
       }
 
-      UnicastJoinAcceptance(uint32_t _user_length,
-            uint32_t _start_pt, 
-            uint32_t _end_pt, 
-            uint32_t _uuid, 
-            uint32_t _pt_owner) {
+      UnicastJoinAcceptance(int _user_length,
+            intptr_t _start_pt, 
+            intptr_t _end_pt, 
+            int _uuid, 
+            int _pt_owner) {
 
          sequence          = htonl(0);
          payload_sz        = htonl(_user_length);
@@ -191,13 +191,13 @@ class SyncPage : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t page_offset;
+      intptr_t page_offset;
 
-      SyncPage(uint32_t page_addr, void* page_data) {
+      SyncPage(intptr_t page_addr, void* page_data) {
          sequence    = htonl(0);
          payload_sz  = htonl(PAGE_SZ);
          flag        = SYNC_PAGE_F;
@@ -214,21 +214,21 @@ class SyncReserve : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t ip;
-      uint32_t start_addr;
-      uint32_t sz;
+      int ip;
+      intptr_t start_addr;
+      int sz;
 
-      SyncReserve(uint32_t _owner, void* _start_addr, uint32_t _sz) {
+      SyncReserve(int _owner, void* _start_addr, int _sz) {
          sequence    = htonl(0);
          payload_sz  = htonl(0);
          flag        = SYNC_RESERVE_F;
 
          ip          = htonl(_owner);
-         start_addr  = htonl(reinterpret_cast<uint32_t>(_start_addr));
+         start_addr  = htonl(reinterpret_cast<intptr_t>(_start_addr));
          sz          = htonl(_sz);
       }
 
@@ -240,24 +240,24 @@ class ThreadCreate : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t stack_ptr;
-      uint32_t stack_sz;
+      intptr_t stack_ptr;
+      int stack_sz;
 
-      uint32_t func_ptr;
-      uint32_t arg;
+      intptr_t func_ptr;
+      intptr_t arg;
 
       ThreadCreate(void* _stack_ptr, void* _func_ptr, void* _arg) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = THREAD_CREATE_F;
-         stack_ptr  = htonl(reinterpret_cast<uint32_t>(_stack_ptr));
+         stack_ptr  = htonl(reinterpret_cast<intptr_t>(_stack_ptr));
          stack_sz   = htonl(PTHREAD_STACK_SZ);
-         func_ptr   = htonl(reinterpret_cast<uint32_t>(_func_ptr));
-         arg        = htonl(reinterpret_cast<uint32_t>(_arg));
+         func_ptr   = htonl(reinterpret_cast<intptr_t>(_func_ptr));
+         arg        = htonl(reinterpret_cast<intptr_t>(_arg));
       }
 
 }__attribute__((packed));
@@ -268,13 +268,13 @@ class ThreadCreateAck : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t thread_id;
+      int thread_id;
 
-      ThreadCreateAck(uint32_t _thread_id) {
+      ThreadCreateAck(int _thread_id) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = THREAD_CREATE_ACK_F;
@@ -289,8 +289,8 @@ class ThreadJoin : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
       ThreadJoin() {
@@ -307,8 +307,8 @@ class AcquireWriteLock : public Packet {
     * This is used to request write access to the page table.
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
       uint16_t ret_port;
@@ -328,12 +328,12 @@ class ReleaseWriteLock : public Packet {
     * This is used to release write access to the page table.
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
-      uint32_t next_addr;
+      intptr_t next_addr;
 
-      ReleaseWriteLock(uint32_t _next_addr) {
+      ReleaseWriteLock(intptr_t _next_addr) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = RELEASE_WRITE_LOCK_F;
@@ -348,13 +348,13 @@ class AcquirePage : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t page_addr;
+      intptr_t page_addr;
 
-      AcquirePage(uint32_t _page_addr) {
+      AcquirePage(intptr_t _page_addr) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = SYNC_ACQUIRE_PAGE_F;
@@ -370,13 +370,13 @@ class ReleasePage : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t page_addr;
+      intptr_t page_addr;
 
-      ReleasePage(uint32_t _page_addr) {
+      ReleasePage(intptr_t _page_addr) {
          sequence   = htonl(0);
          payload_sz = htonl(PAGE_SZ);
          flag       = SYNC_RELEASE_PAGE_F;
@@ -392,13 +392,13 @@ class MutexLockRequest : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t mutex_id;
+      intptr_t mutex_id;
 
-      MutexLockRequest(uint32_t _mutex_id) {
+      MutexLockRequest(intptr_t _mutex_id) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = MUTEX_LOCK_REQUEST_F;
@@ -412,13 +412,13 @@ class MutexLockGrant : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t mutex_id;
+      intptr_t mutex_id;
 
-      MutexLockGrant(uint32_t _mutex_id) {
+      MutexLockGrant(intptr_t _mutex_id) {
          sequence   = htonl(0);
          payload_sz = htonl(0);
          flag       = MUTEX_LOCK_GRANT_F;
@@ -432,13 +432,13 @@ class MutexUnlock : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
-      uint32_t mutex_id;
+      intptr_t mutex_id;
 
-      MutexUnlock(uint32_t _mutex_id, size_t _payload_sz, vmaddr_t* _bits) {
+      MutexUnlock(intptr_t _mutex_id, size_t _payload_sz, vmaddr_t* _bits) {
          sequence   = htonl(0);
          payload_sz = htonl(_payload_sz);
          flag       = MUTEX_UNLOCK_F;
@@ -455,8 +455,8 @@ class GenericPacket : public Packet {
     *
     */
    public:
-      uint32_t sequence;
-      uint32_t payload_sz;
+      int sequence;
+      int payload_sz;
       uint8_t  flag;
 
       GenericPacket(uint8_t type) {

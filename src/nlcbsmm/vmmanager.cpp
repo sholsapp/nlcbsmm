@@ -70,7 +70,7 @@ namespace NLCBSMM {
    mutex           multi_speaker_lock;
 
    // This (binary form IP address) identifies who currently has the page table lock.
-   uint32_t pt_owner;
+   int pt_owner;
    // This forces threads to wait on each other in case someone is reading/writing the
    // page table.
    mutex pt_owner_lock;
@@ -90,11 +90,11 @@ namespace NLCBSMM {
    MachineTableType* node_list;
    PageTableType*    page_table;
 
-   uint32_t _start_page_table = 0;
-   uint32_t _end_page_table   = 0;
-   uint32_t _uuid             = 0;
-   uint32_t _next_uuid        = 1;
-   uint32_t next_addr         = 0;
+   intptr_t _start_page_table = 0;
+   intptr_t _end_page_table   = 0;
+   int _uuid             = 0;
+   int _next_uuid        = 1;
+   intptr_t next_addr         = 0;
 }
 
 // The implementation of utility functions defined in this file
@@ -126,9 +126,9 @@ namespace NLCBSMM {
       uint8_t*              faulting_addr  = NULL;
       uint8_t*              aligned_addr   = NULL;
 
-      uint32_t              remote_ip      = 0;
-      uint32_t              timeout        = 0;
-      uint32_t              perm           = 0;
+      int              remote_ip      = 0;
+      int              timeout        = 0;
+      int              perm           = 0;
       struct sockaddr_in    remote_addr    = {0};
       struct sockaddr_in    to             = {0};
       struct sockaddr_in    from           = {0};
@@ -142,7 +142,7 @@ namespace NLCBSMM {
       PageTableItr          pt_itr;
       PageTableElementType  tuple;
 
-      uint32_t sk = 0;
+      int sk = 0;
 
       uint64_t start, end;
 
@@ -157,7 +157,7 @@ namespace NLCBSMM {
       aligned_addr  = pageAlign(faulting_addr);
 
       mutex_lock(&pt_lock);
-      pt_itr = page_table->find((uint32_t) aligned_addr);
+      pt_itr = page_table->find((intptr_t) aligned_addr);
       mutex_unlock(&pt_lock);
 
       // If the address was not found in the page table
@@ -205,7 +205,7 @@ namespace NLCBSMM {
       p = ClusterCoordinator::persistent_blocking_comm(sk,
             (struct sockaddr*) &remote_addr,
             reinterpret_cast<Packet*>(
-               new (packet_memory) AcquirePage((uint32_t) aligned_addr)),
+               new (packet_memory) AcquirePage((intptr_t) aligned_addr)),
             timeout,
             "acquire page"
             );
@@ -232,7 +232,7 @@ namespace NLCBSMM {
             memcpy(rel_page, p->get_payload_ptr(), PAGE_SZ);
 
             // Set new owner (us)
-            set_new_owner((uint32_t) rel_page, local_addr.s_addr);
+            set_new_owner((intptr_t) rel_page, local_addr.s_addr);
 
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             ClusterCoordinator::direct_comm(remote_addr,
@@ -347,7 +347,7 @@ namespace NLCBSMM {
       return;
    }
 
-   /*void* pt_heap_malloc(uint32_t sz) {
+   /*void* pt_heap_malloc(size_t sz) {
      void* ret;
      mutex_lock(&pt_heap_lock);
      ret = pt_heap->malloc(sz);
@@ -361,7 +361,7 @@ namespace NLCBSMM {
      mutex_unlock(&pt_heap_lock);
      }
 
-     void* clone_heap_malloc(uint32_t sz) {
+     void* clone_heap_malloc(size_t sz) {
      void* ret;
      mutex_lock(&clone_heap_lock);
      ret = clone_heap.malloc(sz);
@@ -430,10 +430,10 @@ namespace NLCBSMM {
       }
       page_table = new (raw) PageTableType();
 
-      _start_page_table = (uint32_t) raw;
-      _end_page_table   = (uint32_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
-      _uuid             = (uint32_t) -1;
-      pt_owner          = (uint32_t) -1;
+      _start_page_table = (intptr_t) raw;
+      _end_page_table   = (intptr_t) ((uint8_t*) raw) + PAGE_TABLE_SZ;
+      _uuid             = (int) -1;
+      pt_owner          = (int) -1;
       local_ip          = get_local_interface();
       local_addr.s_addr = inet_addr(local_ip);
 

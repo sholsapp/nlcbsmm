@@ -8,7 +8,7 @@ namespace NLCBSMM {
       /**
        * Helper function to page align a pointer
        */
-      return (unsigned char *)(((int)p) & ~(PAGE_SZ-1));
+      return (unsigned char *)(((intptr_t) p) & ~(PAGE_SZ-1));
    }
 
 
@@ -21,7 +21,7 @@ namespace NLCBSMM {
 
 
    void* page_align(void* p) {
-      return (unsigned char*) (((int) p) & ~(PAGE_SZ-1));
+      return (unsigned char*) (((intptr_t) p) & ~(PAGE_SZ-1));
    }
 
 
@@ -146,7 +146,7 @@ namespace NLCBSMM {
    }
 
 
-   uint32_t get_available_worker() {
+   int get_available_worker() {
       /**
        * Return the IP address (binary form) of the next worker capable of running a
        * new thread.
@@ -156,8 +156,8 @@ namespace NLCBSMM {
        */
       MachineTableItr node_itr;
       Machine*        machine;
-      uint32_t        machine_status;
-      uint32_t        ip;
+      int        machine_status;
+      int        ip;
 
       mutex_lock(&node_list_lock);
 
@@ -183,7 +183,7 @@ namespace NLCBSMM {
    }
 
 
-   Machine* get_worker(uint32_t ip) {
+   Machine* get_worker(int ip) {
       /**
        *
        */
@@ -199,7 +199,7 @@ namespace NLCBSMM {
    }
 
 
-   void set_new_owner(uint32_t page_addr, uint32_t ip) {
+   void set_new_owner(intptr_t page_addr, int ip) {
       /**
        *
        */

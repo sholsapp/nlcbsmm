@@ -103,7 +103,7 @@ namespace HL {
                   // Return a ptr to a new piece of memory
                   //fprintf(stderr, "> allocating %d\n", sz);
                   ptr = buffer;
-                  buffer = reinterpret_cast<void *>(reinterpret_cast<uint32_t>(buffer) + sz);
+                  buffer = reinterpret_cast<void *>(reinterpret_cast<intptr_t>(buffer) + sz);
                   count++;
                }
                return ptr;

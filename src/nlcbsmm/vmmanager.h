@@ -35,9 +35,9 @@ namespace NLCBSMM {
     * Machine table types
     */
    typedef
-      std::map<uint32_t, Machine*,
-      std::less<uint32_t>,
-      PageTableAllocator<std::pair<uint32_t, Machine* > > >
+      std::map<int, Machine*,
+      std::less<int>,
+      PageTableAllocator<std::pair<int, Machine* > > >
          MachineTableType;
    typedef
       MachineTableType::iterator MachineTableItr;
@@ -48,9 +48,9 @@ namespace NLCBSMM {
    typedef
       std::pair<Page*, Machine*> PageTableElementType;
    typedef
-      std::map<uint32_t, PageTableElementType,
-      std::less<uint32_t>,
-      PageTableAllocator<std::pair<uint32_t, PageTableElementType > > >
+      std::map<intptr_t, PageTableElementType,
+      std::less<intptr_t>,
+      PageTableAllocator<std::pair<intptr_t, PageTableElementType > > >
          PageTableType;
    typedef
       PageTableType::iterator PageTableItr;
@@ -59,9 +59,9 @@ namespace NLCBSMM {
     * Thread table type
     */
    typedef
-      std::map<uint32_t, struct sockaddr,
-      std::less<uint32_t>,
-      CloneAllocator<std::pair<uint32_t, struct sockaddr> > >
+      std::map<int, struct sockaddr,
+      std::less<int>,
+      CloneAllocator<std::pair<int, struct sockaddr> > >
          ThreadTableType;
 
    /**
@@ -184,7 +184,7 @@ namespace NLCBSMM {
    extern mutex pt_owner_lock;
 
    // This (binary form IP address) identifies who currently has the page table lock.
-   extern uint32_t pt_owner;
+   extern int pt_owner;
 
    // This is a per-process lock, so the various threads don't simutaneously use the
    // page table.
@@ -200,11 +200,11 @@ namespace NLCBSMM {
 
    // The next valid address to pull memory from. This is transmitted in the releaseWriteLock
    // packet.
-   extern uint32_t next_addr;
-   extern uint32_t _start_page_table;
-   extern uint32_t _end_page_table;
-   extern uint32_t _uuid;
-   extern uint32_t _next_uuid;
+   extern intptr_t next_addr;
+   extern intptr_t _start_page_table;
+   extern intptr_t _end_page_table;
+   extern int _uuid;
+   extern int _next_uuid;
 
    // Function prototypes
    WorkTupleType*     safe_pop(PacketQueueType* queue, mutex* m);
@@ -216,20 +216,20 @@ namespace NLCBSMM {
    int                safe_thread_size(ThreadQueueType* queue, mutex* m);
 
 
-   //void*              pt_heap_malloc(uint32_t sz);
+   //void*              pt_heap_malloc(size_t sz);
    //void               pt_heap_free(void* addr);
-   //void*              clone_heap_malloc(uint32_t sz);
+   //void*              clone_heap_malloc(size_t sz);
    //void               clone_heap_free(void* addr);
 
-   Machine* get_worker(uint32_t ip); 
+   Machine* get_worker(int ip); 
    PageTableHeapType* get_pt_heap(mutex* m);
-   uint32_t           get_available_worker();
+   int           get_available_worker();
    void               signal_handler(int signo, siginfo_t* info, void* contex);
    void               register_signal_handlers();
    void               nlcbsmm_init();
    void               print_page_table();
    void               reserve_pages();
-   void               set_new_owner(uint32_t page_addr, uint32_t ip);
+   void               set_new_owner(intptr_t page_addr, int ip);
    uint64_t           get_micro_clock();
    void*              page_align(void* p);
    // TODO: Fix naming convention
