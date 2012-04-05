@@ -66,18 +66,18 @@ typedef intptr_t vmaddr_t;
 /**
  *
  */
-extern uint32_t& global_main();
-extern uint32_t& global_end();
-extern uint32_t& global_base();
-extern uint32_t& global_clone_alloc_heap();
-extern uint32_t& global_clone_heap();
-extern uint32_t& global_page_table_mach_list();
-extern uint32_t& global_page_table_obj();
-extern uint32_t& global_page_table();
-extern uint32_t& global_page_table_alloc_heap();
-extern uint32_t& global_page_table_heap();
-extern uint32_t& global_application_heap();
-extern uint32_t& global_pt_start_addr();
+extern intptr_t& global_main();
+extern intptr_t& global_end();
+extern intptr_t& global_base();
+extern intptr_t& global_clone_alloc_heap();
+extern intptr_t& global_clone_heap();
+extern intptr_t& global_page_table_mach_list();
+extern intptr_t& global_page_table_obj();
+extern intptr_t& global_page_table();
+extern intptr_t& global_page_table_alloc_heap();
+extern intptr_t& global_page_table_heap();
+extern intptr_t& global_application_heap();
+extern intptr_t& global_pt_start_addr();
 
-extern uint32_t& get_workers_fixed_addr();
-extern uint32_t& get_clonebase_fixed_addr();
+extern intptr_t& get_workers_fixed_addr();
+extern intptr_t& get_clonebase_fixed_addr();

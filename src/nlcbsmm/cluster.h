@@ -138,6 +138,10 @@ namespace NLCBSMM {
             selflen = sizeof(struct sockaddr_in);
             addrlen = sizeof(struct sockaddr_in);
 
+
+            // Make warning go away
+            arg = arg;
+
             while(1) {
 
                // If there is no work in the queue
@@ -346,6 +350,9 @@ namespace NLCBSMM {
             UnicastJoinAcceptance* uja    = NULL;
             WorkTupleType*         work   = NULL;
 
+            // Make warning go away
+            t = t;
+
             if ((sk = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
                perror("vmmanager.cpp, socket");
                exit(EXIT_FAILURE);
@@ -471,7 +478,7 @@ namespace NLCBSMM {
             uint32_t               i              = 0;
             uint32_t               region_sz      = 0;
             uint32_t               payload_sz     = 0;
-            uint32_t               page_addr      = 0;
+            intptr_t               page_addr      = 0;
             uint32_t               thr_id         = 0;
             uint32_t               thr_stack_sz   = 0;
             uint32_t               mut_id         = 0;
@@ -678,9 +685,9 @@ namespace NLCBSMM {
                thread_work_memory = clone_heap.malloc(sizeof(ThreadWorkType));
                safe_thread_push(&thread_deque, &thread_deque_lock,
                      new (thread_work_memory) ThreadWorkType(retaddr,
-                        PthreadWork((uint32_t) func,
-                           (uint32_t) arg,
-                           (uint32_t) thr_stack_ptr)));
+                        PthreadWork((intptr_t) func,
+                           (intptr_t) arg,
+                           (intptr_t) thr_stack_ptr)));
                // Signal unicast speaker there is queued work
                cond_signal(&thread_cond);
 
@@ -1103,9 +1110,9 @@ namespace NLCBSMM {
             char*                  payload_buf    = NULL;
             uint32_t               payload_sz     = 0;
             uint32_t               ip             = 0;
-            uint32_t               start_addr     = 0;
+            intptr_t               start_addr     = 0;
             uint32_t               memory_sz      = 0;
-            uint32_t               page_addr      = 0;
+            intptr_t               page_addr      = 0;
             struct sockaddr_in     retaddr        = {0};
             struct in_addr         addr           = {0};
 
@@ -1127,9 +1134,9 @@ namespace NLCBSMM {
                if (_uuid == 0) {
 
                   // Verify request's address space requirements
-                  if ((uint32_t) global_main() == ntohl(mjp->main_addr)
-                        && (uint32_t) global_end() == ntohl(mjp->end_addr)
-                        && (uint32_t) global_base() == ntohl(mjp->prog_break_addr)) {
+                  if ((intptr_t) global_main() == ntohl(mjp->main_addr)
+                        && (intptr_t) global_end() == ntohl(mjp->end_addr)
+                        && (intptr_t) global_base() == ntohl(mjp->prog_break_addr)) {
 
                      addr.s_addr = ip = ntohl(mjp->ip_address);
 
@@ -1254,7 +1261,7 @@ namespace NLCBSMM {
             void*                  work_memory    = NULL;
             void*                  page_data      = NULL;
             uint32_t               region_sz      = 0;
-            uint32_t               page_addr      = 0;
+            intptr_t               page_addr      = 0;
             uint32_t               i              = 0;
             uint32_t               timeout        = 0;
 
@@ -1299,7 +1306,7 @@ namespace NLCBSMM {
 
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
-               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+               page_addr = reinterpret_cast<intptr_t>(page_ptr + i);
                page_data = reinterpret_cast<void*>(page_ptr + i);
 
                // If this page has non-zero contents
@@ -1356,7 +1363,7 @@ namespace NLCBSMM {
             void*                  work_memory    = NULL;
             void*                  page_data      = NULL;
             uint32_t               region_sz      = 0;
-            uint32_t               page_addr      = 0;
+            intptr_t               page_addr      = 0;
             uint32_t               i              = 0;
 
             // Respond to the other server's listener
@@ -1377,7 +1384,7 @@ namespace NLCBSMM {
             // Queue work to send page table
             for (i = 0; i < region_sz; i += PAGE_SZ) {
 
-               page_addr = reinterpret_cast<uint32_t>(page_ptr + i);
+               page_addr = reinterpret_cast<intptr_t>(page_ptr + i);
                page_data = reinterpret_cast<void*>(page_ptr + i);
 
                // If this page has non-zero contents
@@ -1786,7 +1793,7 @@ namespace NLCBSMM {
             ThreadCreate*    tc  = NULL;
             ThreadCreateAck* tca = NULL;
 
-            fprintf(stderr, "%lld >> pthread_create(%s) func(%p) arg(%p)\n", get_micro_clock(), local_ip, start_routine, arg);
+            fprintf(stderr, "%d >> pthread_create(%s) func(%p) arg(%p)\n", get_micro_clock(), local_ip, start_routine, arg);
 
             remote_ip = get_available_worker();
 
@@ -1890,7 +1897,7 @@ namespace NLCBSMM {
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
-                     new (packet_memory) MutexLockRequest((uint32_t) lock)),
+                     new (packet_memory) MutexLockRequest((intptr_t) lock)),
                   INFINITY,
                   "mutex lock request"
                   );
@@ -1939,7 +1946,7 @@ namespace NLCBSMM {
             p = ClusterCoordinator::blocking_comm(
                   (struct sockaddr*) &remote_addr,
                   reinterpret_cast<Packet*>(
-                     new (packet_memory) MutexUnlock((uint32_t) lock, sizeof(intptr_t) * invalidated.size(), serialized_invalidates)),
+                     new (packet_memory) MutexUnlock((intptr_t) lock, sizeof(intptr_t) * invalidated.size(), serialized_invalidates)),
                   INFINITY,
                   "mutex unlock"
                   );
