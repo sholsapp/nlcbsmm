@@ -533,7 +533,7 @@ namespace NLCBSMM {
                break;
 
             case UNICAST_JOIN_ACCEPT_ACK_F:
-               //fprintf(stderr, "> received join accept ack\n");
+               fprintf(stderr, "> received join accept ack\n");
 
                // Passively sync the page table region
                passive_pt_sync(retaddr);
@@ -1384,6 +1384,8 @@ namespace NLCBSMM {
 
                page_addr = reinterpret_cast<intptr_t>(page_ptr + i);
                page_data = reinterpret_cast<void*>(page_ptr + i);
+
+               fprintf(stderr, "Sending %p\n", (void*) page_addr);
 
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
