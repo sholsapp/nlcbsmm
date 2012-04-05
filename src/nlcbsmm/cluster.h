@@ -1385,10 +1385,11 @@ namespace NLCBSMM {
                page_addr = reinterpret_cast<intptr_t>(page_ptr + i);
                page_data = reinterpret_cast<void*>(page_ptr + i);
 
-               fprintf(stderr, "Sending %p\n", (void*) page_addr);
 
                // If this page has non-zero contents
                if (!isPageZeros(page_data)) {
+                  
+                  fprintf(stderr, "Sending %p\n", (void*) page_addr);
 
                   work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
                   packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
@@ -1401,7 +1402,7 @@ namespace NLCBSMM {
                            new (packet_memory) SyncPage(page_addr, page_data))
                         );
                   // Signal unicast speaker there is queued work
-                  cond_signal(&uni_speaker_cond);
+                  //cond_signal(&uni_speaker_cond);
                }
             }
 
