@@ -1323,6 +1323,8 @@ namespace NLCBSMM {
                }
             }
 
+            fprintf(stderr, "Sending SYNC DONE\n");
+
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
             // Send a SYNC_DONE_F and wait for ack
             addr = retaddr; // no modify in place
