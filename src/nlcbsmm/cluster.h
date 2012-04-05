@@ -538,6 +538,8 @@ namespace NLCBSMM {
                // Passively sync the page table region
                passive_pt_sync(retaddr);
 
+               fprintf(stderr, "Finished passive pt sync\n");
+
                // TODO: error checking
                mutex_lock(&node_list_lock);
                node_list->find(retaddr.sin_addr.s_addr)->second->status = MACHINE_IDLE;
@@ -1400,6 +1402,8 @@ namespace NLCBSMM {
                   cond_signal(&uni_speaker_cond);
                }
             }
+
+            fprintf(stderr, "Need to send SYNC DONE\n");
 
             work_memory   = clone_heap.malloc(sizeof(WorkTupleType));
             packet_memory = clone_heap.malloc(sizeof(uint8_t) * MAX_PACKET_SZ);
