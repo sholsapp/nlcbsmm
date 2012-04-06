@@ -1402,6 +1402,7 @@ namespace NLCBSMM {
                            new (packet_memory) SyncPage(page_addr, page_data))
                         );
                   // Signal unicast speaker there is queued work
+                  //TODO: what the fuck
                   //cond_signal(&uni_speaker_cond);
                }
             }

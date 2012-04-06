@@ -160,7 +160,6 @@ namespace NLCBSMM {
       int        ip;
 
       mutex_lock(&node_list_lock);
-
       for(node_itr = node_list->begin();
             node_itr != node_list->end();
             node_itr++) {
@@ -171,14 +170,14 @@ namespace NLCBSMM {
          // If this isn't us
          if (ip != local_addr.s_addr
                && machine->status != MACHINE_ACTIVE) {
-            //fprintf(stderr, "> Available worker: %s\n",
-            //      inet_ntoa((struct in_addr&) ip));
+            fprintf(stderr, "> Available worker: %s\n", inet_ntoa((struct in_addr&) ip));
+            machine->status = MACHINE_ACTIVE;
             mutex_unlock(&node_list_lock);
             return ip;
          }
       }
-      mutex_unlock(&node_list_lock);
       fprintf(stderr, "> No available workers\n");
+      mutex_unlock(&node_list_lock);
       return -1;
    }
 
