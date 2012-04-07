@@ -11,7 +11,7 @@ CFLAGS=-g
 LDFLAGS=-lpthread -lrt
 HOARD_LDFLAGS=-Wall -Wl,--no-as-needed -L. -lhoard
 
-ALL=benchmark-malloc benchmark-hoard mmult-malloc mmult-hoard counter-malloc counter-hoard mmult-lock-malloc mmult-lock-hoard mmult-lock-strict-malloc mmult-lock-strict-hoard
+ALL=benchmark-malloc benchmark-hoard mmult-malloc mmult-hoard counter-malloc counter-hoard mmult-lock-row-malloc mmult-lock-row-hoard mmult-lock-col-malloc mmult-lock-col-hoard mmult-lock-strict-malloc mmult-lock-strict-hoard
 
 all:	$(ALL)
 
@@ -33,13 +33,22 @@ mmult-hoard: mmult.o
 mmult.o: mmult.c
 	$(CPP) $(CFLAGS) -c $<
 
-mmult-lock-malloc: mmult-lock.o
+mmult-lock-row-malloc: mmult-lock-row.o
 	$(CPP) -o $@ $^ $(LDFLAGS)
 
-mmult-lock-hoard: mmult-lock.o
+mmult-lock-row-hoard: mmult-lock-row.o
 	$(CPP) -o $@ $^ $(HOARD_LDFLAGS) $(LDFLAGS)
 
-mmult-lock.o: mmult-lock.c
+mmult-lock-row.o: mmult-lock-row.c
+	$(CPP) $(CFLAGS) -c $<
+
+mmult-lock-col-malloc: mmult-lock-col.o
+	$(CPP) -o $@ $^ $(LDFLAGS)
+
+mmult-lock-col-hoard: mmult-lock-col.o
+	$(CPP) -o $@ $^ $(HOARD_LDFLAGS) $(LDFLAGS)
+
+mmult-lock-col.o: mmult-lock-col.c
 	$(CPP) $(CFLAGS) -c $<
 
 mmult-lock-strict-malloc: mmult-lock-strict.o
