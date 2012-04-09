@@ -65,3 +65,6 @@ clean:
 
 test:
 	cd ../../src; make; cd ../experiments/benchmark; make clean; cp ../../src/libhoard.so .; make $(ALL)
+
+test64:
+	cd ../../src; make linux-gcc-x86_64; cd ../experiments/benchmark; make clean; cp ../../src/libhoard.so .; make $(ALL)
