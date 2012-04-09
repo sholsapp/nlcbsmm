@@ -568,7 +568,11 @@ namespace NLCBSMM {
                if (p) {
                   // Set page table ownership/permissions, need a lock free version
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
+#ifdef 1
                   mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
+#elif
+                  mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
+#endif
                }
                else {
                   fprintf(stderr, "> Bad release page response\n");
@@ -1797,6 +1801,9 @@ namespace NLCBSMM {
             ThreadCreate*    tc  = NULL;
             ThreadCreateAck* tca = NULL;
 
+            uint64_t start, end;
+            start = get_micro_clock();
+
             fprintf(stderr, "%lld >> pthread_create(%s) func(%p) arg(%p)\n", get_micro_clock(), local_ip, start_routine, arg);
 
             remote_ip = get_available_worker();
@@ -1871,6 +1878,8 @@ namespace NLCBSMM {
                thr_id = -1;
             }
 
+            fprintf(stderr, ">>PTHREAD_CREATE %d\n", start - get_micro_clock());
+
             return thr_id;
          }
 
@@ -1882,6 +1891,9 @@ namespace NLCBSMM {
             int            timeout        = 0;
             struct sockaddr_in  remote_addr    = {0};
             Packet*              p   = NULL;
+
+            uint64_t start, end;
+            start = get_micro_clock();
 
             fprintf(stderr, "%lld >> mutex_lock(%s)\n", get_micro_clock(), local_ip);
 
@@ -1920,6 +1932,8 @@ namespace NLCBSMM {
                fprintf(stderr, "> Bad mutex lock response\n");
             }
 
+            fprintf(stderr, ">>PTHREAD_MUTEX_LOCK %s\n", start - get_micro_lock());
+
             return 0;
          }
 
@@ -1931,6 +1945,9 @@ namespace NLCBSMM {
             int            timeout        = 0;
             struct sockaddr_in  remote_addr    = {0};
             Packet*              p   = NULL;
+
+            uint64_t start, end;
+            start = get_mirco_clock();
 
             vmaddr_t* serialized_invalidates = 0;
 
@@ -1971,6 +1988,8 @@ namespace NLCBSMM {
             else {
                fprintf(stderr, "> Bad mutex unlock response\n");
             }
+
+            fprintf(stderr, ">>PTHREAD_MUTEX_UNLOCK %s\n", start - get_micro_lock());
 
             return 0;
          }
