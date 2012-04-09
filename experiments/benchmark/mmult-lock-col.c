@@ -60,9 +60,9 @@ void mm(int me_no, int noproc, int n, double** a, double** b, double** c) {
       for (j = 0; j < n; j++) {
          sum = 0.0;
          for (k = 0; k < n; k++) {
-            sum = sum + a[i][k] * b[k][j];
+            sum = sum + a[k][i] * b[j][k];
          }
-         c[i][j] = sum;
+         c[j][i] = sum;
       }
       pthread_mutex_unlock(&lock);
       i += noproc;
@@ -104,10 +104,9 @@ void check_matrix(int dim)
          double e=0.0;
 
          for (k=0;k<dim;k++)
-            e+=a[i][k]*b[k][j];
+            e+=a[k][i]*b[j][k];
 
-         if (e!=c[i][j]) {
-            //printf("(%d,%d) error\n",i,j);
+         if (e!=c[j][i]) {
             error++;
          }
       }
@@ -156,20 +155,17 @@ int main(int argc, char *argv[]) {
    init_matrix(&b);
    init_matrix(&c);
 
-   for (i = 0; i < NDIM; i++)
-      for (j = 0; j < NDIM; j++)
-      {
-         a[i][j] = i + j;
-         b[i][j] = i + j;
+   for (i = 0; i < NDIM; i++) {
+      for (j = 0; j < NDIM; j++) {
+         a[j][i] = i + j;
+         b[j][i] = i + j;
       }
+   }
 
    threads = (pthread_t*) malloc(n * sizeof(pthread_t));
    pthread_attr_init(&pthread_custom_attr);
 
    arg = (parm*) malloc(sizeof(parm) * n);
-   /* setup barrier */
-
-   /* Start up thread */
 
    /* Spawn thread */
    for (i = 0; i < n; i++) {
@@ -182,11 +178,10 @@ int main(int argc, char *argv[]) {
       pthread_create(&threads[i], &pthread_custom_attr, worker, (void*) (arg+i));
    }
 
-   for (i = 0; i < n; i++)
-   {
+   for (i = 0; i < n; i++) {
       pthread_join(threads[i], NULL);
-
    }
+
    /* print_matrix(NDIM); */
    check_matrix(NDIM);
    free(arg);

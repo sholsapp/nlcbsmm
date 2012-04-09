@@ -172,6 +172,7 @@ namespace NLCBSMM {
       perm  = page->protection;
       node  = tuple.second;
 
+#ifdef 1
       if (node->ip_address == local_addr.s_addr) {
          fprintf(stderr, "> %p invalidated - granting PROT_WRITE!\n", (void*) page->address);
          if(mprotect((void*) page->address,
@@ -181,9 +182,10 @@ namespace NLCBSMM {
          }
          // Invalidate page
          invalidated.push_back(page->address);
-
+         sigprocmask(SIG_UNBLOCK, &set, &oset);
          return;
       }
+#endif
 
       remote_ip                   = node->ip_address;
       remote_addr.sin_family      = AF_INET;
@@ -238,12 +240,14 @@ namespace NLCBSMM {
             ClusterCoordinator::direct_comm(remote_addr,
                   new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
 
+#ifdef 1
             // Memory should be mapped, set permissions
             if(mprotect(rel_page,
                      PAGE_SZ,
                      PROT_READ) < 0) {
                fprintf(stderr, "> Fault: mprotect failed\n");
             }
+#endif
 
 
 
