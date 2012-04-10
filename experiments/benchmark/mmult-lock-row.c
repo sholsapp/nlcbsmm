@@ -171,6 +171,9 @@ int main(int argc, char *argv[]) {
 
    /* Start up thread */
 
+   pthread_mutex_t start_lock;
+   pthread_mutex_init(&start_lock, NULL);
+
    /* Spawn thread */
    for (i = 0; i < n; i++) {
       arg[i].id = i;
@@ -179,7 +182,9 @@ int main(int argc, char *argv[]) {
       arg[i].a = a;
       arg[i].b = b;
       arg[i].c = c;
+      pthread_mutex_lock(&start_lock);
       pthread_create(&threads[i], &pthread_custom_attr, worker, (void*) (arg+i));
+      pthread_mutex_unlock(&start_lock);
    }
 
    for (i = 0; i < n; i++)

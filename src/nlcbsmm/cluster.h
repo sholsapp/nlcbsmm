@@ -491,7 +491,7 @@ namespace NLCBSMM {
             payload_sz  = p->get_payload_sz();
             payload_buf = reinterpret_cast<uint8_t*>(p->get_payload_ptr());
 
-            fprintf(stderr, "> received a packet (%x)\n", p->get_flag());
+            //fprintf(stderr, "> received a packet (%x)\n", p->get_flag());
 
             switch (p->get_flag()) {
 
@@ -568,9 +568,9 @@ namespace NLCBSMM {
                if (p) {
                   // Set page table ownership/permissions, need a lock free version
                   set_new_owner(page_addr, retaddr.sin_addr.s_addr);
-#ifdef 1
+#ifdef __USE_LRC
                   mprotect((void*) page_addr, PAGE_SZ, PROT_READ);
-#elif
+#else
                   mprotect((void*) page_addr, PAGE_SZ, PROT_NONE);
 #endif
                }
@@ -1900,7 +1900,7 @@ namespace NLCBSMM {
             //TODO: MEGA HACK, need to implement a get_master function
             remote_ip = pt_owner;
 
-            fprintf(stderr, ">>>> send lock-request to %s\n", inet_ntoa((struct in_addr&) remote_ip));
+            //fprintf(stderr, ">>>> send lock-request to %s\n", inet_ntoa((struct in_addr&) remote_ip));
 
             remote_addr.sin_family      = AF_INET;
             remote_addr.sin_addr.s_addr = remote_ip;
@@ -1932,7 +1932,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> Bad mutex lock response\n");
             }
 
-            fprintf(stderr, ">>PTHREAD_MUTEX_LOCK %s\n", start - get_micro_lock());
+            fprintf(stderr, ">>PTHREAD_MUTEX_LOCK %lld\n", get_micro_clock() - start);
 
             return 0;
          }
@@ -1947,7 +1947,7 @@ namespace NLCBSMM {
             Packet*              p   = NULL;
 
             uint64_t start, end;
-            start = get_mirco_clock();
+            start = get_micro_clock();
 
             vmaddr_t* serialized_invalidates = 0;
 
@@ -1989,7 +1989,7 @@ namespace NLCBSMM {
                fprintf(stderr, "> Bad mutex unlock response\n");
             }
 
-            fprintf(stderr, ">>PTHREAD_MUTEX_UNLOCK %s\n", start - get_micro_lock());
+            fprintf(stderr, ">>PTHREAD_MUTEX_UNLOCK %lld\n", get_micro_clock() - start);
 
             return 0;
          }

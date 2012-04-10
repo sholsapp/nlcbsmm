@@ -172,7 +172,7 @@ namespace NLCBSMM {
       perm  = page->protection;
       node  = tuple.second;
 
-#ifdef 1
+#ifdef __USE_LRC
       if (node->ip_address == local_addr.s_addr) {
          fprintf(stderr, "> %p invalidated - granting PROT_WRITE!\n", (void*) page->address);
          if(mprotect((void*) page->address,
@@ -240,7 +240,7 @@ namespace NLCBSMM {
             ClusterCoordinator::direct_comm(remote_addr,
                   new (packet_memory) GenericPacket(SYNC_RELEASE_PAGE_ACK_F));
 
-#ifdef 1
+#ifdef __USE_LRC
             // Memory should be mapped, set permissions
             if(mprotect(rel_page,
                      PAGE_SZ,
@@ -248,9 +248,6 @@ namespace NLCBSMM {
                fprintf(stderr, "> Fault: mprotect failed\n");
             }
 #endif
-
-
-
          }
 
          // TODO: Add a multicat packet to inform the other hosts
@@ -278,7 +275,6 @@ namespace NLCBSMM {
       // Unblock sigsegv
       sigprocmask(SIG_UNBLOCK, &set, &oset);
       close(sk);
-
       return;
    }
 
